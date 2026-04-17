@@ -4,29 +4,30 @@
     "slug": "sacred-design",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/app-icon-dwn.png",
+    "icon": "./assets/images/6da5f013-3a42-4811-a914-2b2cf598ca43.jpeg",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/app-icon-dwn.png",
+      "image": "./assets/images/6da5f013-3a42-4811-a914-2b2cf598ca43.jpeg",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#F6F1E8"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.placeholder.app",
+      "icon": "./assets/images/6da5f013-3a42-4811-a914-2b2cf598ca43.jpeg",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/app-icon-dwn.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/images/6da5f013-3a42-4811-a914-2b2cf598ca43.jpeg",
+        "backgroundColor": "#F6F1E8"
       },
       "package": "com.placeholder.app"
     },
     "web": {
-      "favicon": "./assets/images/final_quest_240x240.png",
+      "favicon": "./assets/images/6da5f013-3a42-4811-a914-2b2cf598ca43.jpeg",
       "bundler": "metro"
     },
     "plugins": [
