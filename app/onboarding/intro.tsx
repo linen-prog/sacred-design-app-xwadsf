@@ -1,10 +1,9 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
-import { COLORS } from '@/constants/Colors';
-import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { useFonts, Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/lora';
 
 const PHASES = [
   'How You Operate',
@@ -16,15 +15,7 @@ const PHASES = [
 export default function IntroScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 400, useNativeDriver: true }),
-    ]).start();
-  }, [opacity, translateY]);
+  const [fontsLoaded] = useFonts({ Lora_400Regular, Lora_600SemiBold });
 
   function handleBack() {
     console.log('[Intro] Back pressed');
@@ -36,137 +27,130 @@ export default function IntroScreen() {
     router.push('/onboarding/phase-1');
   }
 
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: '#F6F1E8' }} />;
+  }
+
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: COLORS.background,
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom,
-      }}
-    >
-      <View style={{ paddingTop: 16, paddingHorizontal: 16 }}>
-        <AnimatedPressable
+    <View style={{ flex: 1, backgroundColor: '#F6F1E8' }}>
+      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16 }}>
+        <Pressable
           onPress={handleBack}
-          style={{
-            width: 44,
-            height: 44,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <ChevronLeft size={24} color={COLORS.textSecondary} />
-        </AnimatedPressable>
+          <ChevronLeft size={22} color="#6F8A6A" />
+        </Pressable>
       </View>
 
-      <Animated.View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{
           paddingHorizontal: 32,
-          opacity,
-          transform: [{ translateY }],
+          paddingVertical: 48,
+          alignItems: 'center',
         }}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={{ gap: 20, alignItems: 'center', marginBottom: 40 }}>
-          <Text
-            style={{
-              fontSize: 17,
-              fontFamily: 'Inter_400Regular',
-              color: COLORS.text,
-              lineHeight: 28,
-              textAlign: 'center',
-              maxWidth: 320,
-            }}
-          >
-            {"We'll guide you through a short discovery process to understand how you naturally think, feel, and show up."}
-          </Text>
-          <Text
-            style={{
-              fontSize: 17,
-              fontFamily: 'Inter_400Regular',
-              color: COLORS.text,
-              lineHeight: 28,
-              textAlign: 'center',
-              maxWidth: 320,
-            }}
-          >
-            {"There are no right or wrong answers—just your honest experience."}
-          </Text>
-          <Text
-            style={{
-              fontSize: 17,
-              fontFamily: 'Inter_400Regular',
-              color: COLORS.text,
-              lineHeight: 28,
-              textAlign: 'center',
-              maxWidth: 320,
-            }}
-          >
-            {"At the end, you'll receive your Sacred Design."}
-          </Text>
-        </View>
-
-        <View
+        <Text
           style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 8,
-            justifyContent: 'center',
+            fontSize: 15,
+            color: '#6F8A6A',
+            textAlign: 'center',
+            fontWeight: '400',
+            marginBottom: 32,
           }}
         >
+          A simple discovery process
+        </Text>
+
+        <Text
+          style={{
+            fontFamily: 'Lora_400Regular',
+            fontSize: 19,
+            color: '#2F3E2F',
+            textAlign: 'center',
+            lineHeight: 30,
+            marginBottom: 20,
+          }}
+        >
+          {"We'll guide you through a short series of questions to understand how you naturally think, feel, and show up."}
+        </Text>
+
+        <Text
+          style={{
+            fontFamily: 'Lora_400Regular',
+            fontSize: 19,
+            color: '#2F3E2F',
+            textAlign: 'center',
+            lineHeight: 30,
+            marginBottom: 20,
+          }}
+        >
+          {"There are no right or wrong answers\u2014just your honest experience."}
+        </Text>
+
+        <Text
+          style={{
+            fontFamily: 'Lora_400Regular',
+            fontSize: 17,
+            color: '#5A5A5A',
+            textAlign: 'center',
+            lineHeight: 26,
+            marginTop: 8,
+            marginBottom: 36,
+          }}
+        >
+          {"At the end, you'll receive your Sacred Design."}
+        </Text>
+
+        <View style={{ alignItems: 'center', gap: 14, marginBottom: 48 }}>
           {PHASES.map((phase) => (
-            <View
+            <Text
               key={phase}
               style={{
-                backgroundColor: COLORS.accentMuted,
-                borderRadius: 20,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
+                fontSize: 16,
+                color: '#6F8A6A',
+                textAlign: 'center',
+                lineHeight: 24,
               }}
             >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontFamily: 'Inter_400Regular',
-                  color: COLORS.accent,
-                }}
-              >
-                {phase}
-              </Text>
-            </View>
+              {'• '}
+              {phase}
+            </Text>
           ))}
         </View>
-      </Animated.View>
 
-      <View style={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 32 }}>
-        <AnimatedPressable
+        <Pressable
           onPress={handleContinue}
           style={{
-            backgroundColor: COLORS.primary,
-            borderRadius: 14,
-            height: 54,
+            backgroundColor: '#6F8A6A',
+            borderRadius: 18,
+            paddingVertical: 18,
+            width: '100%',
             alignItems: 'center',
-            justifyContent: 'center',
+            shadowColor: '#6F8A6A',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.25,
+            shadowRadius: 12,
+            elevation: 4,
           }}
           accessibilityRole="button"
           accessibilityLabel="Continue"
         >
           <Text
             style={{
-              color: COLORS.white,
-              fontSize: 16,
-              fontFamily: 'Inter_600SemiBold',
+              color: '#FFFFFF',
+              fontSize: 17,
               fontWeight: '600',
+              textAlign: 'center',
             }}
           >
             Continue
           </Text>
-        </AnimatedPressable>
-      </View>
+        </Pressable>
+      </ScrollView>
     </View>
   );
 }

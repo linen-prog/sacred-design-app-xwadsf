@@ -1,9 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, ScrollView, Animated } from 'react-native';
+import { View, Text, ScrollView, Pressable, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Compass } from 'lucide-react-native';
 import { useFonts, Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/lora';
-import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -26,6 +25,9 @@ export default function WelcomeScreen() {
     router.push('/onboarding/intro');
   }
 
+  const headlineText = 'Know your design.\nGrow in your calling.\nWalk in it\u2014daily.';
+  const subtextContent = 'A simple path to understand how you\u2019re uniquely made\u2014and begin living it.';
+
   return (
     <View style={{ flex: 1, backgroundColor: '#F6F1E8' }}>
       <ScrollView
@@ -35,7 +37,8 @@ export default function WelcomeScreen() {
           justifyContent: 'center',
           alignItems: 'center',
           paddingHorizontal: 32,
-          paddingVertical: 60,
+          paddingTop: 80,
+          paddingBottom: 60,
         }}
       >
         <Animated.View
@@ -46,35 +49,42 @@ export default function WelcomeScreen() {
             transform: [{ translateY }],
           }}
         >
-          {/* Icon area */}
-          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            {/* Outer glow */}
+          {/* Glowing compass orb */}
+          <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 40 }}>
+            {/* Outermost glow — very faint */}
             <View
               style={{
                 position: 'absolute',
-                width: 120,
-                height: 120,
-                borderRadius: 60,
-                backgroundColor: 'rgba(230, 211, 163, 0.10)',
+                width: 140,
+                height: 140,
+                borderRadius: 70,
+                backgroundColor: 'rgba(230, 211, 163, 0.12)',
+              }}
+            />
+            {/* Middle glow */}
+            <View
+              style={{
+                position: 'absolute',
+                width: 110,
+                height: 110,
+                borderRadius: 55,
+                backgroundColor: 'rgba(230, 211, 163, 0.18)',
               }}
             />
             {/* Inner circle */}
             <View
               style={{
-                width: 88,
-                height: 88,
-                borderRadius: 44,
-                backgroundColor: 'rgba(230, 211, 163, 0.18)',
+                width: 84,
+                height: 84,
+                borderRadius: 42,
+                backgroundColor: 'rgba(230, 211, 163, 0.28)',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Compass size={42} color="#8A7A5A" strokeWidth={1} />
+              <Compass size={40} color="#8A7A5A" strokeWidth={1} />
             </View>
           </View>
-
-          {/* 40px spacer */}
-          <View style={{ height: 40 }} />
 
           {/* Headline */}
           <Text
@@ -83,14 +93,12 @@ export default function WelcomeScreen() {
               fontSize: 30,
               color: '#2F3E2F',
               textAlign: 'center',
-              lineHeight: 42,
+              lineHeight: 44,
+              marginBottom: 24,
             }}
           >
-            {'Know your design.\nGrow in your calling.\nWalk in it\u2014daily.'}
+            {headlineText}
           </Text>
-
-          {/* 24px spacer */}
-          <View style={{ height: 24 }} />
 
           {/* Subtext */}
           <Text
@@ -99,44 +107,39 @@ export default function WelcomeScreen() {
               color: '#5A5A5A',
               textAlign: 'center',
               lineHeight: 26,
-              paddingHorizontal: 28,
+              paddingHorizontal: 8,
+              marginBottom: 52,
             }}
           >
-            {
-              'A simple path to understand how you\u2019re uniquely made\u2014and begin living it.'
-            }
+            {subtextContent}
           </Text>
 
-          {/* 48px spacer */}
-          <View style={{ height: 48 }} />
-
           {/* Button */}
-          <AnimatedPressable
+          <Pressable
             onPress={handleBegin}
-            style={{
-              backgroundColor: '#6F8A6A',
+            style={({ pressed }) => ({
+              backgroundColor: pressed ? '#5A7355' : '#6F8A6A',
               borderRadius: 18,
               paddingVertical: 18,
               paddingHorizontal: 32,
               width: '100%',
               alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(111, 138, 106, 0.25)',
-            }}
+              boxShadow: '0 4px 14px rgba(111, 138, 106, 0.30)',
+            })}
             accessibilityRole="button"
             accessibilityLabel="Begin Your Discovery"
           >
             <Text
               style={{
-                color: '#FFFFFF',
+                color: 'white',
                 fontSize: 17,
                 fontWeight: '600',
-                textAlign: 'center',
+                letterSpacing: 0.3,
               }}
             >
               Begin Your Discovery
             </Text>
-          </AnimatedPressable>
+          </Pressable>
         </Animated.View>
       </ScrollView>
     </View>
