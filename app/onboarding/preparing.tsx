@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Compass } from 'lucide-react-native';
 import { COLORS } from '@/constants/Colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 
 export default function PreparingScreen() {
@@ -34,16 +33,9 @@ export default function PreparingScreen() {
     );
     pulseAnimation.start();
 
-    const timer = setTimeout(async () => {
-      try {
-        console.log('[Preparing] Marking onboarding complete');
-        await AsyncStorage.setItem('onboarding_complete', 'true');
-        console.log('[Preparing] Navigating to main tabs');
-        router.replace('/(tabs)');
-      } catch (e) {
-        console.log('[Preparing] AsyncStorage error:', e);
-        router.replace('/(tabs)');
-      }
+    const timer = setTimeout(() => {
+      console.log('[Preparing] Navigating to reveal screen');
+      router.replace('/reveal');
     }, 3000);
 
     return () => {
