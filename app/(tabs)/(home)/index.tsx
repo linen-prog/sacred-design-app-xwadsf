@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AnimatedPressable from "@/components/AnimatedPressable";
+import { AnimatedPressable } from "@/components/AnimatedPressable";
 
 const BG = "#F6F1E8";
 const TEXT = "#2F3E2F";
