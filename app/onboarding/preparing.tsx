@@ -58,7 +58,7 @@ export default function PreparingScreen() {
     >
       {/* logo */}
       <Animated.Image
-        source={require('@/assets/images/72057605-fb00-4601-8fac-ab7091e359b9.jpeg')}
+        source={require('@/assets/images/c5285e11-d314-42f2-b5cc-3466932600b8.jpeg')}
         style={{
           width: 120,
           height: 120,
