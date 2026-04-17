@@ -28,8 +28,8 @@ export default function HomeScreen() {
   const router = useRouter();
 
   function handleBeginPress() {
-    console.log("[Home] 'Bring Your Design to Life' button pressed");
-    router.push("/(tabs)/(design)");
+    console.log("[Home] 'Bring Your Design to Life' button pressed — navigating to onboarding");
+    router.push("/onboarding/welcome");
   }
 
   const topPadding = insets.top + 20;
