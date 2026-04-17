@@ -8,23 +8,23 @@ import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
-const QUESTIONS = [
-  { id: 'q1_1', text: 'I tend to think things through carefully before acting.' },
-  { id: 'q1_2', text: 'I feel most alive when I\'m helping others find their way.' },
-  { id: 'q1_3', text: 'I naturally take charge when a situation needs direction.' },
-  { id: 'q1_4', text: 'I notice details that others often miss.' },
-  { id: 'q1_5', text: 'I prefer harmony over conflict, even when I disagree.' },
-  { id: 'q1_6', text: 'I find meaning in understanding the deeper \'why\' behind things.' },
-  { id: 'q1_7', text: 'I feel energized by bringing people together.' },
-  { id: 'q1_8', text: 'I tend to feel things deeply, even when I don\'t show it.' },
-  { id: 'q1_9', text: 'I\'m drawn to creating order and structure in my environment.' },
-  { id: 'q1_10', text: 'I often sense what others are feeling before they say it.' },
+const PHASE_1_QUESTIONS = [
+  { id: 'Q1', text: 'I feel energized being around people and engaging in conversation.' },
+  { id: 'Q2', text: 'I often need quiet or alone time to reset.' },
+  { id: 'Q3', text: 'I tend to notice and feel what others are experiencing emotionally.' },
+  { id: 'Q4', text: 'I feel a strong pull to take responsibility and follow through.' },
+  { id: 'Q5', text: 'I enjoy exploring new ideas and deeper meaning.' },
+  { id: 'Q6', text: 'I can become overwhelmed when things feel uncertain.' },
+  { id: 'Q7', text: 'I naturally step into leadership when needed.' },
+  { id: 'Q8', text: 'I prefer structure and clear expectations.' },
+  { id: 'Q9', text: 'I value harmony and avoid conflict when possible.' },
+  { id: 'Q10', text: 'I am drawn to purpose and deeper meaning in life.' },
 ];
 
 export default function Phase1Screen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { answers, setAnswer } = useContext(DiscoveryContext);
+  const { answers, setAnswer, computePhase1Scores } = useContext(DiscoveryContext);
   const [currentIndex, setCurrentIndex] = useState(0);
   const questionOpacity = useRef(new Animated.Value(1)).current;
   const screenOpacity = useRef(new Animated.Value(0)).current;
@@ -37,7 +37,7 @@ export default function Phase1Screen() {
     ]).start();
   }, [screenOpacity, screenTranslateY]);
 
-  const currentQuestion = QUESTIONS[currentIndex];
+  const currentQuestion = PHASE_1_QUESTIONS[currentIndex];
   const selectedValue = answers[currentQuestion.id];
 
   function transitionToQuestion(nextIndex: number) {
@@ -52,10 +52,11 @@ export default function Phase1Screen() {
     setAnswer(currentQuestion.id, value);
 
     setTimeout(() => {
-      if (currentIndex < QUESTIONS.length - 1) {
+      if (currentIndex < PHASE_1_QUESTIONS.length - 1) {
         transitionToQuestion(currentIndex + 1);
       } else {
-        console.log('[Phase1] All questions answered, navigating to reflection');
+        console.log('[Phase1] All questions answered, computing scores and navigating to reflection');
+        computePhase1Scores();
         router.push('/onboarding/phase-1-reflection');
       }
     }, 300);
@@ -86,7 +87,7 @@ export default function Phase1Screen() {
         phase={1}
         title="How You Operate"
         current={currentIndex + 1}
-        total={QUESTIONS.length}
+        total={PHASE_1_QUESTIONS.length}
       />
 
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
