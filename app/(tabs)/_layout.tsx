@@ -1,15 +1,27 @@
-import React from 'react';
-import { Stack } from 'expo-router';
+import React from "react";
+import { Tabs } from "expo-router";
+import FloatingTabBar, { TabBarItem } from "@/components/FloatingTabBar";
+
+const TABS: TabBarItem[] = [
+  { name: "(home)", route: "/(tabs)/(home)", icon: "home", label: "Home" },
+  { name: "(design)", route: "/(tabs)/(design)", icon: "auto-awesome", label: "My Design" },
+  { name: "(journey)", route: "/(tabs)/(journey)", icon: "schedule", label: "Journey" },
+];
 
 export default function TabLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: 'none',
-      }}
+    <Tabs
+      tabBar={() => (
+        <FloatingTabBar
+          tabs={TABS}
+          containerWidth={320}
+        />
+      )}
+      screenOptions={{ headerShown: false }}
     >
-      <Stack.Screen key="home" name="(home)" />
-    </Stack>
+      <Tabs.Screen name="(home)" />
+      <Tabs.Screen name="(design)" />
+      <Tabs.Screen name="(journey)" />
+    </Tabs>
   );
 }
