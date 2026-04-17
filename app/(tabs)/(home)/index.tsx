@@ -13,35 +13,26 @@ import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 // Placeholder — will be wired to real data later
 const discoveryStatus: "none" | "in_progress" | "completed" = "none";
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { sacredDesignResult } = useContext(DiscoveryContext);
 
-  const greeting = getGreeting();
-
   const status: "none" | "in_progress" | "completed" =
     sacredDesignResult ? "completed" : discoveryStatus;
 
   const handleBeginDiscovery = () => {
-    console.log("[HomeScreen] Begin Sacred Discovery pressed");
+    console.log("[HomeScreen] Begin Discovery button pressed");
     router.push("/onboarding/welcome");
   };
 
   const handleContinueDiscovery = () => {
-    console.log("[HomeScreen] Continue Your Discovery pressed");
+    console.log("[HomeScreen] Continue Discovery button pressed");
     router.push("/onboarding/welcome");
   };
 
   const handleBringToLife = () => {
-    console.log("[HomeScreen] Bring Your Design to Life pressed");
+    console.log("[HomeScreen] Bring Your Design to Life button pressed");
   };
 
   return (
@@ -54,24 +45,27 @@ export default function HomeScreen() {
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     >
-      {/* App name */}
+      {/* App name — minimal, subdued */}
       <Text style={styles.appName}>Sacred Design</Text>
 
-      {/* Greeting */}
-      <Text style={styles.greeting}>{greeting}</Text>
+      {/* Primary headline */}
+      <Text style={styles.headline}>Bring Your Design to Life</Text>
+
+      {/* Subtext */}
+      <Text style={styles.subtext}>One small step today makes it real.</Text>
 
       {/* State-dependent CTA */}
       {status === "none" && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Begin Your Journey</Text>
-          <Text style={styles.cardSubtitle}>
-            Discover the sacred design woven into who you are.
+          <Text style={styles.cardBody}>
+            Discover how you naturally think, feel, and show up—and begin living it.
           </Text>
           <Pressable
             style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
             onPress={handleBeginDiscovery}
           >
-            <Text style={styles.ctaButtonText}>Begin Sacred Discovery</Text>
+            <Text style={styles.ctaButtonText}>Bring Your Design to Life</Text>
           </Pressable>
         </View>
       )}
@@ -79,14 +73,14 @@ export default function HomeScreen() {
       {status === "in_progress" && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Your Discovery Awaits</Text>
-          <Text style={styles.cardSubtitle}>
-            Pick up where you left off and continue uncovering your design.
+          <Text style={styles.cardBody}>
+            Discover how you naturally think, feel, and show up—and begin living it.
           </Text>
           <Pressable
             style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
             onPress={handleContinueDiscovery}
           >
-            <Text style={styles.ctaButtonText}>Continue Your Discovery</Text>
+            <Text style={styles.ctaButtonText}>Bring Your Design to Life</Text>
           </Pressable>
         </View>
       )}
@@ -94,15 +88,15 @@ export default function HomeScreen() {
       {status === "completed" && (
         <View style={styles.card}>
           <Text style={styles.alignmentLabel}>Today's Alignment</Text>
-          <Text style={styles.cardTitle}>Bring Your Design to Life</Text>
-          <Text style={styles.cardSubtitle}>
-            Your daily alignment will appear here once your Sacred Design is complete.
+          <Text style={styles.cardTitle}>Begin Your Journey</Text>
+          <Text style={styles.cardBody}>
+            Discover how you naturally think, feel, and show up—and begin living it.
           </Text>
           <Pressable
             style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
             onPress={handleBringToLife}
           >
-            <Text style={styles.ctaButtonText}>View Today's Alignment</Text>
+            <Text style={styles.ctaButtonText}>Bring Your Design to Life</Text>
           </Pressable>
         </View>
       )}
@@ -120,33 +114,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   appName: {
-    fontFamily: "Lora_400Regular",
-    fontSize: 13,
-    color: "#8A8070",
-    letterSpacing: 1.2,
+    fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    color: "#2F3E2F",
+    letterSpacing: 3,
     textTransform: "uppercase",
-    marginBottom: 32,
+    opacity: 0.35,
     textAlign: "center",
   },
-  greeting: {
-    fontFamily: "Lora_400Regular",
+  headline: {
+    fontFamily: "Lora_700Bold",
     fontSize: 30,
-    color: "#3D3530",
+    color: "#2F3E2F",
     textAlign: "center",
-    marginBottom: 36,
-    letterSpacing: -0.3,
+    marginTop: 32,
+  },
+  subtext: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: "rgba(47,62,47,0.5)",
+    textAlign: "center",
+    marginTop: 8,
+    letterSpacing: 0.2,
+    marginBottom: 32,
   },
   card: {
-    backgroundColor: "#FFFDF7",
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
     width: "100%",
-    borderCurve: "continuous",
-    // @ts-expect-error — RN web supports boxShadow
-    boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+    shadowColor: "#2F3E2F",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
   },
   alignmentLabel: {
-    fontFamily: "Lora_400Regular",
+    fontFamily: "Inter_400Regular",
     fontSize: 11,
     color: "#A8B5A2",
     letterSpacing: 1.4,
@@ -154,34 +159,37 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cardTitle: {
-    fontFamily: "Lora_400Regular",
-    fontSize: 20,
-    color: "#3D3530",
-    marginBottom: 10,
-    letterSpacing: -0.2,
+    fontFamily: "Lora_700Bold",
+    fontSize: 18,
+    color: "#2F3E2F",
   },
-  cardSubtitle: {
-    fontFamily: "System",
-    fontSize: 15,
-    color: "#8A8070",
+  cardBody: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: "rgba(47,62,47,0.65)",
     lineHeight: 22,
-    marginBottom: 24,
+    marginTop: 8,
   },
   ctaButton: {
     backgroundColor: "#6F8A6A",
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignSelf: "stretch",
     alignItems: "center",
-    borderCurve: "continuous",
+    marginTop: 20,
+    shadowColor: "#6F8A6A",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
   },
   ctaButtonPressed: {
     opacity: 0.85,
   },
   ctaButtonText: {
-    fontFamily: "Lora_400Regular",
-    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
     color: "#FFFFFF",
-    letterSpacing: 0.2,
+    textAlign: "center",
   },
 });

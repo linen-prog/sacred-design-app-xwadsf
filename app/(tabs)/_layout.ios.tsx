@@ -4,7 +4,7 @@ export default function TabLayout() {
   return (
     <NativeTabs
       tabBarActiveTintColor="#6F8A6A"
-      tabBarInactiveTintColor="#A8B5A2"
+      tabBarInactiveTintColor="rgba(47,62,47,0.35)"
       tabBarStyle={{ backgroundColor: "#F6F1E8" }}
     >
       <NativeTabs.Trigger name="(home)">
