@@ -121,8 +121,8 @@ export default function RevealScreen() {
   const handleCTA = async () => {
     console.log('[Reveal] "Bring Your Design to Life" pressed');
     try {
-      await AsyncStorage.setItem('onboarding_complete', 'true');
-      console.log('[Reveal] onboarding_complete set, navigating to tabs');
+      await AsyncStorage.setItem('hasCompletedQuiz', 'true');
+      console.log('[Reveal] hasCompletedQuiz set to true, navigating to tabs');
     } catch (e) {
       console.log('[Reveal] AsyncStorage error:', e);
     }

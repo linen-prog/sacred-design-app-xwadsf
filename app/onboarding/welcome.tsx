@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, Animated, StyleSheet } from 'react-n
 import { useRouter } from 'expo-router';
 import { useFonts, Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/lora';
 import { Compass } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -20,8 +21,14 @@ export default function WelcomeScreen() {
 
   if (!fontsLoaded) return null;
 
-  function handleBegin() {
+  async function handleBegin() {
     console.log('[Welcome] Begin Your Discovery pressed');
+    try {
+      await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+      console.log('[Welcome] hasSeenOnboarding set to true');
+    } catch (e) {
+      console.log('[Welcome] AsyncStorage error:', e);
+    }
     router.push('/onboarding/intro');
   }
 

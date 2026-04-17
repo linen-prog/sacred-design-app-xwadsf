@@ -43,8 +43,7 @@ export const unstable_settings = {
 
 function RootNavigator() {
   const router = useRouter();
-  // useSegments is imported but not used here — kept for future guard logic
-  const [_onboardingChecked, setOnboardingChecked] = useState(false);
+  const [_navigationReady, setNavigationReady] = useState(false);
 
   useEffect(() => {
     async function checkOnboarding() {
@@ -62,18 +61,27 @@ function RootNavigator() {
           }
         }
 
-        const value = await AsyncStorage.getItem("onboarding_complete");
-        console.log("[RootLayout] onboarding_complete:", value);
-        if (!value) {
-          router.replace("/onboarding/welcome");
-        } else {
+        const [hasCompletedQuiz, hasSeenOnboarding] = await Promise.all([
+          AsyncStorage.getItem("hasCompletedQuiz"),
+          AsyncStorage.getItem("hasSeenOnboarding"),
+        ]);
+        console.log("[RootLayout] hasCompletedQuiz:", hasCompletedQuiz, "hasSeenOnboarding:", hasSeenOnboarding);
+
+        if (hasCompletedQuiz === "true") {
+          console.log("[RootLayout] Quiz complete — navigating to home");
           router.replace("/(tabs)");
+        } else if (hasSeenOnboarding === "true") {
+          console.log("[RootLayout] Seen onboarding — resuming quiz at phase-1");
+          router.replace("/onboarding/intro");
+        } else {
+          console.log("[RootLayout] First launch — navigating to welcome");
+          router.replace("/onboarding/welcome");
         }
       } catch (e) {
         console.log("[RootLayout] AsyncStorage error:", e);
         router.replace("/onboarding/welcome");
       } finally {
-        setOnboardingChecked(true);
+        setNavigationReady(true);
       }
     }
     checkOnboarding();
