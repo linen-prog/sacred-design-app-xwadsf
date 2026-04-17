@@ -26,6 +26,13 @@ export interface Phase3Scores {
   teacher_score: number;
 }
 
+export interface Phase4Scores {
+  avoidant_score: number;
+  anxious_score: number;
+  overactive_score: number;
+  grounded_score: number;
+}
+
 interface DiscoveryContextType {
   answers: Record<string, number>;
   setAnswer: (id: string, value: number) => void;
@@ -36,6 +43,8 @@ interface DiscoveryContextType {
   computePhase2Scores: () => void;
   phase3Scores: Phase3Scores | null;
   computePhase3Scores: () => void;
+  phase4Scores: Phase4Scores | null;
+  computePhase4Scores: () => void;
 }
 
 export const DiscoveryContext = createContext<DiscoveryContextType>({
@@ -48,6 +57,8 @@ export const DiscoveryContext = createContext<DiscoveryContextType>({
   computePhase2Scores: () => {},
   phase3Scores: null,
   computePhase3Scores: () => {},
+  phase4Scores: null,
+  computePhase4Scores: () => {},
 });
 
 export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
@@ -55,6 +66,7 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
   const [phase1Scores, setPhase1Scores] = useState<Phase1Scores | null>(null);
   const [phase2Scores, setPhase2Scores] = useState<Phase2Scores | null>(null);
   const [phase3Scores, setPhase3Scores] = useState<Phase3Scores | null>(null);
+  const [phase4Scores, setPhase4Scores] = useState<Phase4Scores | null>(null);
 
   const setAnswer = useCallback((id: string, value: number) => {
     console.log(`[DiscoveryContext] setAnswer: ${id} = ${value}`);
@@ -67,6 +79,7 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     setPhase1Scores(null);
     setPhase2Scores(null);
     setPhase3Scores(null);
+    setPhase4Scores(null);
   }, []);
 
   const computePhase1Scores = useCallback(() => {
@@ -177,6 +190,36 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const computePhase4Scores = useCallback(() => {
+    console.log('[DiscoveryContext] computePhase4Scores called');
+    setAnswers(current => {
+      const Q1 = current['P4_Q1'] ?? 0;
+      const Q2 = current['P4_Q2'] ?? 0;
+      const Q3 = current['P4_Q3'] ?? 0;
+      const Q4 = current['P4_Q4'] ?? 0;
+      const Q5 = current['P4_Q5'] ?? 0;
+      const Q6 = current['P4_Q6'] ?? 0;
+      const Q7 = current['P4_Q7'] ?? 0;
+      const Q8 = current['P4_Q8'] ?? 0;
+
+      const Avoidant   = Q1 + Q4;              // max = 10
+      const Anxious    = Q2 + Q7;              // max = 10
+      const Overactive = Q5 + Q8;              // max = 10
+      const Grounded   = (6 - Q3) + (6 - Q6); // max = 10
+
+      const scores: Phase4Scores = {
+        avoidant_score:   (Avoidant   / 10) * 10,
+        anxious_score:    (Anxious    / 10) * 10,
+        overactive_score: (Overactive / 10) * 10,
+        grounded_score:   (Grounded   / 10) * 10,
+      };
+
+      console.log('[DiscoveryContext] phase4Scores computed:', scores);
+      setPhase4Scores(scores);
+      return current;
+    });
+  }, []);
+
   const value = useMemo(() => ({
     answers,
     setAnswer,
@@ -187,7 +230,9 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     computePhase2Scores,
     phase3Scores,
     computePhase3Scores,
-  }), [answers, setAnswer, resetAnswers, phase1Scores, computePhase1Scores, phase2Scores, computePhase2Scores, phase3Scores, computePhase3Scores]);
+    phase4Scores,
+    computePhase4Scores,
+  }), [answers, setAnswer, resetAnswers, phase1Scores, computePhase1Scores, phase2Scores, computePhase2Scores, phase3Scores, computePhase3Scores, phase4Scores, computePhase4Scores]);
 
   return (
     <DiscoveryContext.Provider value={value}>

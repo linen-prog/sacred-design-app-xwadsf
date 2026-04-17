@@ -9,14 +9,14 @@ import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 const QUESTIONS = [
-  { id: 'q4_1', text: 'I feel most regulated when I have quiet, uninterrupted time alone.' },
-  { id: 'q4_2', text: 'Being in nature helps me reset and reconnect.' },
-  { id: 'q4_3', text: 'I ground myself through movement—walking, stretching, or exercise.' },
-  { id: 'q4_4', text: 'I feel most settled when I have a consistent daily rhythm.' },
-  { id: 'q4_5', text: 'Deep conversation with a trusted person helps me feel centered.' },
-  { id: 'q4_6', text: 'Creative expression (writing, art, music) helps me process and ground.' },
-  { id: 'q4_7', text: 'Prayer or contemplative practice is central to how I stay grounded.' },
-  { id: 'q4_8', text: 'I tend to disconnect or shut down when I\'m overwhelmed.' },
+  { id: 'P4_Q1', text: 'When I feel overwhelmed, I tend to shut down or withdraw.' },
+  { id: 'P4_Q2', text: 'When something feels stressful, I feel it strongly in my body.' },
+  { id: 'P4_Q3', text: 'I can usually return to a calm state after stress without much difficulty.' },
+  { id: 'P4_Q4', text: 'I often stay busy or distracted to avoid uncomfortable feelings.' },
+  { id: 'P4_Q5', text: 'I feel most at ease when things are predictable and steady.' },
+  { id: 'P4_Q6', text: 'I can stay present and connected without feeling overwhelmed or shut down.' },
+  { id: 'P4_Q7', text: 'I notice tension in my body when I\'m stressed (tight chest, shoulders, etc.).' },
+  { id: 'P4_Q8', text: 'It\'s hard for me to slow down, even when I need rest.' },
 ];
 
 const INTRO_TEXT = "Growth becomes lasting when it feels supported in your body.";
@@ -24,7 +24,7 @@ const INTRO_TEXT = "Growth becomes lasting when it feels supported in your body.
 export default function Phase4Screen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { answers, setAnswer } = useContext(DiscoveryContext);
+  const { answers, setAnswer, computePhase4Scores } = useContext(DiscoveryContext);
   const [showIntro, setShowIntro] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const questionOpacity = useRef(new Animated.Value(1)).current;
@@ -61,7 +61,9 @@ export default function Phase4Screen() {
       if (currentIndex < QUESTIONS.length - 1) {
         transitionToQuestion(currentIndex + 1);
       } else {
-        console.log('[Phase4] All questions answered, navigating to reflection');
+        console.log('[Phase4] All questions answered, computing phase4 scores');
+        computePhase4Scores();
+        console.log('[Phase4] Navigating to phase-4-reflection');
         router.push('/onboarding/phase-4-reflection');
       }
     }, 300);
