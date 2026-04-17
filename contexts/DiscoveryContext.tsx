@@ -23,6 +23,58 @@ export interface SacredDesignResult {
   primary_archetype: ArchetypeName;
   secondary_archetype: ArchetypeName;
   archetypeScores: ArchetypeWeightScores;
+  blend_name: string;
+}
+
+// Explicit blend name map — order matters (primary first)
+const BLEND_NAME_MAP: Partial<Record<string, string>> = {
+  'Truth Seeker|Light Bearer':          'The Wayfinder',
+  'Truth Seeker|Peacemaker':            'The Grounded Voice',
+  'Truth Seeker|Faithful Steward':      'The Wise Builder',
+  'Truth Seeker|Courageous Leader':     'The Strategic Guide',
+  'Light Bearer|Peacemaker':            'The Gentle Light',
+  'Light Bearer|Courageous Leader':     'The Inspiring Leader',
+  'Light Bearer|Faithful Steward':      'The Steady Encourager',
+  'Peacemaker|Faithful Steward':        'The Steady Presence',
+  'Peacemaker|Deep Feeler':             'The Compassionate Heart',
+  'Deep Feeler|Light Bearer':           'The Expressive Heart',
+  'Deep Feeler|Truth Seeker':           'The Reflective Soul',
+  'Courageous Leader|Faithful Steward': 'The Grounded Leader',
+  'Courageous Leader|Justice Carrier':  'The Bold Advocate',
+  'Justice Carrier|Truth Seeker':       'The Disciplined Voice',
+  'Justice Carrier|Light Bearer':       'The Courageous Light',
+};
+
+// Fallback trait words per archetype (used when combination is not in the map)
+const ARCHETYPE_TRAIT_WORD: Record<ArchetypeName, string> = {
+  'Peacemaker':        'Peaceful',
+  'Courageous Leader': 'Courageous',
+  'Deep Feeler':       'Empathic',
+  'Faithful Steward':  'Faithful',
+  'Light Bearer':      'Luminous',
+  'Truth Seeker':      'Discerning',
+  'Justice Carrier':   'Steadfast',
+};
+
+const ARCHETYPE_EXPRESSION_WORD: Record<ArchetypeName, string> = {
+  'Peacemaker':        'Keeper',
+  'Courageous Leader': 'Leader',
+  'Deep Feeler':       'Heart',
+  'Faithful Steward':  'Builder',
+  'Light Bearer':      'Guide',
+  'Truth Seeker':      'Voice',
+  'Justice Carrier':   'Advocate',
+};
+
+function getBlendName(primary: ArchetypeName, secondary: ArchetypeName): string {
+  const key = `${primary}|${secondary}`;
+  if (BLEND_NAME_MAP[key]) {
+    return BLEND_NAME_MAP[key]!;
+  }
+  // Fallback: "The [Primary Trait] [Secondary Expression]"
+  const traitWord = ARCHETYPE_TRAIT_WORD[primary];
+  const expressionWord = ARCHETYPE_EXPRESSION_WORD[secondary];
+  return `The ${traitWord} ${expressionWord}`;
 }
 
 export interface Phase1Scores {
@@ -372,10 +424,13 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
       secondaryName = sorted.find(([name]) => name !== primaryName)![0];
     }
 
+    const blend_name = getBlendName(primaryName, secondaryName);
+
     const result: SacredDesignResult = {
       primary_archetype: primaryName,
       secondary_archetype: secondaryName,
       archetypeScores,
+      blend_name,
     };
 
     console.log('[DiscoveryContext] sacredDesignResult computed:', result);
