@@ -70,6 +70,19 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         )}
+        {__DEV__ && (
+          <Pressable
+            onPress={() => {
+              console.log('[HomeScreen] Dev: Skip to Reveal pressed');
+              router.push('/dev-skip');
+            }}
+            style={{ marginTop: 40, opacity: 0.4 }}
+          >
+            <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: '#2F3E2F', textAlign: 'center' }}>
+              ⚡ Dev: Skip to Reveal
+            </Text>
+          </Pressable>
+        )}
       </ScrollView>
     </View>
   );
