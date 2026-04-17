@@ -56,6 +56,7 @@ export default function PreparingScreen() {
         transform: [{ translateY: screenTranslateY }],
       }}
     >
+      {/* logo */}
       <Animated.Image
         source={require('@/assets/images/72057605-fb00-4601-8fac-ab7091e359b9.jpeg')}
         style={{

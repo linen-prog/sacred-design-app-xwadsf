@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, ScrollView, Pressable, Animated, Image } from 'react-native';
+import { View, Text, ScrollView, Pressable, Animated, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFonts, Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/lora';
+import { Compass } from 'lucide-react-native';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -49,15 +50,12 @@ export default function WelcomeScreen() {
           }}
         >
           {/* Logo */}
-          <Image
-            source={require('@/assets/images/72057605-fb00-4601-8fac-ab7091e359b9.jpeg')}
-            style={{
-              width: 180,
-              height: 180,
-              resizeMode: 'contain',
-              marginBottom: 8,
-            }}
-          />
+          <View style={styles.logoContainer}>
+            <View style={styles.outerOrb} />
+            <View style={styles.middleOrb} />
+            <View style={styles.innerOrb} />
+            <Compass size={32} color="#6F8A6A" strokeWidth={1.5} />
+          </View>
 
           {/* Headline */}
           <Text
@@ -118,3 +116,34 @@ export default function WelcomeScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  logoContainer: {
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  outerOrb: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(111, 138, 106, 0.08)',
+  },
+  middleOrb: {
+    position: 'absolute',
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: 'rgba(111, 138, 106, 0.12)',
+  },
+  innerOrb: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(111, 138, 106, 0.18)',
+  },
+});
