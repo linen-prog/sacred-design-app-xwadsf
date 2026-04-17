@@ -48,30 +48,31 @@ export default function FloatingTabBar({
   const theme = useTheme();
   const animatedValue = useSharedValue(0);
 
-  // Improved active tab detection with better path matching
+  // Active tab detection — handles Expo Router group-collapsed pathnames.
+  // e.g. /(tabs)/(home) → "/", /(tabs)/(design) → "/design"
   const activeTabIndex = React.useMemo(() => {
-    // Find the best matching tab based on the current pathname
+    // Strip route-group parens so "/(tabs)/(design)" → "/design"
+    const stripGroups = (path: string) =>
+      path.replace(/\/\([^)]*\)/g, '').replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+
     let bestMatch = -1;
     let bestMatchScore = 0;
 
     tabs.forEach((tab, index) => {
+      const normalizedRoute = stripGroups(String(tab.route));
       let score = 0;
 
-      // Exact route match gets highest score
-      if (pathname === tab.route) {
+      // Exact match on collapsed route
+      if (pathname === normalizedRoute) {
         score = 100;
       }
-      // Check if pathname starts with tab route (for nested routes)
-      else if (pathname.startsWith(tab.route as string)) {
+      // Pathname starts with collapsed route (nested screens)
+      else if (normalizedRoute !== '/' && pathname.startsWith(normalizedRoute)) {
         score = 80;
       }
-      // Check if pathname contains the tab name
-      else if (pathname.includes(tab.name)) {
+      // Pathname contains the tab name segment
+      else if (tab.name !== 'home' && pathname.includes(tab.name)) {
         score = 60;
-      }
-      // Check for partial matches in the route
-      else if (String(tab.route).includes('/(tabs)/') && pathname.includes(String(tab.route).split('/(tabs)/')[1])) {
-        score = 40;
       }
 
       if (score > bestMatchScore) {
@@ -94,8 +95,9 @@ export default function FloatingTabBar({
     }
   }, [activeTabIndex, animatedValue]);
 
-  const handleTabPress = (route: Href) => {
-    router.push(route);
+  const handleTabPress = (tab: TabBarItem) => {
+    console.log('[FloatingTabBar] Tab pressed:', tab.label, '→', tab.route);
+    router.push(tab.route);
   };
 
   // Remove unnecessary tabBarStyle animation to prevent flickering
@@ -178,7 +180,7 @@ export default function FloatingTabBar({
                 <TouchableOpacity
                   key={index} // Use index as key
                   style={styles.tab}
-                  onPress={() => handleTabPress(tab.route)}
+                  onPress={() => handleTabPress(tab)}
                   activeOpacity={0.7}
                 >
                   <View key={index} style={styles.tabContent}>

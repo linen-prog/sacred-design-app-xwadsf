@@ -3,8 +3,9 @@ import { Tabs } from "expo-router";
 import FloatingTabBar, { TabBarItem } from "@/components/FloatingTabBar";
 
 const TABS: TabBarItem[] = [
-  { name: "(design)", route: "/(tabs)/(design)", icon: "auto-awesome", label: "Know Your Design" },
-  { name: "(journey)", route: "/(tabs)/(journey)", icon: "schedule", label: "Journey" },
+  { name: "home", route: "/", icon: "home", label: "Home" },
+  { name: "design", route: "/(tabs)/(design)", icon: "auto-awesome", label: "Know Your Design" },
+  { name: "journey", route: "/(tabs)/(journey)", icon: "schedule", label: "Journey" },
 ];
 
 export default function TabLayout() {
@@ -13,11 +14,12 @@ export default function TabLayout() {
       tabBar={() => (
         <FloatingTabBar
           tabs={TABS}
-          containerWidth={320}
+          containerWidth={360}
         />
       )}
       screenOptions={{ headerShown: false }}
     >
+      <Tabs.Screen name="(home)" />
       <Tabs.Screen name="(design)" />
       <Tabs.Screen name="(journey)" />
     </Tabs>
