@@ -1,17 +1,24 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated } from 'react-native';
+import React, { useContext, useEffect, useRef } from 'react';
+import { Text, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Compass } from 'lucide-react-native';
 import { COLORS } from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 
 export default function PreparingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { computeSacredDesign } = useContext(DiscoveryContext);
   const pulseScale = useRef(new Animated.Value(1)).current;
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const screenTranslateY = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    console.log('[Preparing] Computing Sacred Design');
+    computeSacredDesign();
+  }, [computeSacredDesign]);
 
   useEffect(() => {
     Animated.parallel([

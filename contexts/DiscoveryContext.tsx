@@ -1,5 +1,30 @@
 import React, { createContext, useState, useCallback, useMemo } from 'react';
 
+export type ArchetypeName =
+  | 'Peacemaker'
+  | 'Courageous Leader'
+  | 'Deep Feeler'
+  | 'Faithful Steward'
+  | 'Light Bearer'
+  | 'Truth Seeker'
+  | 'Justice Carrier';
+
+export interface ArchetypeWeightScores {
+  Peacemaker: number;
+  'Courageous Leader': number;
+  'Deep Feeler': number;
+  'Faithful Steward': number;
+  'Light Bearer': number;
+  'Truth Seeker': number;
+  'Justice Carrier': number;
+}
+
+export interface SacredDesignResult {
+  primary_archetype: ArchetypeName;
+  secondary_archetype: ArchetypeName;
+  archetypeScores: ArchetypeWeightScores;
+}
+
 export interface Phase1Scores {
   social_energy_score: number;
   emotional_score: number;
@@ -45,6 +70,8 @@ interface DiscoveryContextType {
   computePhase3Scores: () => void;
   phase4Scores: Phase4Scores | null;
   computePhase4Scores: () => void;
+  sacredDesignResult: SacredDesignResult | null;
+  computeSacredDesign: () => void;
 }
 
 export const DiscoveryContext = createContext<DiscoveryContextType>({
@@ -59,6 +86,8 @@ export const DiscoveryContext = createContext<DiscoveryContextType>({
   computePhase3Scores: () => {},
   phase4Scores: null,
   computePhase4Scores: () => {},
+  sacredDesignResult: null,
+  computeSacredDesign: () => {},
 });
 
 export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
@@ -67,6 +96,7 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
   const [phase2Scores, setPhase2Scores] = useState<Phase2Scores | null>(null);
   const [phase3Scores, setPhase3Scores] = useState<Phase3Scores | null>(null);
   const [phase4Scores, setPhase4Scores] = useState<Phase4Scores | null>(null);
+  const [sacredDesignResult, setSacredDesignResult] = useState<SacredDesignResult | null>(null);
 
   const setAnswer = useCallback((id: string, value: number) => {
     console.log(`[DiscoveryContext] setAnswer: ${id} = ${value}`);
@@ -220,6 +250,138 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const computeSacredDesign = useCallback(() => {
+    console.log('[DiscoveryContext] computeSacredDesign called');
+
+    const p1 = phase1Scores;
+    const p2 = phase2Scores;
+    const p3 = phase3Scores;
+    const p4 = phase4Scores;
+
+    if (!p1 || !p2 || !p3 || !p4) {
+      console.log('[DiscoveryContext] computeSacredDesign: missing phase scores, aborting');
+      return;
+    }
+
+    const { social_energy_score, emotional_score, drive_score, openness_score, stress_score } = p1;
+    const { peacemaker_score, leader_score, deep_feeler_score, steward_score, light_bearer_score, truth_seeker_score, justice_carrier_score } = p2;
+    const { apostle_score, prophet_score, evangelist_score, shepherd_score, teacher_score } = p3;
+    const { avoidant_score, anxious_score, overactive_score } = p4;
+
+    const PeacemakerScore =
+      (peacemaker_score * 0.4) +
+      (emotional_score * 0.2) +
+      (shepherd_score * 0.2) +
+      (anxious_score * 0.1) +
+      (avoidant_score * 0.1);
+
+    const LeaderScore =
+      (leader_score * 0.4) +
+      (drive_score * 0.2) +
+      (apostle_score * 0.2) +
+      (social_energy_score * 0.1) +
+      ((10 - stress_score) * 0.1);
+
+    const DeepFeelerScore =
+      (deep_feeler_score * 0.4) +
+      (emotional_score * 0.2) +
+      (openness_score * 0.2) +
+      (anxious_score * 0.1) +
+      (shepherd_score * 0.1);
+
+    const StewardScore =
+      (steward_score * 0.4) +
+      (drive_score * 0.3) +
+      (teacher_score * 0.1) +
+      ((10 - openness_score) * 0.1) +
+      ((10 - emotional_score) * 0.1);
+
+    const LightBearerScore =
+      (light_bearer_score * 0.4) +
+      (social_energy_score * 0.2) +
+      (evangelist_score * 0.2) +
+      (openness_score * 0.1) +
+      ((10 - avoidant_score) * 0.1);
+
+    const TruthSeekerScore =
+      (truth_seeker_score * 0.4) +
+      (openness_score * 0.3) +
+      (teacher_score * 0.2) +
+      ((10 - social_energy_score) * 0.1);
+
+    const JusticeCarrierScore =
+      (justice_carrier_score * 0.4) +
+      (drive_score * 0.2) +
+      (prophet_score * 0.2) +
+      (anxious_score * 0.1) +
+      (overactive_score * 0.1);
+
+    const archetypeScores: ArchetypeWeightScores = {
+      'Peacemaker': PeacemakerScore,
+      'Courageous Leader': LeaderScore,
+      'Deep Feeler': DeepFeelerScore,
+      'Faithful Steward': StewardScore,
+      'Light Bearer': LightBearerScore,
+      'Truth Seeker': TruthSeekerScore,
+      'Justice Carrier': JusticeCarrierScore,
+    };
+
+    const sorted = (Object.entries(archetypeScores) as [ArchetypeName, number][])
+      .sort((a, b) => b[1] - a[1]);
+
+    const primary = sorted[0];
+    const primaryName = primary[0];
+    const primaryScore = primary[1];
+
+    const callingInfluence: Record<ArchetypeName, number> = {
+      'Peacemaker': shepherd_score,
+      'Courageous Leader': apostle_score,
+      'Deep Feeler': shepherd_score,
+      'Faithful Steward': teacher_score,
+      'Light Bearer': evangelist_score,
+      'Truth Seeker': teacher_score,
+      'Justice Carrier': prophet_score,
+    };
+
+    let secondaryName: ArchetypeName | null = null;
+
+    for (let i = 1; i < sorted.length; i++) {
+      const candidate = sorted[i];
+      if (candidate[0] === primaryName) continue;
+
+      const meetsThreshold = candidate[1] >= primaryScore * 0.6;
+
+      if (meetsThreshold) {
+        const next = sorted[i + 1];
+        if (
+          next &&
+          next[0] !== primaryName &&
+          Math.abs(candidate[1] - next[1]) < 0.5
+        ) {
+          const candidateCalling = callingInfluence[candidate[0]];
+          const nextCalling = callingInfluence[next[0]];
+          secondaryName = nextCalling > candidateCalling ? next[0] : candidate[0];
+        } else {
+          secondaryName = candidate[0];
+        }
+        break;
+      }
+    }
+
+    if (!secondaryName) {
+      secondaryName = sorted.find(([name]) => name !== primaryName)![0];
+    }
+
+    const result: SacredDesignResult = {
+      primary_archetype: primaryName,
+      secondary_archetype: secondaryName,
+      archetypeScores,
+    };
+
+    console.log('[DiscoveryContext] sacredDesignResult computed:', result);
+    setSacredDesignResult(result);
+  }, [phase1Scores, phase2Scores, phase3Scores, phase4Scores]);
+
   const value = useMemo(() => ({
     answers,
     setAnswer,
@@ -232,7 +394,9 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     computePhase3Scores,
     phase4Scores,
     computePhase4Scores,
-  }), [answers, setAnswer, resetAnswers, phase1Scores, computePhase1Scores, phase2Scores, computePhase2Scores, phase3Scores, computePhase3Scores, phase4Scores, computePhase4Scores]);
+    sacredDesignResult,
+    computeSacredDesign,
+  }), [answers, setAnswer, resetAnswers, phase1Scores, computePhase1Scores, phase2Scores, computePhase2Scores, phase3Scores, computePhase3Scores, phase4Scores, computePhase4Scores, sacredDesignResult, computeSacredDesign]);
 
   return (
     <DiscoveryContext.Provider value={value}>
