@@ -4,30 +4,30 @@
     "slug": "sacred-design",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/6da5f013-3a42-4811-a914-2b2cf598ca43.jpeg",
+    "icon": "./assets/images/72057605-fb00-4601-8fac-ab7091e359b9.jpeg",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/6da5f013-3a42-4811-a914-2b2cf598ca43.jpeg",
+      "image": "./assets/images/72057605-fb00-4601-8fac-ab7091e359b9.jpeg",
       "resizeMode": "contain",
       "backgroundColor": "#F6F1E8"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.placeholder.app",
-      "icon": "./assets/images/6da5f013-3a42-4811-a914-2b2cf598ca43.jpeg",
+      "icon": "./assets/images/72057605-fb00-4601-8fac-ab7091e359b9.jpeg",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/6da5f013-3a42-4811-a914-2b2cf598ca43.jpeg",
+        "foregroundImage": "./assets/images/72057605-fb00-4601-8fac-ab7091e359b9.jpeg",
         "backgroundColor": "#F6F1E8"
       },
       "package": "com.placeholder.app"
     },
     "web": {
-      "favicon": "./assets/images/6da5f013-3a42-4811-a914-2b2cf598ca43.jpeg",
+      "favicon": "./assets/images/72057605-fb00-4601-8fac-ab7091e359b9.jpeg",
       "bundler": "metro"
     },
     "plugins": [
