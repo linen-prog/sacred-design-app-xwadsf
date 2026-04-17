@@ -7,13 +7,9 @@ export default function TabLayout() {
       tabBarInactiveTintColor="rgba(47,62,47,0.35)"
       tabBarStyle={{ backgroundColor: "#F6F1E8" }}
     >
-      <NativeTabs.Trigger name="(home)">
-        <Icon sf="house" />
-        <Label>Home</Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(design)">
         <Icon sf="sparkles" />
-        <Label>My Design</Label>
+        <Label>Know Your Design</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(journey)">
         <Icon sf="clock" />
