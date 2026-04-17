@@ -31,8 +31,11 @@ export default function IntroScreen() {
     return <View style={{ flex: 1, backgroundColor: '#F6F1E8' }} />;
   }
 
+  const bottomPadding = insets.bottom + 24;
+
   return (
     <View style={{ flex: 1, backgroundColor: '#F6F1E8' }}>
+      {/* Back button */}
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16 }}>
         <Pressable
           onPress={handleBack}
@@ -48,96 +51,116 @@ export default function IntroScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
           paddingHorizontal: 32,
-          paddingVertical: 48,
+          paddingTop: 36,
+          paddingBottom: bottomPadding + 100,
           alignItems: 'center',
         }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Top label */}
         <Text
           style={{
-            fontSize: 15,
+            fontSize: 12,
             color: '#6F8A6A',
             textAlign: 'center',
             fontWeight: '400',
-            marginBottom: 32,
+            letterSpacing: 1.2,
+            textTransform: 'uppercase',
+            marginBottom: 28,
           }}
         >
           A simple discovery process
         </Text>
 
+        {/* Main paragraph */}
         <Text
           style={{
             fontFamily: 'Lora_400Regular',
             fontSize: 19,
             color: '#2F3E2F',
             textAlign: 'center',
-            lineHeight: 30,
-            marginBottom: 20,
+            lineHeight: 31,
+            marginBottom: 28,
           }}
         >
-          {"We'll guide you through a short series of questions to understand how you naturally think, feel, and show up."}
+          {"You'll answer a few simple questions to understand how you naturally think, feel, and show up."}
         </Text>
 
+        {/* Reassurance line */}
         <Text
           style={{
             fontFamily: 'Lora_400Regular',
-            fontSize: 19,
-            color: '#2F3E2F',
+            fontSize: 17,
+            color: '#4A5E4A',
             textAlign: 'center',
-            lineHeight: 30,
-            marginBottom: 20,
+            lineHeight: 28,
+            marginBottom: 28,
           }}
         >
           {"There are no right or wrong answers\u2014just your honest experience."}
         </Text>
 
+        {/* Outcome line */}
         <Text
           style={{
             fontFamily: 'Lora_400Regular',
             fontSize: 17,
             color: '#5A5A5A',
             textAlign: 'center',
-            lineHeight: 26,
-            marginTop: 8,
-            marginBottom: 36,
+            lineHeight: 27,
+            marginBottom: 44,
           }}
         >
           {"At the end, you'll receive your Sacred Design."}
         </Text>
 
-        <View style={{ alignItems: 'center', gap: 14, marginBottom: 48 }}>
+        {/* Phase list — no bullets */}
+        <View style={{ alignItems: 'center', gap: 18, marginBottom: 52 }}>
           {PHASES.map((phase) => (
             <Text
               key={phase}
               style={{
-                fontSize: 16,
+                fontSize: 15,
                 color: '#6F8A6A',
                 textAlign: 'center',
-                lineHeight: 24,
+                lineHeight: 22,
               }}
             >
-              {'• '}
               {phase}
             </Text>
           ))}
         </View>
 
+        {/* Growth blurb */}
         <Text
           style={{
-            fontSize: 14,
-            fontFamily: 'Inter_400Regular',
-            color: 'rgba(47,62,47,0.5)',
+            fontSize: 13,
+            color: 'rgba(47,62,47,0.65)',
             textAlign: 'center',
-            lineHeight: 22,
+            lineHeight: 21,
             letterSpacing: 0.2,
-            marginTop: 28,
-            marginBottom: 8,
+            marginTop: 8,
+            marginBottom: 40,
             paddingHorizontal: 8,
           }}
         >
-          {"As you move through this process, you'll begin to see yourself more clearly\u2014and naturally grow into a stronger, more grounded version of who you already are."}
+          {"As you move through this, you'll begin to see yourself more clearly\u2014and grow into a more grounded version of who you already are."}
         </Text>
 
+        {/* Micro-text above button */}
+        <Text
+          style={{
+            fontSize: 12,
+            color: '#A0A0A0',
+            textAlign: 'center',
+            marginBottom: 14,
+            letterSpacing: 0.2,
+          }}
+        >
+          Go with your first instinct.
+        </Text>
+
+        {/* Continue button */}
         <Pressable
           onPress={handleContinue}
           style={{
@@ -148,7 +171,7 @@ export default function IntroScreen() {
             alignItems: 'center',
             shadowColor: '#6F8A6A',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.25,
+            shadowOpacity: 0.28,
             shadowRadius: 12,
             elevation: 4,
           }}
