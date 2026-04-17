@@ -23,6 +23,8 @@ const QUESTIONS = [
 
 const INTRO_TEXT = "You were created with a unique way of showing up in the world.";
 
+const scaleValues = [1, 2, 3, 4, 5];
+
 export default function Phase3Screen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -77,7 +79,9 @@ export default function Phase3Screen() {
     }
   }
 
-  const scaleValues = [1, 2, 3, 4, 5];
+  const guidanceText = 'Go with your first instinct.';
+  const leftLabel = 'Not like me';
+  const rightLabel = 'Feels very true';
 
   if (showIntro) {
     return (
@@ -97,11 +101,12 @@ export default function Phase3Screen() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Text
             style={{
-              fontSize: 12,
+              fontSize: 10,
               fontFamily: 'Inter_400Regular',
-              color: COLORS.textTertiary,
+              color: '#2F3E2F',
+              opacity: 0.45,
               textTransform: 'uppercase',
-              letterSpacing: 1,
+              letterSpacing: 2.5,
               textAlign: 'center',
               marginBottom: 12,
             }}
@@ -112,9 +117,8 @@ export default function Phase3Screen() {
             style={{
               fontSize: 22,
               fontFamily: 'Lora_700Bold',
-              color: COLORS.text,
+              color: '#2F3E2F',
               textAlign: 'center',
-              letterSpacing: -0.2,
               marginBottom: 32,
             }}
           >
@@ -170,7 +174,7 @@ export default function Phase3Screen() {
         backgroundColor: COLORS.background,
         paddingTop: insets.top + 24,
         paddingBottom: insets.bottom + 24,
-        paddingHorizontal: 24,
+        paddingHorizontal: 28,
         opacity: screenOpacity,
         transform: [{ translateY: screenTranslateY }],
       }}
@@ -182,73 +186,91 @@ export default function Phase3Screen() {
         total={QUESTIONS.length}
       />
 
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Animated.View
+      <Animated.View
+        style={{
+          opacity: questionOpacity,
+          alignItems: 'center',
+          marginTop: 32,
+        }}
+      >
+        <Text
           style={{
-            opacity: questionOpacity,
-            alignItems: 'center',
-            paddingHorizontal: 8,
+            fontSize: 22,
+            fontFamily: 'Lora_700Bold',
+            color: '#2F3E2F',
+            lineHeight: 32,
+            textAlign: 'center',
+          }}
+        >
+          {currentQuestion.text}
+        </Text>
+
+        <Text
+          style={{
+            marginTop: 10,
+            fontSize: 12,
+            fontFamily: 'Inter_400Regular',
+            color: 'rgba(47,62,47,0.45)',
+            textAlign: 'center',
+            letterSpacing: 0.3,
+          }}
+        >
+          {guidanceText}
+        </Text>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            width: '100%',
+            paddingHorizontal: 4,
+            marginTop: 40,
+          }}
+        >
+          {scaleValues.map((v) => (
+            <ScaleButton
+              key={v}
+              value={v}
+              selected={selectedValue === v}
+              onPress={() => handleSelect(v)}
+            />
+          ))}
+        </View>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            width: '100%',
+            paddingHorizontal: 4,
+            marginTop: 10,
           }}
         >
           <Text
             style={{
-              fontSize: 20,
-              fontFamily: 'Lora_700Bold',
-              color: COLORS.text,
-              lineHeight: 30,
-              textAlign: 'center',
-              marginBottom: 48,
-              letterSpacing: -0.2,
+              fontSize: 11,
+              fontFamily: 'Inter_400Regular',
+              color: 'rgba(47,62,47,0.45)',
             }}
           >
-            {currentQuestion.text}
+            {leftLabel}
           </Text>
-
-          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-            {scaleValues.map((v) => (
-              <ScaleButton
-                key={v}
-                value={v}
-                selected={selectedValue === v}
-                onPress={() => handleSelect(v)}
-              />
-            ))}
-          </View>
-
-          <View
+          <Text
             style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              width: '100%',
-              paddingHorizontal: 4,
+              fontSize: 11,
+              fontFamily: 'Inter_400Regular',
+              color: 'rgba(47,62,47,0.45)',
             }}
           >
-            <Text
-              style={{
-                fontSize: 12,
-                fontFamily: 'Inter_400Regular',
-                color: COLORS.textTertiary,
-              }}
-            >
-              Not like me
-            </Text>
-            <Text
-              style={{
-                fontSize: 12,
-                fontFamily: 'Inter_400Regular',
-                color: COLORS.textTertiary,
-              }}
-            >
-              Very much like me
-            </Text>
-          </View>
-        </Animated.View>
-      </View>
+            {rightLabel}
+          </Text>
+        </View>
+      </Animated.View>
 
       {currentIndex > 0 && (
         <AnimatedPressable
           onPress={handlePrevious}
-          style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 4 }}
+          style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 4, marginTop: 32 }}
           accessibilityRole="button"
           accessibilityLabel="Previous question"
         >

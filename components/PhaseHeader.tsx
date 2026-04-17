@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { COLORS } from '@/constants/Colors';
 
 interface PhaseHeaderProps {
   phase: number;
@@ -11,30 +10,36 @@ interface PhaseHeaderProps {
 
 export function PhaseHeader({ phase, title, current, total }: PhaseHeaderProps) {
   const progress = total > 0 ? current / total : 0;
+  const progressWidth = `${progress * 100}%`;
+
+  const phaseLabel = 'PHASE ';
+  const phaseNum = String(phase);
+  const phaseOf = ' OF 4';
 
   return (
-    <View style={{ gap: 8, marginBottom: 32 }}>
+    <View style={{ marginBottom: 0 }}>
       <Text
         style={{
-          fontSize: 12,
+          fontSize: 10,
           fontFamily: 'Inter_400Regular',
-          color: COLORS.textTertiary,
+          color: '#2F3E2F',
+          opacity: 0.45,
           textTransform: 'uppercase',
-          letterSpacing: 1,
+          letterSpacing: 2.5,
           textAlign: 'center',
         }}
       >
-        {'Phase '}
-        {phase}
-        {' of 4'}
+        {phaseLabel}
+        {phaseNum}
+        {phaseOf}
       </Text>
       <Text
         style={{
           fontSize: 22,
           fontFamily: 'Lora_700Bold',
-          color: COLORS.text,
+          color: '#2F3E2F',
           textAlign: 'center',
-          letterSpacing: -0.2,
+          marginTop: 4,
         }}
       >
         {title}
@@ -43,8 +48,8 @@ export function PhaseHeader({ phase, title, current, total }: PhaseHeaderProps) 
         style={{
           height: 3,
           borderRadius: 2,
-          backgroundColor: COLORS.primaryMuted,
-          marginTop: 4,
+          backgroundColor: 'rgba(47,62,47,0.12)',
+          marginTop: 12,
           overflow: 'hidden',
         }}
       >
@@ -52,8 +57,8 @@ export function PhaseHeader({ phase, title, current, total }: PhaseHeaderProps) 
           style={{
             height: 3,
             borderRadius: 2,
-            backgroundColor: COLORS.primary,
-            width: `${progress * 100}%`,
+            backgroundColor: '#6F8A6A',
+            width: progressWidth,
           }}
         />
       </View>
