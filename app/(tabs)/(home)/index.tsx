@@ -5,8 +5,8 @@ import {
   ScrollView,
   Pressable,
   StyleSheet,
+  SafeAreaView,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 
@@ -14,7 +14,6 @@ import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 const discoveryStatus: "none" | "in_progress" | "completed" = "none";
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { sacredDesignResult } = useContext(DiscoveryContext);
 
@@ -36,119 +35,135 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 120 },
-      ]}
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-    >
-      {/* App name — minimal, subdued */}
-      <Text style={styles.appName}>Sacred Design</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* Warm glow orb — absolute, top center */}
+        <View style={styles.glowOrb} pointerEvents="none" />
 
-      {/* Primary headline */}
-      <Text style={styles.headline}>Bring Your Design to Life</Text>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Headline */}
+          <Text style={styles.headline}>Bring Your Design to Life</Text>
 
-      {/* Subtext */}
-      <Text style={styles.subtext}>One small step today makes it real.</Text>
+          {/* Subtext */}
+          <Text style={styles.subtext}>One small step today makes it real.</Text>
 
-      {/* State-dependent CTA */}
-      {status === "none" && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Begin Your Journey</Text>
-          <Text style={styles.cardBody}>
-            Discover how you naturally think, feel, and show up—and begin living it.
-          </Text>
-          <Pressable
-            style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
-            onPress={handleBeginDiscovery}
-          >
-            <Text style={styles.ctaButtonText}>Bring Your Design to Life</Text>
-          </Pressable>
-        </View>
-      )}
+          {/* State-dependent card */}
+          {status === "none" && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Begin Your Journey</Text>
+              <Text style={styles.cardBody}>
+                Discover how you naturally think, feel, and show up—and begin living it.
+              </Text>
+              <Pressable
+                style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
+                onPress={handleBeginDiscovery}
+              >
+                <Text style={styles.ctaButtonText}>Bring Your Design to Life</Text>
+              </Pressable>
+            </View>
+          )}
 
-      {status === "in_progress" && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Your Discovery Awaits</Text>
-          <Text style={styles.cardBody}>
-            Discover how you naturally think, feel, and show up—and begin living it.
-          </Text>
-          <Pressable
-            style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
-            onPress={handleContinueDiscovery}
-          >
-            <Text style={styles.ctaButtonText}>Bring Your Design to Life</Text>
-          </Pressable>
-        </View>
-      )}
+          {status === "in_progress" && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Your Discovery Awaits</Text>
+              <Text style={styles.cardBody}>
+                Discover how you naturally think, feel, and show up—and begin living it.
+              </Text>
+              <Pressable
+                style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
+                onPress={handleContinueDiscovery}
+              >
+                <Text style={styles.ctaButtonText}>Bring Your Design to Life</Text>
+              </Pressable>
+            </View>
+          )}
 
-      {status === "completed" && (
-        <View style={styles.card}>
-          <Text style={styles.alignmentLabel}>Today's Alignment</Text>
-          <Text style={styles.cardTitle}>Begin Your Journey</Text>
-          <Text style={styles.cardBody}>
-            Discover how you naturally think, feel, and show up—and begin living it.
-          </Text>
-          <Pressable
-            style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
-            onPress={handleBringToLife}
-          >
-            <Text style={styles.ctaButtonText}>Bring Your Design to Life</Text>
-          </Pressable>
-        </View>
-      )}
-    </ScrollView>
+          {status === "completed" && (
+            <View style={styles.card}>
+              <Text style={styles.alignmentLabel}>Today's Alignment</Text>
+              <Text style={styles.cardTitle}>Begin Your Journey</Text>
+              <Text style={styles.cardBody}>
+                Discover how you naturally think, feel, and show up—and begin living it.
+              </Text>
+              <Pressable
+                style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
+                onPress={handleBringToLife}
+              >
+                <Text style={styles.ctaButtonText}>Bring Your Design to Life</Text>
+              </Pressable>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
+  safeArea: {
     flex: 1,
     backgroundColor: "#F6F1E8",
   },
-  content: {
-    paddingHorizontal: 24,
-    alignItems: "center",
+  container: {
+    flex: 1,
+    position: "relative",
   },
-  appName: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 10,
-    color: "#2F3E2F",
-    letterSpacing: 3,
-    textTransform: "uppercase",
-    opacity: 0.35,
-    textAlign: "center",
+  glowOrb: {
+    position: "absolute",
+    top: -40,
+    alignSelf: "center",
+    left: "50%",
+    marginLeft: -110,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(230, 211, 163, 0.45)",
+    shadowColor: "rgba(230, 200, 120, 1)",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 60,
+    zIndex: 0,
+  },
+  scroll: {
+    flex: 1,
+    zIndex: 1,
+  },
+  content: {
+    paddingTop: 80,
+    paddingHorizontal: 28,
+    paddingBottom: 120,
+    alignItems: "center",
   },
   headline: {
     fontFamily: "Lora_700Bold",
-    fontSize: 30,
+    fontSize: 34,
     color: "#2F3E2F",
     textAlign: "center",
-    marginTop: 32,
   },
   subtext: {
     fontFamily: "Inter_400Regular",
-    fontSize: 14,
+    fontSize: 15,
     color: "rgba(47,62,47,0.5)",
     textAlign: "center",
-    marginTop: 8,
-    letterSpacing: 0.2,
-    marginBottom: 32,
+    marginTop: 10,
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    borderRadius: 20,
     paddingHorizontal: 24,
     paddingVertical: 28,
     width: "100%",
+    marginTop: 40,
+    marginHorizontal: 20,
     shadowColor: "#2F3E2F",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   alignmentLabel: {
     fontFamily: "Inter_400Regular",
@@ -162,24 +177,24 @@ const styles = StyleSheet.create({
     fontFamily: "Lora_700Bold",
     fontSize: 18,
     color: "#2F3E2F",
+    marginBottom: 10,
   },
   cardBody: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: "rgba(47,62,47,0.65)",
+    color: "rgba(47,62,47,0.6)",
     lineHeight: 22,
-    marginTop: 8,
   },
   ctaButton: {
     backgroundColor: "#6F8A6A",
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: 14,
+    paddingVertical: 18,
     alignSelf: "stretch",
     alignItems: "center",
     marginTop: 20,
     shadowColor: "#6F8A6A",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 4,
   },
