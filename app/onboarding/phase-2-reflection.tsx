@@ -1,0 +1,22 @@
+import React from 'react';
+import { useRouter } from 'expo-router';
+import { Layers } from 'lucide-react-native';
+import { ReflectionScreen } from '@/components/ReflectionScreen';
+
+export default function Phase2ReflectionScreen() {
+  const router = useRouter();
+
+  function handleContinue() {
+    console.log('[Phase2Reflection] Continue pressed');
+    router.push('/onboarding/phase-3');
+  }
+
+  return (
+    <ReflectionScreen
+      icon={Layers}
+      text={"These patterns aren't flaws—they're ways you've learned to move through the world."}
+      buttonLabel="Continue"
+      onContinue={handleContinue}
+    />
+  );
+}
