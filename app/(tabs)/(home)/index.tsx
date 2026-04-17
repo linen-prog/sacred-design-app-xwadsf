@@ -327,6 +327,26 @@ export default function HomeScreen() {
               <Text style={styles.bodyText}>{alignment.somatic_cue}</Text>
             </View>
           </AnimatedCard>
+
+          {/* I Did This button */}
+          <AnimatedPressable
+            onPress={() => {
+              console.log('[HomeScreen] "I Did This" pressed');
+              router.push('/completion');
+            }}
+            style={{
+              backgroundColor: COLORS.primary,
+              borderRadius: 14,
+              height: 54,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: 8,
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontFamily: 'Inter_600SemiBold' }}>
+              I Did This
+            </Text>
+          </AnimatedPressable>
         </View>
       )}
     </ScrollView>
