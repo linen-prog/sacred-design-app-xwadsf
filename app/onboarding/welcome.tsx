@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, ScrollView, Pressable, Animated } from 'react-native';
+import { View, Text, ScrollView, Pressable, Animated, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Compass } from 'lucide-react-native';
 import { useFonts, Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/lora';
 
 export default function WelcomeScreen() {
@@ -49,42 +48,16 @@ export default function WelcomeScreen() {
             transform: [{ translateY }],
           }}
         >
-          {/* Glowing compass orb */}
-          <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 40 }}>
-            {/* Outermost glow — very faint */}
-            <View
-              style={{
-                position: 'absolute',
-                width: 140,
-                height: 140,
-                borderRadius: 70,
-                backgroundColor: 'rgba(230, 211, 163, 0.12)',
-              }}
-            />
-            {/* Middle glow */}
-            <View
-              style={{
-                position: 'absolute',
-                width: 110,
-                height: 110,
-                borderRadius: 55,
-                backgroundColor: 'rgba(230, 211, 163, 0.18)',
-              }}
-            />
-            {/* Inner circle */}
-            <View
-              style={{
-                width: 84,
-                height: 84,
-                borderRadius: 42,
-                backgroundColor: 'rgba(230, 211, 163, 0.28)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Compass size={40} color="#8A7A5A" strokeWidth={1} />
-            </View>
-          </View>
+          {/* Logo */}
+          <Image
+            source={require('@/assets/images/72057605-fb00-4601-8fac-ab7091e359b9.jpeg')}
+            style={{
+              width: 180,
+              height: 180,
+              resizeMode: 'contain',
+              marginBottom: 8,
+            }}
+          />
 
           {/* Headline */}
           <Text

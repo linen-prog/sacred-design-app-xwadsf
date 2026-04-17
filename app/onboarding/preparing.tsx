@@ -1,8 +1,7 @@
 import React, { useContext, useEffect, useRef } from 'react';
-import { Text, Animated } from 'react-native';
+import { Text, Animated, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Compass } from 'lucide-react-native';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 
@@ -57,20 +56,16 @@ export default function PreparingScreen() {
         transform: [{ translateY: screenTranslateY }],
       }}
     >
-      <Animated.View
+      <Animated.Image
+        source={require('@/assets/images/72057605-fb00-4601-8fac-ab7091e359b9.jpeg')}
         style={{
-          width: 100,
-          height: 100,
-          borderRadius: 50,
-          backgroundColor: COLORS.accentMuted,
-          alignItems: 'center',
-          justifyContent: 'center',
+          width: 120,
+          height: 120,
+          resizeMode: 'contain',
           marginBottom: 32,
           transform: [{ scale: pulseScale }],
         }}
-      >
-        <Compass size={36} color={COLORS.accent} strokeWidth={1.5} />
-      </Animated.View>
+      />
 
       <Text
         style={{
