@@ -18,6 +18,14 @@ export interface Phase2Scores {
   justice_carrier_score: number;
 }
 
+export interface Phase3Scores {
+  apostle_score: number;
+  prophet_score: number;
+  evangelist_score: number;
+  shepherd_score: number;
+  teacher_score: number;
+}
+
 interface DiscoveryContextType {
   answers: Record<string, number>;
   setAnswer: (id: string, value: number) => void;
@@ -26,6 +34,8 @@ interface DiscoveryContextType {
   computePhase1Scores: () => void;
   phase2Scores: Phase2Scores | null;
   computePhase2Scores: () => void;
+  phase3Scores: Phase3Scores | null;
+  computePhase3Scores: () => void;
 }
 
 export const DiscoveryContext = createContext<DiscoveryContextType>({
@@ -36,12 +46,15 @@ export const DiscoveryContext = createContext<DiscoveryContextType>({
   computePhase1Scores: () => {},
   phase2Scores: null,
   computePhase2Scores: () => {},
+  phase3Scores: null,
+  computePhase3Scores: () => {},
 });
 
 export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [phase1Scores, setPhase1Scores] = useState<Phase1Scores | null>(null);
   const [phase2Scores, setPhase2Scores] = useState<Phase2Scores | null>(null);
+  const [phase3Scores, setPhase3Scores] = useState<Phase3Scores | null>(null);
 
   const setAnswer = useCallback((id: string, value: number) => {
     console.log(`[DiscoveryContext] setAnswer: ${id} = ${value}`);
@@ -53,6 +66,7 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     setAnswers({});
     setPhase1Scores(null);
     setPhase2Scores(null);
+    setPhase3Scores(null);
   }, []);
 
   const computePhase1Scores = useCallback(() => {
@@ -129,6 +143,40 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const computePhase3Scores = useCallback(() => {
+    console.log('[DiscoveryContext] computePhase3Scores called');
+    setAnswers(current => {
+      const Q1  = current['P3_Q1']  ?? 0;
+      const Q2  = current['P3_Q2']  ?? 0;
+      const Q3  = current['P3_Q3']  ?? 0;
+      const Q4  = current['P3_Q4']  ?? 0;
+      const Q5  = current['P3_Q5']  ?? 0;
+      const Q6  = current['P3_Q6']  ?? 0;
+      const Q7  = current['P3_Q7']  ?? 0;
+      const Q8  = current['P3_Q8']  ?? 0;
+      const Q9  = current['P3_Q9']  ?? 0;
+      const Q10 = current['P3_Q10'] ?? 0;
+
+      const Apostle    = Q1 + Q6;
+      const Prophet    = Q2 + Q8;
+      const Evangelist = Q3 + Q9;
+      const Shepherd   = Q4 + Q7;
+      const Teacher    = Q5 + Q10;
+
+      const scores: Phase3Scores = {
+        apostle_score:    (Apostle    / 10) * 10,
+        prophet_score:    (Prophet    / 10) * 10,
+        evangelist_score: (Evangelist / 10) * 10,
+        shepherd_score:   (Shepherd   / 10) * 10,
+        teacher_score:    (Teacher    / 10) * 10,
+      };
+
+      console.log('[DiscoveryContext] phase3Scores computed:', scores);
+      setPhase3Scores(scores);
+      return current;
+    });
+  }, []);
+
   const value = useMemo(() => ({
     answers,
     setAnswer,
@@ -137,7 +185,9 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     computePhase1Scores,
     phase2Scores,
     computePhase2Scores,
-  }), [answers, setAnswer, resetAnswers, phase1Scores, computePhase1Scores, phase2Scores, computePhase2Scores]);
+    phase3Scores,
+    computePhase3Scores,
+  }), [answers, setAnswer, resetAnswers, phase1Scores, computePhase1Scores, phase2Scores, computePhase2Scores, phase3Scores, computePhase3Scores]);
 
   return (
     <DiscoveryContext.Provider value={value}>

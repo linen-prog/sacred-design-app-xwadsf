@@ -9,16 +9,16 @@ import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 const QUESTIONS = [
-  { id: 'q3_1', text: 'People often come to me for guidance or perspective.' },
-  { id: 'q3_2', text: 'I naturally encourage others and help them see their potential.' },
-  { id: 'q3_3', text: 'I show up most powerfully in moments of crisis or challenge.' },
-  { id: 'q3_4', text: 'I tend to lead by example rather than by instruction.' },
-  { id: 'q3_5', text: 'I bring a sense of peace and calm to the spaces I enter.' },
-  { id: 'q3_6', text: 'I often find myself advocating for those who can\'t speak for themselves.' },
-  { id: 'q3_7', text: 'I show up as a truth-teller, even when it\'s not what people want to hear.' },
-  { id: 'q3_8', text: 'I naturally create environments where others feel safe and seen.' },
-  { id: 'q3_9', text: 'I show up as a builder—I love creating systems and structures that last.' },
-  { id: 'q3_10', text: 'I tend to carry the emotional weight of the people around me.' },
+  { id: 'P3_Q1',  text: 'I naturally see what could be different or better and want to bring change.' },
+  { id: 'P3_Q2',  text: 'I sense truth beneath the surface and feel drawn to name it.' },
+  { id: 'P3_Q3',  text: 'I feel energized helping others feel seen or included.' },
+  { id: 'P3_Q4',  text: 'I naturally care for and support others\' growth.' },
+  { id: 'P3_Q5',  text: 'I enjoy explaining things and helping others understand.' },
+  { id: 'P3_Q6',  text: 'I tend to initiate rather than wait for direction.' },
+  { id: 'P3_Q7',  text: 'I feel responsible for helping others feel supported and grounded.' },
+  { id: 'P3_Q8',  text: 'I feel drawn to speak up when something feels off.' },
+  { id: 'P3_Q9',  text: 'I enjoy bringing encouragement or energy into a space.' },
+  { id: 'P3_Q10', text: 'I feel fulfilled when I bring clarity to others.' },
 ];
 
 const INTRO_TEXT = "You were created with a unique way of showing up in the world.";
@@ -26,7 +26,7 @@ const INTRO_TEXT = "You were created with a unique way of showing up in the worl
 export default function Phase3Screen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { answers, setAnswer } = useContext(DiscoveryContext);
+  const { answers, setAnswer, computePhase3Scores } = useContext(DiscoveryContext);
   const [showIntro, setShowIntro] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const questionOpacity = useRef(new Animated.Value(1)).current;
@@ -63,7 +63,8 @@ export default function Phase3Screen() {
       if (currentIndex < QUESTIONS.length - 1) {
         transitionToQuestion(currentIndex + 1);
       } else {
-        console.log('[Phase3] All questions answered, navigating to reflection');
+        console.log('[Phase3] All questions answered, computing phase3 scores');
+        computePhase3Scores();
         router.push('/onboarding/phase-3-reflection');
       }
     }, 300);
