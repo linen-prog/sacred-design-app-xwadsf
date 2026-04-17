@@ -122,6 +122,22 @@ export default function IntroScreen() {
           ))}
         </View>
 
+        <Text
+          style={{
+            fontSize: 14,
+            fontFamily: 'Inter_400Regular',
+            color: 'rgba(47,62,47,0.5)',
+            textAlign: 'center',
+            lineHeight: 22,
+            letterSpacing: 0.2,
+            marginTop: 28,
+            marginBottom: 8,
+            paddingHorizontal: 8,
+          }}
+        >
+          {"As you move through this process, you'll begin to see yourself more clearly\u2014and naturally grow into a stronger, more grounded version of who you already are."}
+        </Text>
+
         <Pressable
           onPress={handleContinue}
           style={{
