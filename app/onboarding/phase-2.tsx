@@ -8,19 +8,19 @@ import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
-const QUESTIONS = [
-  { id: 'q2_1', text: 'I feel driven to make things right when I see injustice.' },
-  { id: 'q2_2', text: 'I often put others\' needs before my own.' },
-  { id: 'q2_3', text: 'I\'m motivated by achieving goals and seeing results.' },
-  { id: 'q2_4', text: 'I seek deep, meaningful connections over many surface-level ones.' },
-  { id: 'q2_5', text: 'I feel compelled to speak truth, even when it\'s uncomfortable.' },
-  { id: 'q2_6', text: 'I find purpose in serving quietly behind the scenes.' },
-  { id: 'q2_7', text: 'I\'m motivated by a desire to protect and care for others.' },
-  { id: 'q2_8', text: 'I feel most fulfilled when I\'m learning or teaching something new.' },
-  { id: 'q2_9', text: 'I tend to take on more than I can handle because I care so much.' },
-  { id: 'q2_10', text: 'I\'m driven by a sense of calling or purpose larger than myself.' },
-  { id: 'q2_11', text: 'I feel unsettled when things feel chaotic or out of order.' },
-  { id: 'q2_12', text: 'I\'m motivated by seeing others grow and flourish.' },
+const PHASE_2_QUESTIONS = [
+  { id: 'P2_Q1',  text: 'I tend to keep the peace, even if it means not fully expressing myself.' },
+  { id: 'P2_Q2',  text: 'I feel a strong responsibility to step up and take charge.' },
+  { id: 'P2_Q3',  text: 'I experience emotions deeply and they often shape my day.' },
+  { id: 'P2_Q4',  text: 'I feel most secure when things are organized and under control.' },
+  { id: 'P2_Q5',  text: 'I sense when I\'m meant to step forward and influence.' },
+  { id: 'P2_Q6',  text: 'I am driven to understand the deeper meaning behind things.' },
+  { id: 'P2_Q7',  text: 'I feel a strong pull to stand up for what is right.' },
+  { id: 'P2_Q8',  text: 'I avoid conflict because it feels uncomfortable.' },
+  { id: 'P2_Q9',  text: 'I feel pressure to do things well and follow through.' },
+  { id: 'P2_Q10', text: 'I sometimes hold back from being fully seen.' },
+  { id: 'P2_Q11', text: 'I can get stuck thinking instead of taking action.' },
+  { id: 'P2_Q12', text: 'When something feels unjust, I feel it strongly.' },
 ];
 
 const INTRO_TEXT = "Now we'll explore what moves you beneath the surface—your motivations and patterns.";
@@ -28,7 +28,7 @@ const INTRO_TEXT = "Now we'll explore what moves you beneath the surface—your 
 export default function Phase2Screen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { answers, setAnswer } = useContext(DiscoveryContext);
+  const { answers, setAnswer, computePhase2Scores } = useContext(DiscoveryContext);
   const [showIntro, setShowIntro] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const questionOpacity = useRef(new Animated.Value(1)).current;
@@ -42,7 +42,7 @@ export default function Phase2Screen() {
     ]).start();
   }, [screenOpacity, screenTranslateY]);
 
-  const currentQuestion = QUESTIONS[currentIndex];
+  const currentQuestion = PHASE_2_QUESTIONS[currentIndex];
   const selectedValue = answers[currentQuestion?.id ?? ''];
 
   function handleBegin() {
@@ -62,10 +62,11 @@ export default function Phase2Screen() {
     setAnswer(currentQuestion.id, value);
 
     setTimeout(() => {
-      if (currentIndex < QUESTIONS.length - 1) {
+      if (currentIndex < PHASE_2_QUESTIONS.length - 1) {
         transitionToQuestion(currentIndex + 1);
       } else {
-        console.log('[Phase2] All questions answered, navigating to reflection');
+        console.log('[Phase2] All questions answered, computing phase2 scores');
+        computePhase2Scores();
         router.push('/onboarding/phase-2-reflection');
       }
     }, 300);
@@ -180,7 +181,7 @@ export default function Phase2Screen() {
         phase={2}
         title="What Drives You"
         current={currentIndex + 1}
-        total={QUESTIONS.length}
+        total={PHASE_2_QUESTIONS.length}
       />
 
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
