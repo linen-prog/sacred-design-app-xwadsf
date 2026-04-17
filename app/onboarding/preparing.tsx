@@ -47,7 +47,7 @@ export default function PreparingScreen() {
     <Animated.View
       style={{
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: '#000000',
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
         alignItems: 'center',
@@ -72,7 +72,7 @@ export default function PreparingScreen() {
         style={{
           fontSize: 22,
           fontFamily: 'Lora_700Bold',
-          color: COLORS.text,
+          color: '#FFFFFF',
           textAlign: 'center',
           lineHeight: 32,
           letterSpacing: -0.2,
@@ -86,7 +86,7 @@ export default function PreparingScreen() {
         style={{
           fontSize: 15,
           fontFamily: 'Inter_400Regular',
-          color: COLORS.textSecondary,
+          color: 'rgba(255,255,255,0.6)',
           textAlign: 'center',
         }}
       >
