@@ -15,6 +15,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { DiscoveryProvider } from "@/contexts/DiscoveryContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -28,6 +29,7 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
 } from "@expo-google-fonts/inter";
+import { authClient } from "@/lib/auth";
 
 const DevErrorBoundary = __DEV__
   ? ErrorBoundary
@@ -41,12 +43,25 @@ export const unstable_settings = {
 
 function RootNavigator() {
   const router = useRouter();
-  const segments = useSegments();
-  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  // useSegments is imported but not used here — kept for future guard logic
+  const [_onboardingChecked, setOnboardingChecked] = useState(false);
 
   useEffect(() => {
     async function checkOnboarding() {
       try {
+        // Silently create anonymous session on first launch
+        const anonCreated = await AsyncStorage.getItem("anon_session_created");
+        if (!anonCreated) {
+          console.log("[RootLayout] Creating anonymous session...");
+          try {
+            await authClient.signIn.anonymous();
+            await AsyncStorage.setItem("anon_session_created", "true");
+            console.log("[RootLayout] Anonymous session created");
+          } catch (e) {
+            console.log("[RootLayout] Anonymous sign-in failed (silent):", e);
+          }
+        }
+
         const value = await AsyncStorage.getItem("onboarding_complete");
         console.log("[RootLayout] onboarding_complete:", value);
         if (!value) {
@@ -69,6 +84,8 @@ function RootNavigator() {
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
+      <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -121,14 +138,16 @@ export default function RootLayout() {
       <StatusBar style="auto" animated />
       <ThemeProvider value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}>
         <SafeAreaProvider>
-          <DiscoveryProvider>
-            <WidgetProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <RootNavigator />
-                <SystemBars style="auto" />
-              </GestureHandlerRootView>
-            </WidgetProvider>
-          </DiscoveryProvider>
+          <AuthProvider>
+            <DiscoveryProvider>
+              <WidgetProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <RootNavigator />
+                  <SystemBars style="auto" />
+                </GestureHandlerRootView>
+              </WidgetProvider>
+            </DiscoveryProvider>
+          </AuthProvider>
         </SafeAreaProvider>
       </ThemeProvider>
     </DevErrorBoundary>
