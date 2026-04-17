@@ -1,16 +1,16 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, ScrollView, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Compass } from 'lucide-react-native';
-import { COLORS } from '@/constants/Colors';
+import { useFonts, Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/lora';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
+
+  const [fontsLoaded] = useFonts({ Lora_400Regular, Lora_600SemiBold });
 
   useEffect(() => {
     Animated.parallel([
@@ -19,103 +19,126 @@ export default function WelcomeScreen() {
     ]).start();
   }, [opacity, translateY]);
 
+  if (!fontsLoaded) return null;
+
   function handleBegin() {
-    console.log('[Welcome] Begin Sacred Discovery pressed');
+    console.log('[Welcome] Begin Your Discovery pressed');
     router.push('/onboarding/intro');
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: COLORS.background,
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom,
-      }}
-    >
-      <Animated.View
-        style={{
-          flex: 1,
-          alignItems: 'center',
+    <View style={{ flex: 1, backgroundColor: '#F6F1E8' }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{
+          flexGrow: 1,
           justifyContent: 'center',
+          alignItems: 'center',
           paddingHorizontal: 32,
-          opacity,
-          transform: [{ translateY }],
+          paddingVertical: 60,
         }}
       >
-        <View
+        <Animated.View
           style={{
-            width: 120,
-            height: 120,
-            borderRadius: 60,
-            backgroundColor: COLORS.accentMuted,
+            width: '100%',
             alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 48,
+            opacity,
+            transform: [{ translateY }],
           }}
         >
-          <Compass size={64} color={COLORS.accent} strokeWidth={1.5} />
-        </View>
+          {/* Icon area */}
+          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            {/* Outer glow */}
+            <View
+              style={{
+                position: 'absolute',
+                width: 120,
+                height: 120,
+                borderRadius: 60,
+                backgroundColor: 'rgba(230, 211, 163, 0.10)',
+              }}
+            />
+            {/* Inner circle */}
+            <View
+              style={{
+                width: 88,
+                height: 88,
+                borderRadius: 44,
+                backgroundColor: 'rgba(230, 211, 163, 0.18)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Compass size={42} color="#8A7A5A" strokeWidth={1} />
+            </View>
+          </View>
 
-        <Text
-          style={{
-            fontSize: 30,
-            fontFamily: 'Lora_700Bold',
-            color: COLORS.text,
-            letterSpacing: -0.3,
-            textAlign: 'center',
-            lineHeight: 40,
-            marginBottom: 20,
-          }}
-        >
-          {'Know your design.\nGrow in your calling.\nWalk in it daily.'}
-        </Text>
+          {/* 40px spacer */}
+          <View style={{ height: 40 }} />
 
-        <Text
-          style={{
-            fontSize: 16,
-            fontFamily: 'Inter_400Regular',
-            color: COLORS.textSecondary,
-            lineHeight: 24,
-            textAlign: 'center',
-            maxWidth: 300,
-          }}
-        >
-          {'A gentle path to understand how you\'re uniquely made—and grow into it.'}
-        </Text>
-      </Animated.View>
-
-      <Animated.View
-        style={{
-          paddingHorizontal: 24,
-          paddingBottom: insets.bottom + 32,
-          opacity,
-        }}
-      >
-        <AnimatedPressable
-          onPress={handleBegin}
-          style={{
-            backgroundColor: COLORS.primary,
-            borderRadius: 14,
-            height: 54,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Begin Sacred Discovery"
-        >
+          {/* Headline */}
           <Text
             style={{
-              color: COLORS.white,
-              fontSize: 16,
-              fontFamily: 'Inter_600SemiBold',
-              fontWeight: '600',
+              fontFamily: 'Lora_600SemiBold',
+              fontSize: 30,
+              color: '#2F3E2F',
+              textAlign: 'center',
+              lineHeight: 42,
             }}
           >
-            Begin Sacred Discovery
+            {'Know your design.\nGrow in your calling.\nWalk in it\u2014daily.'}
           </Text>
-        </AnimatedPressable>
-      </Animated.View>
+
+          {/* 24px spacer */}
+          <View style={{ height: 24 }} />
+
+          {/* Subtext */}
+          <Text
+            style={{
+              fontSize: 17,
+              color: '#5A5A5A',
+              textAlign: 'center',
+              lineHeight: 26,
+              paddingHorizontal: 28,
+            }}
+          >
+            {
+              'A simple path to understand how you\u2019re uniquely made\u2014and begin living it.'
+            }
+          </Text>
+
+          {/* 48px spacer */}
+          <View style={{ height: 48 }} />
+
+          {/* Button */}
+          <AnimatedPressable
+            onPress={handleBegin}
+            style={{
+              backgroundColor: '#6F8A6A',
+              borderRadius: 18,
+              paddingVertical: 18,
+              paddingHorizontal: 32,
+              width: '100%',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(111, 138, 106, 0.25)',
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Begin Your Discovery"
+          >
+            <Text
+              style={{
+                color: '#FFFFFF',
+                fontSize: 17,
+                fontWeight: '600',
+                textAlign: 'center',
+              }}
+            >
+              Begin Your Discovery
+            </Text>
+          </AnimatedPressable>
+        </Animated.View>
+      </ScrollView>
     </View>
   );
 }
