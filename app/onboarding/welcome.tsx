@@ -44,7 +44,7 @@ export default function WelcomeScreen() {
           justifyContent: 'center',
           alignItems: 'center',
           paddingHorizontal: 32,
-          paddingTop: 80,
+          paddingTop: 40,
           paddingBottom: 60,
         }}
       >
@@ -125,7 +125,7 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  logoContainer: { width: 120, height: 120, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  logoContainer: { width: 120, height: 120, alignItems: 'center', justifyContent: 'center', marginBottom: 80 },
   outerOrb: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(111, 138, 106, 0.08)' },
   middleOrb: { position: 'absolute', width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(111, 138, 106, 0.12)' },
   innerOrb: { position: 'absolute', width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(111, 138, 106, 0.18)' },
