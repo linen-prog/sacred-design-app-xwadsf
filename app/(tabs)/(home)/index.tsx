@@ -13,7 +13,7 @@ const BG = "#F5F0EB";
 const TEXT = "#2C3A2C";
 const TEXT_MUTED = "#9A9A8E";
 const CARD_BG = "#FFFFFF";
-const BUTTON_BG = "#4A6741";
+const BUTTON_BG = "#6F8A6A";
 
 function resolveImageSource(
   source: string | number | ImageSourcePropType | undefined
