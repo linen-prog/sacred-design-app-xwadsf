@@ -22,5 +22,14 @@ export const dailyAlignments = pgTable('daily_alignments', {
   primaryArchetype: text('primary_archetype').notNull(),
   secondaryArchetype: text('secondary_archetype').notNull(),
   blendName: text('blend_name').notNull(),
+  reflectionPrompt: text('reflection_prompt'),
   generatedAt: timestamp('generated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const alignmentReflections = pgTable('alignment_reflections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  alignmentId: uuid('alignment_id').notNull().references(() => dailyAlignments.id, { onDelete: 'cascade' }),
+  reflectionText: text('reflection_text').notNull(),
+  completedAt: timestamp('completed_at', { withTimezone: true }).defaultNow().notNull(),
 });
