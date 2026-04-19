@@ -1,4 +1,4 @@
-import { createApplication } from "@specific-dev/framework";
+import { createApplication, resend } from "@specific-dev/framework";
 import { anonymous } from "better-auth/plugins";
 import * as appSchema from './db/schema/schema.js';
 import * as authSchema from './db/schema/auth-schema.js';
@@ -14,11 +14,21 @@ export const app = await createApplication(schema);
 // Export App type for use in route files
 export type App = typeof app;
 
-// Enable authentication with anonymous plugin
+// Enable authentication with email/password, OAuth, and anonymous sign-in
 app.withAuth({
   plugins: [
     anonymous(),
   ],
+  emailAndPassword: {
+    sendResetPassword: async ({ user, url }) => {
+      resend.emails.send({
+        from: 'Sacred Design <noreply@example.com>',
+        to: user.email,
+        subject: 'Reset your password',
+        html: `<p>Click the link to reset your password: <a href="${url}">${url}</a></p>`,
+      });
+    },
+  },
 });
 
 // Register routes - add your route modules here
