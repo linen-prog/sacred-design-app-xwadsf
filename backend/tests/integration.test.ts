@@ -161,11 +161,14 @@ describe("API Integration Tests", () => {
       expect(data.total_days).toBeDefined();
     });
 
-    test("GET /api/alignments/history returns 401 without authentication", async () => {
+    test("GET /api/alignments/history returns 200 with empty data when unauthenticated", async () => {
       const res = await api("/api/alignments/history", {
         method: "GET",
       });
-      await expectStatus(res, 401);
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.alignments).toBeDefined();
+      expect(Array.isArray(data.alignments)).toBe(true);
     });
 
     test("GET /api/alignments/progress returns user progress when authenticated", async () => {
@@ -179,11 +182,14 @@ describe("API Integration Tests", () => {
       expect(data.last_active_date).toBeDefined();
     });
 
-    test("GET /api/alignments/progress returns 401 without authentication", async () => {
+    test("GET /api/alignments/progress returns 200 with empty data when unauthenticated", async () => {
       const res = await api("/api/alignments/progress", {
         method: "GET",
       });
-      await expectStatus(res, 401);
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.day_count).toBeDefined();
+      expect(data.level).toBeDefined();
     });
   });
 });

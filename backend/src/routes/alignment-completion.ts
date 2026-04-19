@@ -402,7 +402,7 @@ Return ONLY valid JSON with exactly these fields:
   // GET /api/alignments/history
   fastify.get('/api/alignments/history', {
     schema: {
-      description: 'Get alignment history for the authenticated user',
+      description: 'Get alignment history for the user (returns empty data if unauthenticated)',
       tags: ['alignments'],
       response: {
         200: {
@@ -441,11 +441,6 @@ Return ONLY valid JSON with exactly these fields:
             total_days: { type: 'integer' },
           },
         },
-        401: {
-          description: 'Unauthorized',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-        },
         500: {
           description: 'Server error',
           type: 'object',
@@ -456,16 +451,31 @@ Return ONLY valid JSON with exactly these fields:
   }, async (
     request: FastifyRequest,
     reply: FastifyReply
-  ): Promise<{ alignments: any[]; total_days: number } | void> => {
-    const requireAuth = app.requireAuth();
-    const session = await requireAuth(request, reply);
-    if (!session) return;
-
-    const userId = session.user.id;
-
-    app.logger.info({ userId }, 'Fetching alignment history');
-
+  ): Promise<{ alignments: any[]; total_days: number }> => {
     try {
+      // Convert Fastify headers to standard Headers
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
+
+      // Get session without requiring authentication
+      const session = await app.auth.api.getSession({ headers });
+      const userId = session?.user.id;
+
+      // If no authenticated user, return empty data
+      if (!userId) {
+        app.logger.info({}, 'Fetching alignment history for unauthenticated user');
+        return {
+          alignments: [],
+          total_days: 0,
+        };
+      }
+
+      app.logger.info({ userId }, 'Fetching alignment history');
+
       // Fetch all alignments for this user
       const alignments = await app.db
         .select()
@@ -507,7 +517,7 @@ Return ONLY valid JSON with exactly these fields:
         total_days: alignmentsWithReflections.length,
       };
     } catch (error) {
-      app.logger.error({ err: error, userId }, 'Failed to fetch alignment history');
+      app.logger.error({ err: error }, 'Failed to fetch alignment history');
       throw error;
     }
   });
@@ -515,7 +525,7 @@ Return ONLY valid JSON with exactly these fields:
   // GET /api/alignments/progress
   fastify.get('/api/alignments/progress', {
     schema: {
-      description: 'Get user progress in the alignment system',
+      description: 'Get user progress in the alignment system (returns empty data if unauthenticated)',
       tags: ['alignments'],
       response: {
         200: {
@@ -524,13 +534,8 @@ Return ONLY valid JSON with exactly these fields:
           properties: {
             day_count: { type: 'integer' },
             level: { type: 'integer' },
-            last_active_date: { type: 'string' },
+            last_active_date: { type: ['string', 'null'] },
           },
-        },
-        401: {
-          description: 'Unauthorized',
-          type: 'object',
-          properties: { error: { type: 'string' } },
         },
         500: {
           description: 'Server error',
@@ -542,16 +547,32 @@ Return ONLY valid JSON with exactly these fields:
   }, async (
     request: FastifyRequest,
     reply: FastifyReply
-  ): Promise<{ day_count: number; level: number; last_active_date: string } | void> => {
-    const requireAuth = app.requireAuth();
-    const session = await requireAuth(request, reply);
-    if (!session) return;
-
-    const userId = session.user.id;
-
-    app.logger.info({ userId }, 'Fetching alignment progress');
-
+  ): Promise<{ day_count: number; level: number; last_active_date: string | null }> => {
     try {
+      // Convert Fastify headers to standard Headers
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
+
+      // Get session without requiring authentication
+      const session = await app.auth.api.getSession({ headers });
+      const userId = session?.user.id;
+
+      // If no authenticated user, return empty data
+      if (!userId) {
+        app.logger.info({}, 'Fetching alignment progress for unauthenticated user');
+        return {
+          day_count: 0,
+          level: 1,
+          last_active_date: null,
+        };
+      }
+
+      app.logger.info({ userId }, 'Fetching alignment progress');
+
       const userProgress = await app.db
         .select()
         .from(schema.userProgress)
@@ -563,7 +584,7 @@ Return ONLY valid JSON with exactly these fields:
         return {
           day_count: 0,
           level: 1,
-          last_active_date: '',
+          last_active_date: null,
         };
       }
 
@@ -578,7 +599,7 @@ Return ONLY valid JSON with exactly these fields:
         last_active_date: progress.lastActiveDate,
       };
     } catch (error) {
-      app.logger.error({ err: error, userId }, 'Failed to fetch progress');
+      app.logger.error({ err: error }, 'Failed to fetch progress');
       throw error;
     }
   });

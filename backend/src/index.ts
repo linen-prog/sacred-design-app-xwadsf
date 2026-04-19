@@ -1,4 +1,5 @@
 import { createApplication } from "@specific-dev/framework";
+import { anonymous } from "better-auth/plugins";
 import * as appSchema from './db/schema/schema.js';
 import * as authSchema from './db/schema/auth-schema.js';
 import { register as registerDailyAlignmentRoutes } from './routes/daily-alignment.js';
@@ -13,8 +14,12 @@ export const app = await createApplication(schema);
 // Export App type for use in route files
 export type App = typeof app;
 
-// Enable authentication
-app.withAuth();
+// Enable authentication with anonymous plugin
+app.withAuth({
+  plugins: [
+    anonymous(),
+  ],
+});
 
 // Register routes - add your route modules here
 // IMPORTANT: Always use registration functions to avoid circular dependency issues
