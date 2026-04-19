@@ -13,6 +13,23 @@ export default function WelcomeScreen() {
   const [fontsLoaded] = useFonts({ Lora_400Regular, Lora_600SemiBold });
 
   useEffect(() => {
+    async function checkFlags() {
+      const [hasSeenOnboarding, hasCompletedQuiz] = await Promise.all([
+        AsyncStorage.getItem('hasSeenOnboarding'),
+        AsyncStorage.getItem('hasCompletedQuiz'),
+      ]);
+      console.log('[Welcome] checkFlags — hasSeenOnboarding:', hasSeenOnboarding, 'hasCompletedQuiz:', hasCompletedQuiz);
+      if (hasCompletedQuiz === 'true') {
+        router.replace('/(tabs)');
+      } else if (hasSeenOnboarding === 'true') {
+        router.replace('/onboarding/intro');
+      }
+    }
+    checkFlags();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     Animated.parallel([
       Animated.timing(opacity, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.timing(translateY, { toValue: 0, duration: 600, useNativeDriver: true }),
