@@ -150,6 +150,30 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 404);
     });
 
+    test("POST /api/alignments/{id}/complete returns 403 when user doesn't own alignment", async () => {
+      // Create a new alignment with the first user
+      const alignRes = await authenticatedApi("/api/alignments/generate", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(generatePayload),
+      });
+      await expectStatus(alignRes, 200);
+      const alignData = await alignRes.json();
+      const otherAlignmentId = alignData.id;
+
+      // Sign up a second user
+      const { token: otherToken } = await signUpTestUser();
+
+      // Try to complete the alignment created by the first user with the second user
+      const res = await authenticatedApi(`/api/alignments/${otherAlignmentId}/complete`, otherToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reflection_text: "test" }),
+      });
+
+      await expectStatus(res, 403);
+    });
+
     test("GET /api/alignments/history returns alignment history when authenticated", async () => {
       const res = await authenticatedApi("/api/alignments/history", authToken, {
         method: "GET",
