@@ -91,10 +91,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const session = await authClient.getSession();
+      console.log("[AuthContext] fetchUser session.data:", JSON.stringify(session?.data));
       if (session?.data?.user) {
         setUser(session.data.user as User);
-        if (session.data.session?.token) {
-          await setBearerToken(session.data.session.token);
+        const token = (session as any)?.data?.session?.token;
+        if (token) {
+          await setBearerToken(token);
+          console.log("[AuthContext] Stored token from getSession");
         }
       } else {
         setUser(null);
@@ -110,7 +113,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      await authClient.signIn.email({ email, password });
+      const result = await authClient.signIn.email({ email, password });
+      console.log('[AuthContext] signIn result:', JSON.stringify(result?.data));
+      const token = (result as any)?.data?.token ?? (result as any)?.data?.session?.token;
+      if (token) {
+        console.log('[AuthContext] Storing token from signIn response');
+        await setBearerToken(token);
+      }
       await fetchUser();
     } catch (error) {
       console.error("Email sign in failed:", error);
@@ -120,7 +129,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
     try {
-      await authClient.signUp.email({ email, password, name });
+      const result = await authClient.signUp.email({ email, password, name: name ?? '' });
+      console.log('[AuthContext] signUp result:', JSON.stringify(result?.data));
+      const token = (result as any)?.data?.token ?? (result as any)?.data?.session?.token;
+      if (token) {
+        console.log('[AuthContext] Storing token from signUp response');
+        await setBearerToken(token);
+      }
       await fetchUser();
     } catch (error) {
       console.error("Email sign up failed:", error);

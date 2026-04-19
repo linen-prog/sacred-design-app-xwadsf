@@ -1,7 +1,5 @@
 import Constants from "expo-constants";
-import { Platform } from "react-native";
-import * as SecureStore from "expo-secure-store";
-import { BEARER_TOKEN_KEY } from "@/lib/auth";
+import { getSessionToken } from "@/lib/auth";
 
 export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || "";
 
@@ -10,16 +8,7 @@ export const isBackendConfigured = (): boolean => {
 };
 
 export const getBearerToken = async (): Promise<string | null> => {
-  try {
-    if (Platform.OS === "web") {
-      return localStorage.getItem(BEARER_TOKEN_KEY);
-    } else {
-      return await SecureStore.getItemAsync(BEARER_TOKEN_KEY);
-    }
-  } catch (error) {
-    console.error("[API] Error retrieving bearer token:", error);
-    return null;
-  }
+  return getSessionToken();
 };
 
 export const apiCall = async <T = any>(

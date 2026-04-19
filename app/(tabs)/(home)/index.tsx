@@ -11,7 +11,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
-import { getBearerToken } from "@/utils/api";
+import { apiFetch } from "@/lib/auth";
 
 const BG = "#F5F0EB";
 const TEXT = "#2C3A2C";
@@ -22,7 +22,6 @@ const SKELETON_BG = "#E8E3DA";
 const SUCCESS_TINT = "#EAF2EA";
 const SUCCESS_TEXT = "#4A7A4A";
 
-const API_BASE = "https://rxv2r6bszrawnrpuzqt5kh3zhd9kv48u.app.specular.dev";
 
 interface AlignmentData {
   id: string;
@@ -93,17 +92,7 @@ function SkeletonCard() {
   );
 }
 
-async function apiCall(path: string, options?: RequestInit) {
-  const token = await getBearerToken();
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
-  });
-}
+const apiCall = apiFetch;
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -210,6 +199,17 @@ export default function HomeScreen() {
             </View>
           </AnimatedPressable>
         </View>
+        <Pressable
+          onPress={() => {
+            console.log("[Home] 'Sign In' link pressed — navigating to auth-screen");
+            router.push("/auth-screen");
+          }}
+          style={{ marginTop: 20, padding: 8 }}
+        >
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: TEXT_MUTED, textAlign: "center" }}>
+            Sign In
+          </Text>
+        </Pressable>
       </View>
     );
   }

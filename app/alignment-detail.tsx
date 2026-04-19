@@ -12,7 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
-import { getBearerToken } from "@/utils/api";
+import { apiFetch } from "@/lib/auth";
 
 const BG = "#F5F0EB";
 const TEXT = "#2C3A2C";
@@ -26,19 +26,8 @@ const SUCCESS_TEXT = "#4A7A4A";
 const INPUT_BG = "#F5F0EB";
 const DANGER = "#C0392B";
 
-const API_BASE = "https://rxv2r6bszrawnrpuzqt5kh3zhd9kv48u.app.specular.dev";
 
-async function apiCall(path: string, options?: RequestInit) {
-  const token = await getBearerToken();
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
-  });
-}
+const apiCall = apiFetch;
 
 export default function AlignmentDetailScreen() {
   const insets = useSafeAreaInsets();

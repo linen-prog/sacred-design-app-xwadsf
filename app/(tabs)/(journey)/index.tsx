@@ -7,7 +7,7 @@ import {
   Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getBearerToken } from "@/utils/api";
+import { apiFetch } from "@/lib/auth";
 
 const BG = "#F6F1E8";
 const TEXT = "#3D3530";
@@ -17,7 +17,6 @@ const CARD_BG = "#FFFDF7";
 const ACCENT = "#6F8A6A";
 const DIVIDER = "rgba(61,53,48,0.07)";
 
-const API_BASE = "https://rxv2r6bszrawnrpuzqt5kh3zhd9kv48u.app.specular.dev";
 
 interface AlignmentHistoryItem {
   id: string;
@@ -35,17 +34,7 @@ interface HistoryResponse {
   total_days: number;
 }
 
-async function apiCall(path: string, options?: RequestInit) {
-  const token = await getBearerToken();
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
-  });
-}
+const apiCall = apiFetch;
 
 function formatDate(iso: string): string {
   if (!iso) return "";

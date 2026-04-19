@@ -96,6 +96,8 @@ function RootNavigator() {
       <Stack.Screen name="reveal" options={{ headerShown: false }} />
       <Stack.Screen name="dev-skip" options={{ headerShown: false }} />
       <Stack.Screen name="alignment-detail" options={{ headerShown: false }} />
+      <Stack.Screen name="auth-screen" options={{ headerShown: false }} />
+      <Stack.Screen name="debug-auth" options={{ headerShown: false }} />
       <Stack.Screen
         name="completion"
         options={{
