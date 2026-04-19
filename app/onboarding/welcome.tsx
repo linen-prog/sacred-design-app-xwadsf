@@ -118,6 +118,22 @@ export default function WelcomeScreen() {
               Begin Your Discovery
             </Text>
           </Pressable>
+
+          {__DEV__ && (
+            <Pressable
+              onPress={() => {
+                console.log('[Welcome] Dev skip pressed');
+                router.push('/dev-skip');
+              }}
+              style={{ marginTop: 24, padding: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Skip quiz (dev only)"
+            >
+              <Text style={{ fontSize: 12, color: 'rgba(47,62,47,0.35)', textAlign: 'center' }}>
+                ⚡ Skip quiz (dev only)
+              </Text>
+            </Pressable>
+          )}
         </Animated.View>
       </ScrollView>
     </View>
