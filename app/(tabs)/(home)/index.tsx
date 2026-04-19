@@ -11,7 +11,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
-import { authClient } from "@/lib/auth";
+import { getBearerToken } from "@/utils/api";
 
 const BG = "#F5F0EB";
 const TEXT = "#2C3A2C";
@@ -94,8 +94,7 @@ function SkeletonCard() {
 }
 
 async function apiCall(path: string, options?: RequestInit) {
-  const session = await authClient.getSession();
-  const token = (session as any)?.data?.session?.token;
+  const token = await getBearerToken();
   return fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {

@@ -12,7 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
-import { authClient } from "@/lib/auth";
+import { getBearerToken } from "@/utils/api";
 
 const BG = "#F5F0EB";
 const TEXT = "#2C3A2C";
@@ -29,8 +29,7 @@ const DANGER = "#C0392B";
 const API_BASE = "https://rxv2r6bszrawnrpuzqt5kh3zhd9kv48u.app.specular.dev";
 
 async function apiCall(path: string, options?: RequestInit) {
-  const session = await authClient.getSession();
-  const token = (session as any)?.data?.session?.token;
+  const token = await getBearerToken();
   return fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {

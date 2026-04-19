@@ -7,7 +7,7 @@ import {
   Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { authClient } from "@/lib/auth";
+import { getBearerToken } from "@/utils/api";
 
 const BG = "#F6F1E8";
 const TEXT = "#3D3530";
@@ -36,8 +36,7 @@ interface HistoryResponse {
 }
 
 async function apiCall(path: string, options?: RequestInit) {
-  const session = await authClient.getSession();
-  const token = (session as any)?.data?.session?.token;
+  const token = await getBearerToken();
   return fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
