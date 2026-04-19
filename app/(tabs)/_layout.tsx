@@ -4,7 +4,7 @@ import FloatingTabBar, { TabBarItem } from "@/components/FloatingTabBar";
 
 const TABS: TabBarItem[] = [
   { name: "(home)", route: "/(tabs)/(home)", icon: "home", label: "Home" },
-  { name: "(design)", route: "/(tabs)/(design)", icon: "auto-awesome", label: "Know Your Design" },
+  { name: "(design)", route: "/(tabs)/(design)", icon: "auto-awesome", label: "My Design" },
   { name: "(journey)", route: "/(tabs)/(journey)", icon: "schedule", label: "Journey" },
 ];
 
@@ -12,10 +12,10 @@ export default function TabLayout() {
   return (
     <Tabs
       initialRouteName="(home)"
-      tabBar={() => (
+      tabBar={(props) => (
         <FloatingTabBar
           tabs={TABS}
-          containerWidth={360}
+          {...props}
         />
       )}
       screenOptions={{ headerShown: false }}

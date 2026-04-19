@@ -1,5 +1,6 @@
 {
   "expo": {
+    "newArchEnabled": true,
     "name": "Sacred Design",
     "slug": "sacred-design",
     "version": "1.0.0",
