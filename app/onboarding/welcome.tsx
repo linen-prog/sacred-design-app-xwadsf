@@ -7,27 +7,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  console.log('[Welcome] Screen mounted');
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
 
   const [fontsLoaded] = useFonts({ Lora_400Regular, Lora_600SemiBold });
-
-  useEffect(() => {
-    async function checkFlags() {
-      const [hasSeenOnboarding, hasCompletedQuiz] = await Promise.all([
-        AsyncStorage.getItem('hasSeenOnboarding'),
-        AsyncStorage.getItem('hasCompletedQuiz'),
-      ]);
-      console.log('[Welcome] checkFlags — hasSeenOnboarding:', hasSeenOnboarding, 'hasCompletedQuiz:', hasCompletedQuiz);
-      if (hasCompletedQuiz === 'true') {
-        router.replace('/(tabs)');
-      } else if (hasSeenOnboarding === 'true') {
-        router.replace('/onboarding/intro');
-      }
-    }
-    checkFlags();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     Animated.parallel([

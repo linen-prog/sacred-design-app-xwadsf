@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Animated,
   ImageSourcePropType,
+  Pressable,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -108,7 +109,7 @@ async function apiCall(path: string, options?: RequestInit) {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { sacredDesignResult, phase4Scores } = useContext(DiscoveryContext);
+  const { sacredDesignResult, phase4Scores, clearSacredDesign } = useContext(DiscoveryContext);
 
   const [alignment, setAlignment] = useState<AlignmentData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -162,6 +163,12 @@ export default function HomeScreen() {
 
   function handleBeginPress() {
     console.log("[Home] 'Bring Your Design to Life' button pressed — navigating to onboarding");
+    router.push("/onboarding/welcome");
+  }
+
+  async function handleRetake() {
+    console.log("[Home] 'Retake Discovery' pressed — clearing sacred design and navigating to welcome");
+    clearSacredDesign();
     router.push("/onboarding/welcome");
   }
 
@@ -258,6 +265,12 @@ export default function HomeScreen() {
           )}
         </Animated.View>
       ) : null}
+
+      <Pressable onPress={handleRetake} style={{ marginTop: 16, padding: 8 }}>
+        <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: TEXT_MUTED, textAlign: 'center' }}>
+          Retake Discovery
+        </Text>
+      </Pressable>
     </View>
   );
 }

@@ -125,6 +125,7 @@ interface DiscoveryContextType {
   computePhase4Scores: () => void;
   sacredDesignResult: SacredDesignResult | null;
   computeSacredDesign: () => void;
+  clearSacredDesign: () => void;
 }
 
 export const DiscoveryContext = createContext<DiscoveryContextType>({
@@ -141,6 +142,7 @@ export const DiscoveryContext = createContext<DiscoveryContextType>({
   computePhase4Scores: () => {},
   sacredDesignResult: null,
   computeSacredDesign: () => {},
+  clearSacredDesign: () => {},
 });
 
 export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
@@ -180,6 +182,12 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     setPhase4Scores(null);
     setSacredDesignResult(null);
     AsyncStorage.removeItem('sacredDesignResult').catch(() => {});
+  }, []);
+
+  const clearSacredDesign = useCallback(() => {
+    console.log('[DiscoveryContext] clearSacredDesign — clearing result and quiz flags');
+    setSacredDesignResult(null);
+    AsyncStorage.multiRemove(['sacredDesignResult', 'hasCompletedQuiz', 'hasSeenOnboarding']).catch(() => {});
   }, []);
 
   const computePhase1Scores = useCallback(() => {
@@ -469,7 +477,8 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     computePhase4Scores,
     sacredDesignResult,
     computeSacredDesign,
-  }), [answers, setAnswer, resetAnswers, phase1Scores, computePhase1Scores, phase2Scores, computePhase2Scores, phase3Scores, computePhase3Scores, phase4Scores, computePhase4Scores, sacredDesignResult, computeSacredDesign]);
+    clearSacredDesign,
+  }), [answers, setAnswer, resetAnswers, phase1Scores, computePhase1Scores, phase2Scores, computePhase2Scores, phase3Scores, computePhase3Scores, phase4Scores, computePhase4Scores, sacredDesignResult, computeSacredDesign, clearSacredDesign]);
 
   return (
     <DiscoveryContext.Provider value={value}>
