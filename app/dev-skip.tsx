@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 
 const MOCK_ANSWERS: Record<string, number> = {
@@ -66,15 +67,25 @@ export default function DevSkipScreen() {
     computeSacredDesign();
   }, [phase1Scores, phase2Scores, phase3Scores, phase4Scores, computeSacredDesign]);
 
-  // Step 4: once result is ready, navigate to reveal after short delay
+  // Step 4: once result is ready, persist and navigate to tabs
   useEffect(() => {
     if (!sacredDesignResult) return;
     if (step.current !== 'sacred') return;
     step.current = 'navigate';
-    console.log('[DevSkip] Sacred design ready, navigating to /reveal in 500ms', sacredDesignResult);
-    const timer = setTimeout(() => {
-      router.replace('/reveal');
-    }, 500);
+    console.log('[DevSkip] Sacred design ready, persisting and navigating to tabs');
+    const timer = setTimeout(async () => {
+      try {
+        await AsyncStorage.multiSet([
+          ['hasCompletedQuiz', 'true'],
+          ['hasSeenOnboarding', 'true'],
+          ['sacredDesignResult', JSON.stringify(sacredDesignResult)],
+        ]);
+        console.log('[DevSkip] Persisted sacredDesignResult:', sacredDesignResult);
+      } catch (e) {
+        console.log('[DevSkip] AsyncStorage error:', e);
+      }
+      router.replace('/(tabs)');
+    }, 300);
     return () => clearTimeout(timer);
   }, [sacredDesignResult, router]);
 

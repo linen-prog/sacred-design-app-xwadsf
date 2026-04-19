@@ -1,4 +1,5 @@
-import React, { createContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useCallback, useMemo, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type ArchetypeName =
   | 'Peacemaker'
@@ -150,6 +151,21 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
   const [phase4Scores, setPhase4Scores] = useState<Phase4Scores | null>(null);
   const [sacredDesignResult, setSacredDesignResult] = useState<SacredDesignResult | null>(null);
 
+  // Restore persisted result on mount
+  useEffect(() => {
+    AsyncStorage.getItem('sacredDesignResult').then(stored => {
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setSacredDesignResult(parsed);
+          console.log('[DiscoveryContext] Restored sacredDesignResult from storage:', parsed);
+        } catch (e) {
+          console.log('[DiscoveryContext] Failed to parse stored sacredDesignResult:', e);
+        }
+      }
+    });
+  }, []);
+
   const setAnswer = useCallback((id: string, value: number) => {
     console.log(`[DiscoveryContext] setAnswer: ${id} = ${value}`);
     setAnswers(prev => ({ ...prev, [id]: value }));
@@ -162,6 +178,8 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     setPhase2Scores(null);
     setPhase3Scores(null);
     setPhase4Scores(null);
+    setSacredDesignResult(null);
+    AsyncStorage.removeItem('sacredDesignResult').catch(() => {});
   }, []);
 
   const computePhase1Scores = useCallback(() => {
