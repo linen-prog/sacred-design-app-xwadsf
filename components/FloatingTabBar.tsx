@@ -70,8 +70,8 @@ export default function FloatingTabBar({
       else if (normalizedRoute !== '/' && pathname.startsWith(normalizedRoute)) {
         score = 80;
       }
-      // Pathname contains the tab name segment
-      else if (tab.name !== 'home' && pathname.includes(tab.name)) {
+      // Pathname contains the tab name segment (strip parens for matching)
+      else if (tab.name !== '(home)' && pathname.includes(tab.name.replace(/[()]/g, ''))) {
         score = 60;
       }
 
