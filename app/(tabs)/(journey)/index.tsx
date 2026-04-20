@@ -5,8 +5,10 @@ import {
   ScrollView,
   StyleSheet,
   Animated,
+  Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { apiFetch } from "@/lib/auth";
 
 const BG = "#F6F1E8";
@@ -17,24 +19,20 @@ const CARD_BG = "#FFFDF7";
 const ACCENT = "#6F8A6A";
 const DIVIDER = "rgba(61,53,48,0.07)";
 
-
 interface AlignmentHistoryItem {
   id: string;
   day_number: number;
-  level: string;
+  level: number;
   action: string;
+  guidance: string;
+  somatic_cue: string;
+  scripture: string;
+  reflection_prompt: string;
+  primary_archetype: string;
+  secondary_archetype: string;
+  blend_name: string;
   generated_at: string;
-  reflection?: {
-    reflection_text: string;
-  };
 }
-
-interface HistoryResponse {
-  alignments: AlignmentHistoryItem[];
-  total_days: number;
-}
-
-const apiCall = apiFetch;
 
 function formatDate(iso: string): string {
   if (!iso) return "";
@@ -44,6 +42,12 @@ function formatDate(iso: string): string {
   } catch {
     return "";
   }
+}
+
+function truncateAction(text: string, maxLen = 72): string {
+  if (!text) return "";
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen).trimEnd() + "…";
 }
 
 function SkeletonLine({ width, height = 13 }: { width: number | string; height?: number }) {
@@ -99,8 +103,8 @@ function AnimatedCard({ index, children }: { index: number; children: React.Reac
 
 export default function JourneyScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [history, setHistory] = useState<AlignmentHistoryItem[]>([]);
-  const [totalDays, setTotalDays] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -113,19 +117,18 @@ export default function JourneyScreen() {
     setError("");
     console.log("[Journey] GET /api/alignments/history");
     try {
-      const res = await apiCall("/api/alignments/history");
+      const res = await apiFetch("/api/alignments/history");
       if (!res.ok) {
         const errText = await res.text();
         console.warn("[Journey] /api/alignments/history failed:", res.status, errText);
-        setError("Couldn't load your journey. Pull down to retry.");
+        setError("Couldn't load your journey. Tap to retry.");
         return;
       }
-      const data: HistoryResponse = await res.json();
-      console.log("[Journey] History loaded:", data.alignments.length, "entries, total_days:", data.total_days);
+      const data: AlignmentHistoryItem[] = await res.json();
+      console.log("[Journey] History loaded:", data.length, "entries");
       // Newest first
-      const sorted = [...data.alignments].sort((a, b) => b.day_number - a.day_number);
+      const sorted = [...data].sort((a, b) => b.day_number - a.day_number);
       setHistory(sorted);
-      setTotalDays(data.total_days);
     } catch (e) {
       console.warn("[Journey] loadHistory error:", e);
       setError("Couldn't load your journey. Check your connection.");
@@ -134,8 +137,26 @@ export default function JourneyScreen() {
     }
   }
 
+  function handleCardPress(item: AlignmentHistoryItem) {
+    console.log("[Journey] History card pressed — alignmentId:", item.id, "day:", item.day_number);
+    router.push({
+      pathname: "/alignment-detail",
+      params: {
+        alignmentId: item.id,
+        action: item.action,
+        guidance: item.guidance,
+        somatic_cue: item.somatic_cue,
+        scripture: item.scripture,
+        reflection_prompt: item.reflection_prompt,
+        day_number: String(item.day_number),
+        blend_name: item.blend_name,
+      },
+    });
+  }
+
+  const totalDays = history.length;
   const subtitleText = totalDays > 0
-    ? `Day ${totalDays} of your Sacred Design`
+    ? `Day ${history[history.length - 1]?.day_number ?? totalDays} of your Sacred Design`
     : "Your Sacred Design journey";
 
   return (
@@ -158,13 +179,20 @@ export default function JourneyScreen() {
           <SkeletonCard />
         </View>
       ) : error ? (
-        <View style={styles.emptyArea}>
-          <View style={styles.emptyInner}>
-            <Text style={styles.emptyIcon}>⚠</Text>
-            <Text style={styles.emptyText}>Couldn't load your journey</Text>
-            <Text style={styles.emptyHint}>{error}</Text>
+        <Pressable
+          onPress={() => {
+            console.log("[Journey] Error state retry pressed");
+            loadHistory();
+          }}
+        >
+          <View style={styles.emptyArea}>
+            <View style={styles.emptyInner}>
+              <Text style={styles.emptyIcon}>⚠</Text>
+              <Text style={styles.emptyText}>Couldn't load your journey</Text>
+              <Text style={styles.emptyHint}>{error}</Text>
+            </View>
           </View>
-        </View>
+        </Pressable>
       ) : history.length === 0 ? (
         <View style={styles.emptyArea}>
           <View style={styles.emptyInner}>
@@ -179,33 +207,29 @@ export default function JourneyScreen() {
         <View style={{ gap: 12 }}>
           {history.map((item, index) => {
             const dateStr = formatDate(item.generated_at);
-            const levelLabel = item.level ? `Level ${item.level}` : "";
-            const dayLevelLabel = `Day ${item.day_number}${levelLabel ? ` · ${levelLabel}` : ""}`;
-            const reflectionPreview = item.reflection?.reflection_text ?? "";
+            const dayLevelLabel = `Day ${item.day_number}`;
+            const actionTruncated = truncateAction(item.action);
             return (
               <AnimatedCard key={item.id} index={index}>
-                <View style={styles.historyCard}>
+                <Pressable
+                  onPress={() => handleCardPress(item)}
+                  style={({ pressed }) => [
+                    styles.historyCard,
+                    pressed && styles.historyCardPressed,
+                  ]}
+                >
                   <View style={styles.historyCardTop}>
                     <Text style={styles.historyMeta}>{dayLevelLabel}</Text>
                     <Text style={styles.historyDate}>{dateStr}</Text>
                   </View>
-                  <Text
-                    style={styles.historyAction}
-                    numberOfLines={2}
-                    ellipsizeMode="tail"
-                  >
-                    {item.action}
+                  <Text style={styles.historyAction}>
+                    {actionTruncated}
                   </Text>
-                  {reflectionPreview ? (
-                    <Text
-                      style={styles.historyReflection}
-                      numberOfLines={2}
-                      ellipsizeMode="tail"
-                    >
-                      {reflectionPreview}
-                    </Text>
-                  ) : null}
-                </View>
+                  <View style={styles.historyCardFooter}>
+                    <Text style={styles.historyBlend}>{item.blend_name}</Text>
+                    <Text style={styles.historyChevron}>›</Text>
+                  </View>
+                </Pressable>
               </AnimatedCard>
             );
           })}
@@ -282,6 +306,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: DIVIDER,
   },
+  historyCardPressed: {
+    opacity: 0.75,
+  },
   historyCardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -304,12 +331,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: TEXT,
     lineHeight: 23,
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  historyReflection: {
-    fontFamily: "Lora_400Regular_Italic",
-    fontSize: 13,
+  historyCardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  historyBlend: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
     color: TEXT_MUTED,
-    lineHeight: 20,
+    fontStyle: "italic",
+  },
+  historyChevron: {
+    fontSize: 18,
+    color: TEXT_MUTED,
+    lineHeight: 22,
   },
 });

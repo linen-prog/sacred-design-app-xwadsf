@@ -26,9 +26,6 @@ const SUCCESS_TEXT = "#4A7A4A";
 const INPUT_BG = "#F5F0EB";
 const DANGER = "#C0392B";
 
-
-const apiCall = apiFetch;
-
 export default function AlignmentDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -58,34 +55,38 @@ export default function AlignmentDetailScreen() {
   const reflectionPrompt = params.reflection_prompt ?? "";
   const alignmentId = params.alignmentId ?? "";
 
+  const dayLabel = `TODAY'S ALIGNMENT · DAY ${dayNumber}`;
+  const scriptureQuoted = `"${scripture}"`;
+  const submitLabel = submitting ? "Saving..." : "Save Reflection";
+
   function handleBack() {
     console.log("[AlignmentDetail] Back button pressed");
     router.back();
   }
 
-  async function handleComplete() {
-    console.log("[AlignmentDetail] 'I Did This' pressed — alignmentId:", alignmentId);
+  async function handleSubmitReflection() {
+    console.log("[AlignmentDetail] 'Save Reflection' pressed — alignmentId:", alignmentId);
     if (!reflectionText.trim()) {
-      setValidationMsg("Add a reflection to complete your alignment.");
+      setValidationMsg("Add a reflection before saving.");
       return;
     }
     setValidationMsg("");
     setSubmitting(true);
+    console.log("[AlignmentDetail] POST /api/alignments/:id/reflection", { alignmentId, reflectionLength: reflectionText.trim().length });
     try {
-      console.log("[AlignmentDetail] POST /api/alignments/:id/complete", { alignmentId, reflectionLength: reflectionText.length });
-      const res = await apiCall(`/api/alignments/${alignmentId}/complete`, {
+      const res = await apiFetch(`/api/alignments/${alignmentId}/reflection`, {
         method: "POST",
         body: JSON.stringify({ reflection_text: reflectionText.trim() }),
       });
       if (!res.ok) {
         const errText = await res.text();
-        console.warn("[AlignmentDetail] complete failed:", res.status, errText);
+        console.warn("[AlignmentDetail] POST /reflection failed:", res.status, errText);
         setValidationMsg("Something went wrong. Please try again.");
         setSubmitting(false);
         return;
       }
       const data = await res.json();
-      console.log("[AlignmentDetail] Alignment completed:", data);
+      console.log("[AlignmentDetail] Reflection saved:", data);
       // Show success overlay
       setShowSuccess(true);
       Animated.parallel([
@@ -93,17 +94,15 @@ export default function AlignmentDetailScreen() {
         Animated.spring(checkScale, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 8 }),
       ]).start();
       setTimeout(() => {
-        console.log("[AlignmentDetail] Auto-navigating back to home after completion");
+        console.log("[AlignmentDetail] Auto-navigating back to home after reflection saved");
         router.replace("/(tabs)");
-      }, 2000);
+      }, 2200);
     } catch (e) {
-      console.warn("[AlignmentDetail] handleComplete error:", e);
+      console.warn("[AlignmentDetail] handleSubmitReflection error:", e);
       setValidationMsg("Something went wrong. Please try again.");
       setSubmitting(false);
     }
   }
-
-  const dayLabel = `TODAY'S ALIGNMENT · DAY ${dayNumber}`;
 
   return (
     <KeyboardAvoidingView
@@ -148,7 +147,7 @@ export default function AlignmentDetailScreen() {
         {/* Scripture */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>SCRIPTURE</Text>
-          <Text style={styles.scriptureText}>{`"${scripture}"`}</Text>
+          <Text style={styles.scriptureText}>{scriptureQuoted}</Text>
         </View>
 
         <View style={styles.divider} />
@@ -177,15 +176,19 @@ export default function AlignmentDetailScreen() {
           ) : null}
 
           <AnimatedPressable
-            onPress={handleComplete}
+            onPress={handleSubmitReflection}
             disabled={submitting}
           >
             <View style={[styles.completeButton, submitting && styles.completeButtonDisabled]}>
-              <Text style={styles.completeButtonText}>
-                {submitting ? "Saving..." : "I Did This"}
-              </Text>
+              <Text style={styles.completeButtonText}>{submitLabel}</Text>
             </View>
           </AnimatedPressable>
+        </View>
+
+        {/* Archetype blend info card */}
+        <View style={styles.blendCard}>
+          <Text style={styles.blendLabel}>YOUR DESIGN</Text>
+          <Text style={styles.blendValue}>{params.blend_name ?? ""}</Text>
         </View>
       </ScrollView>
 
@@ -313,6 +316,28 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     letterSpacing: 0.2,
   },
+  blendCard: {
+    backgroundColor: CARD_BG,
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "rgba(44,58,44,0.06)",
+  },
+  blendLabel: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 10,
+    letterSpacing: 2,
+    color: TEXT_MUTED,
+    marginBottom: 6,
+  },
+  blendValue: {
+    fontFamily: "Lora_400Regular_Italic",
+    fontSize: 15,
+    color: TEXT,
+  },
   successOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(20,30,20,0.72)",
@@ -325,7 +350,7 @@ const styles = StyleSheet.create({
   },
   successCheck: {
     fontSize: 56,
-    color: "#7EC87E",
+    color: SUCCESS_TEXT,
     lineHeight: 64,
   },
   successMessage: {
@@ -334,5 +359,9 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     textAlign: "center",
     lineHeight: 30,
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _unused: {
+    backgroundColor: SUCCESS_TINT,
   },
 });

@@ -23,11 +23,11 @@ const SKELETON_BG = "#E8E3DA";
 const SUCCESS_TINT = "#EAF2EA";
 const SUCCESS_TEXT = "#4A7A4A";
 
-
-interface AlignmentData {
+interface DailyAlignment {
   id: string;
+  user_id: string;
   day_number: number;
-  level: string;
+  level: number;
   action: string;
   guidance: string;
   somatic_cue: string;
@@ -37,9 +37,9 @@ interface AlignmentData {
   secondary_archetype: string;
   blend_name: string;
   generated_at: string;
-  already_completed: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resolveImageSource(
   source: string | number | ImageSourcePropType | undefined
 ): ImageSourcePropType {
@@ -93,34 +93,38 @@ function SkeletonCard() {
   );
 }
 
-const apiCall = apiFetch;
+function getFirstSentence(text: string): string {
+  if (!text) return "";
+  const match = text.match(/^[^.!?]+[.!?]/);
+  return match ? match[0].trim() : text.slice(0, 120);
+}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { sacredDesignResult, phase4Computed, quizCompleted, clearSacredDesign, restoreFromBackend } = useContext(DiscoveryContext);
+  const { sacredDesignResult, quizCompleted, clearSacredDesign, restoreFromBackend } = useContext(DiscoveryContext);
   const { user } = useAuth();
   const isSignedIn = !!(user && (user as any).isAnonymous !== true);
 
-  const [alignment, setAlignment] = useState<AlignmentData | null>(null);
+  const [alignment, setAlignment] = useState<DailyAlignment | null>(null);
   const [loading, setLoading] = useState(false);
-  const [fallback, setFallback] = useState(false);
+  const [error, setError] = useState("");
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // On mount: if quiz is marked complete but result is missing, try to restore from backend
   useEffect(() => {
     if (!sacredDesignResult && quizCompleted) {
-      console.log('[Home] sacredDesignResult missing but quizCompleted=true — attempting restore from backend');
-      apiCall('/api/archetypes/me')
+      console.log("[Home] sacredDesignResult missing but quizCompleted=true — attempting restore from backend");
+      apiFetch("/api/archetypes/me")
         .then(async (res) => {
           if (!res.ok) {
             const errText = await res.text();
-            console.warn('[Home] GET /api/archetypes/me failed:', res.status, errText);
+            console.warn("[Home] GET /api/archetypes/me failed:", res.status, errText);
             return;
           }
           const data = await res.json();
-          console.log('[Home] GET /api/archetypes/me response:', data);
+          console.log("[Home] GET /api/archetypes/me response:", data);
           if (data && data.quiz_completed === true) {
             restoreFromBackend({
               primary_archetype: data.primary_archetype,
@@ -131,54 +135,73 @@ export default function HomeScreen() {
           }
         })
         .catch((e) => {
-          console.warn('[Home] GET /api/archetypes/me error:', e);
+          console.warn("[Home] GET /api/archetypes/me error:", e);
         });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load alignment whenever sacredDesignResult becomes available
   useEffect(() => {
     if (!sacredDesignResult) return;
-    generateAlignment();
+    loadTodayAlignment();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sacredDesignResult]);
 
-  async function generateAlignment() {
-    if (!sacredDesignResult) return;
+  async function loadTodayAlignment() {
     setLoading(true);
-    setFallback(false);
-    console.log("[Home] Generating daily alignment for", sacredDesignResult.primary_archetype);
+    setError("");
+    fadeAnim.setValue(0);
+    console.log("[Home] GET /api/alignments/today");
     try {
-      const body = {
-        primary_archetype: sacredDesignResult.primary_archetype,
-        secondary_archetype: sacredDesignResult.secondary_archetype,
-        blend_name: sacredDesignResult.blend_name,
-        anxious_score: phase4Computed?.anxious_score ?? 0,
-        avoidant_score: phase4Computed?.avoidant_score ?? 0,
-        overactive_score: phase4Computed?.overactive_score ?? 0,
-        grounded_score: phase4Computed?.grounded_score ?? 0,
-      };
-      console.log("[Home] POST /api/alignments/generate", body);
-      const res = await apiCall("/api/alignments/generate", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
+      const res = await apiFetch("/api/alignments/today");
       if (!res.ok) {
         const errText = await res.text();
-        console.warn("[Home] /api/alignments/generate failed:", res.status, errText);
-        setFallback(true);
+        console.warn("[Home] GET /api/alignments/today failed:", res.status, errText);
+        setError("Couldn't load today's alignment.");
         return;
       }
-      const data: AlignmentData = await res.json();
-      console.log("[Home] Alignment received:", data.id, "day", data.day_number, "already_completed:", data.already_completed);
+      const data: { alignment: DailyAlignment | null } = await res.json();
+      console.log("[Home] /api/alignments/today response — alignment:", data.alignment ? data.alignment.id : "null");
+
+      if (data.alignment) {
+        setAlignment(data.alignment);
+        Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+      } else {
+        // No alignment yet today — generate one
+        await generateAlignment();
+      }
+    } catch (e) {
+      console.warn("[Home] loadTodayAlignment error:", e);
+      setError("Couldn't load today's alignment.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function generateAlignment() {
+    console.log("[Home] POST /api/alignments/generate — generating today's alignment");
+    try {
+      const res = await apiFetch("/api/alignments/generate", { method: "POST" });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn("[Home] POST /api/alignments/generate failed:", res.status, errText);
+        setError("Couldn't generate today's alignment.");
+        return;
+      }
+      const data: DailyAlignment = await res.json();
+      console.log("[Home] Alignment generated:", data.id, "day", data.day_number);
       setAlignment(data);
       Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
     } catch (e) {
       console.warn("[Home] generateAlignment error:", e);
-      setFallback(true);
-    } finally {
-      setLoading(false);
+      setError("Couldn't generate today's alignment.");
     }
+  }
+
+  async function handleRetry() {
+    console.log("[Home] Retry button pressed");
+    await loadTodayAlignment();
   }
 
   function handleBeginPress() {
@@ -195,7 +218,6 @@ export default function HomeScreen() {
   function handleRespondPress() {
     if (!alignment) return;
     console.log("[Home] 'Respond to Today' pressed — alignment id:", alignment.id);
-    const firstSentence = getFirstSentence(alignment.guidance);
     router.push({
       pathname: "/alignment-detail",
       params: {
@@ -208,7 +230,6 @@ export default function HomeScreen() {
         day_number: String(alignment.day_number),
       },
     });
-    void firstSentence;
   }
 
   const topPadding = insets.top + 20;
@@ -249,7 +270,6 @@ export default function HomeScreen() {
   // ── State B: quiz complete ──────────────────────────────────────────────────
   const guidancePreview = alignment ? getFirstSentence(alignment.guidance) : "";
   const dayLabel = alignment ? `Day ${alignment.day_number}` : "";
-  const isCompleted = alignment?.already_completed ?? false;
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
@@ -258,12 +278,18 @@ export default function HomeScreen() {
       <Text style={styles.subtitle}>Your daily practice awaits.</Text>
 
       {loading ? (
-        <SkeletonCard />
-      ) : fallback ? (
+        <>
+          <SkeletonCard />
+          <Text style={styles.generatingHint}>Preparing your alignment…</Text>
+        </>
+      ) : error ? (
         <View style={styles.card}>
-          <Text style={styles.fallbackText}>
-            Complete your Sacred Discovery to unlock daily alignments.
-          </Text>
+          <Text style={styles.fallbackText}>{error}</Text>
+          <AnimatedPressable onPress={handleRetry}>
+            <View style={styles.button}>
+              <Text style={styles.buttonText}>Try Again</Text>
+            </View>
+          </AnimatedPressable>
         </View>
       ) : alignment ? (
         <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
@@ -281,24 +307,17 @@ export default function HomeScreen() {
             {guidancePreview}
           </Text>
 
-          {/* CTA or completed badge */}
-          {isCompleted ? (
-            <View style={styles.completedBadge}>
-              <Text style={styles.completedCheck}>✓</Text>
-              <Text style={styles.completedText}>Completed today</Text>
+          {/* CTA */}
+          <AnimatedPressable onPress={handleRespondPress}>
+            <View style={styles.button}>
+              <Text style={styles.buttonText}>Respond to Today</Text>
             </View>
-          ) : (
-            <AnimatedPressable onPress={handleRespondPress}>
-              <View style={styles.button}>
-                <Text style={styles.buttonText}>Respond to Today</Text>
-              </View>
-            </AnimatedPressable>
-          )}
+          </AnimatedPressable>
         </Animated.View>
       ) : null}
 
       <Pressable onPress={handleRetake} style={{ marginTop: 16, padding: 8 }}>
-        <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: TEXT_MUTED, textAlign: 'center' }}>
+        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: TEXT_MUTED, textAlign: "center" }}>
           Retake Discovery
         </Text>
       </Pressable>
@@ -310,19 +329,13 @@ export default function HomeScreen() {
           }}
           style={{ marginTop: 8, padding: 8 }}
         >
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: TEXT_MUTED, textAlign: 'center' }}>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: TEXT_MUTED, textAlign: "center" }}>
             Sign in to save your progress
           </Text>
         </Pressable>
       )}
     </View>
   );
-}
-
-function getFirstSentence(text: string): string {
-  if (!text) return "";
-  const match = text.match(/^[^.!?]+[.!?]/);
-  return match ? match[0].trim() : text.slice(0, 120);
 }
 
 const styles = StyleSheet.create({
@@ -418,23 +431,12 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     letterSpacing: 0.2,
   },
-  completedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: SUCCESS_TINT,
-    borderRadius: 50,
-    paddingVertical: 14,
-    gap: 8,
-  },
-  completedCheck: {
-    fontSize: 16,
-    color: SUCCESS_TEXT,
-  },
-  completedText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 14,
-    color: SUCCESS_TEXT,
+  generatingHint: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: TEXT_MUTED,
+    textAlign: "center",
+    marginTop: 16,
   },
   cardTitle: {
     fontFamily: "Lora_700Bold",
@@ -458,5 +460,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 23,
     paddingVertical: 16,
+    marginBottom: 16,
   },
 });
