@@ -1,23 +1,25 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase1Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { OverallProgressBar } from '@/components/OverallProgressBar';
+import { saveCheckpoint } from '@/utils/quizCheckpoint';
 
 const PHASE_1_QUESTIONS = [
   { id: 'Q1', text: 'When conflict arises, I tend to step back and let others work it out.' },
   { id: 'Q2', text: 'I naturally take charge when a group needs direction.' },
   { id: 'Q3', text: 'I process experiences through how they made me feel, not just what happened.' },
-  { id: 'Q4', text: 'I follow through on commitments even when it\'s inconvenient.' },
+  { id: 'Q4', text: "I follow through on commitments even when it's inconvenient." },
   { id: 'Q5', text: 'I find it easy to connect with new people and make them feel welcome.' },
   { id: 'Q6', text: 'I ask "why" more than most people around me.' },
   { id: 'Q7', text: 'When I see something unfair, I feel compelled to do something about it.' },
-  { id: 'Q8', text: 'I often put others\' needs before my own to avoid tension.' },
+  { id: 'Q8', text: "I often put others' needs before my own to avoid tension." },
   { id: 'Q9', text: 'I feel energized when I can rally people around a shared goal.' },
-  { id: 'Q10', text: 'I notice when someone in the room is hurting, even if they haven\'t said anything.' },
+  { id: 'Q10', text: "I notice when someone in the room is hurting, even if they haven't said anything." },
 ];
 
 const scaleValues = [1, 2, 3, 4, 5];
@@ -70,7 +72,8 @@ export default function Phase1Screen() {
         };
         console.log('[Phase1] All questions answered, storing phase 1 answers:', phaseAnswers);
         computePhase1Scores(phaseAnswers);
-        router.push('/onboarding/phase-1-reflection');
+        saveCheckpoint([1], updatedAnswers).catch(() => {});
+        router.push('/onboarding/phase-complete?phase=1');
       }
     }, 300);
   }
@@ -82,13 +85,24 @@ export default function Phase1Screen() {
     }
   }
 
+  async function handleSaveAndExit() {
+    console.log('[Phase1] Save & Continue Later pressed');
+    await saveCheckpoint([], answers);
+    Alert.alert(
+      'Progress Saved',
+      'Your progress is saved. Come back anytime.',
+      [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+    );
+  }
+
   const guidanceText = 'Go with your first instinct.';
   const leftLabel = 'Never like me';
   const rightLabel = 'Always like me';
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-      {/* Animated content area */}
+      <OverallProgressBar phase={1} questionIndex={currentIndex} />
+
       <Animated.View
         style={{
           flex: 1,
@@ -205,6 +219,25 @@ export default function Phase1Screen() {
             </Text>
           </AnimatedPressable>
         )}
+
+        {/* Save & Continue Later */}
+        <AnimatedPressable
+          onPress={handleSaveAndExit}
+          style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12, marginTop: 16 }}
+          accessibilityRole="button"
+          accessibilityLabel="Save and continue later"
+        >
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: 'Inter_400Regular',
+              color: 'rgba(47,62,47,0.38)',
+              textDecorationLine: 'underline',
+            }}
+          >
+            Save &amp; Continue Later
+          </Text>
+        </AnimatedPressable>
       </Animated.View>
     </View>
   );

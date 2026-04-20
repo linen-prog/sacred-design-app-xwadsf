@@ -1,11 +1,13 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase4Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { OverallProgressBar } from '@/components/OverallProgressBar';
+import { saveCheckpoint } from '@/utils/quizCheckpoint';
 
 const QUESTIONS = [
   { id: 'P4_Q1', text: 'I need peace and low conflict in my environment to feel safe.' },
@@ -14,7 +16,7 @@ const QUESTIONS = [
   { id: 'P4_Q4', text: 'Having a clear plan or routine helps me feel grounded.' },
   { id: 'P4_Q5', text: 'Being around people who are positive and hopeful restores me.' },
   { id: 'P4_Q6', text: 'I need solitude and reflection to feel centered.' },
-  { id: 'P4_Q7', text: 'I feel most grounded when I\'m working toward something that matters.' },
+  { id: 'P4_Q7', text: "I feel most grounded when I'm working toward something that matters." },
 ];
 
 const INTRO_TEXT = "Growth becomes lasting when it feels supported in your body.";
@@ -72,8 +74,9 @@ export default function Phase4Screen() {
         };
         console.log('[Phase4] All questions answered, storing phase 4 answers:', phaseAnswers);
         computePhase4Scores(phaseAnswers);
-        console.log('[Phase4] Navigating to phase-4-reflection');
-        router.push('/onboarding/phase-4-reflection');
+        saveCheckpoint([1, 2, 3, 4], updatedAnswers).catch(() => {});
+        console.log('[Phase4] Navigating to phase-complete screen');
+        router.push('/onboarding/phase-complete?phase=4');
       }
     }, 300);
   }
@@ -85,6 +88,16 @@ export default function Phase4Screen() {
     }
   }
 
+  async function handleSaveAndExit() {
+    console.log('[Phase4] Save & Continue Later pressed');
+    await saveCheckpoint([1, 2, 3], answers);
+    Alert.alert(
+      'Progress Saved',
+      'Your progress is saved. Come back anytime.',
+      [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+    );
+  }
+
   const guidanceText = 'Go with your first instinct.';
   const leftLabel = 'Never like me';
   const rightLabel = 'Always like me';
@@ -92,6 +105,7 @@ export default function Phase4Screen() {
   if (showIntro) {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+        <OverallProgressBar phase={4} questionIndex={0} />
         <Animated.View
           style={{
             flex: 1,
@@ -175,6 +189,8 @@ export default function Phase4Screen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <OverallProgressBar phase={4} questionIndex={currentIndex} />
+
       <Animated.View
         style={{
           flex: 1,
@@ -291,6 +307,24 @@ export default function Phase4Screen() {
             </Text>
           </AnimatedPressable>
         )}
+
+        <AnimatedPressable
+          onPress={handleSaveAndExit}
+          style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12, marginTop: 16 }}
+          accessibilityRole="button"
+          accessibilityLabel="Save and continue later"
+        >
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: 'Inter_400Regular',
+              color: 'rgba(47,62,47,0.38)',
+              textDecorationLine: 'underline',
+            }}
+          >
+            Save &amp; Continue Later
+          </Text>
+        </AnimatedPressable>
       </Animated.View>
     </View>
   );

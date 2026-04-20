@@ -1,11 +1,13 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase3Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { OverallProgressBar } from '@/components/OverallProgressBar';
+import { saveCheckpoint } from '@/utils/quizCheckpoint';
 
 const QUESTIONS = [
   { id: 'P3_Q1', text: 'I work hard to keep the atmosphere around me calm and positive.' },
@@ -78,7 +80,8 @@ export default function Phase3Screen() {
         };
         console.log('[Phase3] All questions answered, storing phase 3 answers:', phaseAnswers);
         computePhase3Scores(phaseAnswers);
-        router.push('/onboarding/phase-3-reflection');
+        saveCheckpoint([1, 2, 3], updatedAnswers).catch(() => {});
+        router.push('/onboarding/phase-complete?phase=3');
       }
     }, 300);
   }
@@ -90,6 +93,16 @@ export default function Phase3Screen() {
     }
   }
 
+  async function handleSaveAndExit() {
+    console.log('[Phase3] Save & Continue Later pressed');
+    await saveCheckpoint([1, 2], answers);
+    Alert.alert(
+      'Progress Saved',
+      'Your progress is saved. Come back anytime.',
+      [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+    );
+  }
+
   const guidanceText = 'Go with your first instinct.';
   const leftLabel = 'Never like me';
   const rightLabel = 'Always like me';
@@ -97,6 +110,7 @@ export default function Phase3Screen() {
   if (showIntro) {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+        <OverallProgressBar phase={3} questionIndex={0} />
         <Animated.View
           style={{
             flex: 1,
@@ -180,6 +194,8 @@ export default function Phase3Screen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <OverallProgressBar phase={3} questionIndex={currentIndex} />
+
       <Animated.View
         style={{
           flex: 1,
@@ -296,6 +312,24 @@ export default function Phase3Screen() {
             </Text>
           </AnimatedPressable>
         )}
+
+        <AnimatedPressable
+          onPress={handleSaveAndExit}
+          style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12, marginTop: 16 }}
+          accessibilityRole="button"
+          accessibilityLabel="Save and continue later"
+        >
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: 'Inter_400Regular',
+              color: 'rgba(47,62,47,0.38)',
+              textDecorationLine: 'underline',
+            }}
+          >
+            Save &amp; Continue Later
+          </Text>
+        </AnimatedPressable>
       </Animated.View>
     </View>
   );

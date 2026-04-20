@@ -24,6 +24,13 @@ export default function OnboardingLayout() {
       <Stack.Screen name="phase-3-reflection" />
       <Stack.Screen name="phase-4" />
       <Stack.Screen name="phase-4-reflection" />
+      <Stack.Screen
+        name="phase-complete"
+        options={{
+          headerShown: false,
+          animation: 'fade',
+        }}
+      />
       <Stack.Screen name="preparing" options={{ headerShown: false }} />
     </Stack>
   );

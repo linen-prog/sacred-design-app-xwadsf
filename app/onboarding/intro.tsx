@@ -1,36 +1,275 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import React, { useEffect, useState, useContext } from 'react';
+import { View, Text, ScrollView, Pressable, Alert, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFonts, Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/lora';
+import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { loadCheckpoint, clearCheckpoint, getNextPhaseRoute, QuizCheckpoint } from '@/utils/quizCheckpoint';
+import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 
-
-const PHASES = [
-  'How You Operate',
-  'What Drives You',
-  'How You Show Up',
-  'How You Stay Grounded',
+const PHASE_META = [
+  { num: 1, icon: '🌱', name: 'How You Operate', subname: 'The Foundation' },
+  { num: 2, icon: '🔥', name: 'What Drives You', subname: 'The Fire' },
+  { num: 3, icon: '💧', name: 'How You Show Up', subname: 'The Flow' },
+  { num: 4, icon: '✨', name: 'How You Stay Grounded', subname: 'The Spark' },
 ];
 
 export default function IntroScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { setAnswer } = useContext(DiscoveryContext);
   const [fontsLoaded] = useFonts({ Lora_400Regular, Lora_600SemiBold });
+  const [checkpoint, setCheckpoint] = useState<QuizCheckpoint | null>(null);
+  const [checkpointLoaded, setCheckpointLoaded] = useState(false);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    loadCheckpoint().then((cp) => {
+      setCheckpoint(cp && cp.completedPhases.length > 0 ? cp : null);
+      setCheckpointLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (checkpointLoaded) {
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkpointLoaded]);
 
   function handleContinue() {
-    console.log('[Intro] Continue pressed');
+    console.log('[Intro] Continue pressed — starting fresh');
     router.push('/onboarding/phase-1');
   }
 
-  if (!fontsLoaded) {
+  function handleResume() {
+    if (!checkpoint) return;
+    console.log('[Intro] Resume pressed — restoring checkpoint answers and navigating');
+    // Restore answers into context
+    Object.entries(checkpoint.answers).forEach(([id, value]) => {
+      setAnswer(id, value);
+    });
+    const nextRoute = getNextPhaseRoute(checkpoint.completedPhases);
+    router.push(nextRoute as Parameters<typeof router.push>[0]);
+  }
+
+  function handleStartOver() {
+    console.log('[Intro] Start Over pressed');
+    Alert.alert(
+      'Start Over?',
+      'This will clear your saved progress and restart the assessment from the beginning.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start Over',
+          style: 'destructive',
+          onPress: async () => {
+            console.log('[Intro] Start Over confirmed — clearing checkpoint');
+            await clearCheckpoint();
+            setCheckpoint(null);
+          },
+        },
+      ]
+    );
+  }
+
+  if (!fontsLoaded || !checkpointLoaded) {
     return <View style={{ flex: 1, backgroundColor: '#F6F1E8' }} />;
   }
 
   const bottomPadding = insets.bottom + 24;
+  const hasCheckpoint = checkpoint !== null;
+  const completedPhases = checkpoint?.completedPhases ?? [];
+  const nextPhaseNum = completedPhases.length + 1;
 
+  // ── RESUME MODE ──────────────────────────────────────────────────────────────
+  if (hasCheckpoint) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F6F1E8' }}>
+        <Animated.ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{
+            paddingHorizontal: 28,
+            paddingTop: 20,
+            paddingBottom: bottomPadding + 100,
+            alignItems: 'center',
+          }}
+          showsVerticalScrollIndicator={false}
+          style={{ opacity: fadeAnim }}
+        >
+          {/* Overline */}
+          <Text
+            style={{
+              fontSize: 11,
+              color: '#C9A84C',
+              textAlign: 'center',
+              fontWeight: '500',
+              letterSpacing: 2,
+              textTransform: 'uppercase',
+              marginBottom: 16,
+            }}
+          >
+            Welcome Back
+          </Text>
+
+          {/* Heading */}
+          <Text
+            style={{
+              fontFamily: 'Lora_600SemiBold',
+              fontSize: 26,
+              color: '#2F3E2F',
+              textAlign: 'center',
+              lineHeight: 36,
+              letterSpacing: -0.3,
+              marginBottom: 12,
+            }}
+          >
+            Resume Your Journey
+          </Text>
+
+          {/* Subtext */}
+          <Text
+            style={{
+              fontFamily: 'Lora_400Regular',
+              fontSize: 16,
+              color: '#4A5E4A',
+              textAlign: 'center',
+              lineHeight: 26,
+              marginBottom: 40,
+              maxWidth: 300,
+            }}
+          >
+            Your progress has been saved. Pick up right where you left off.
+          </Text>
+
+          {/* Phase status rows */}
+          <View style={{ width: '100%', gap: 12, marginBottom: 44 }}>
+            {PHASE_META.map((p) => {
+              const isCompleted = completedPhases.includes(p.num);
+              const isCurrent = p.num === nextPhaseNum;
+              const isLocked = !isCompleted && !isCurrent;
+
+              const statusIcon = isCompleted ? '✅' : isCurrent ? '▶' : '○';
+              const rowOpacity = isLocked ? 0.4 : 1;
+              const borderColor = isCompleted
+                ? 'rgba(201,168,76,0.4)'
+                : isCurrent
+                ? 'rgba(111,138,106,0.5)'
+                : 'rgba(47,62,47,0.1)';
+              const bgColor = isCompleted
+                ? 'rgba(201,168,76,0.06)'
+                : isCurrent
+                ? 'rgba(111,138,106,0.08)'
+                : 'rgba(47,62,47,0.03)';
+
+              return (
+                <View
+                  key={p.num}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: bgColor,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor,
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    opacity: rowOpacity,
+                  }}
+                >
+                  <Text style={{ fontSize: 22, marginRight: 14 }}>{p.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontFamily: 'Inter_600SemiBold',
+                        color: '#2F3E2F',
+                        fontWeight: '600',
+                      }}
+                    >
+                      {p.name}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontFamily: 'Inter_400Regular',
+                        color: 'rgba(47,62,47,0.55)',
+                        marginTop: 2,
+                      }}
+                    >
+                      {p.subname}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: isCompleted ? 18 : 16,
+                      color: isCompleted ? '#C9A84C' : isCurrent ? '#6F8A6A' : 'rgba(47,62,47,0.3)',
+                    }}
+                  >
+                    {statusIcon}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Resume CTA */}
+          <AnimatedPressable
+            onPress={handleResume}
+            style={{
+              backgroundColor: '#6F8A6A',
+              borderRadius: 18,
+              paddingVertical: 18,
+              width: '100%',
+              alignItems: 'center',
+              shadowColor: '#6F8A6A',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.28,
+              shadowRadius: 12,
+              elevation: 4,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Continue your journey"
+          >
+            <Text
+              style={{
+                color: '#FFFFFF',
+                fontSize: 17,
+                fontWeight: '600',
+                textAlign: 'center',
+              }}
+            >
+              Continue
+            </Text>
+          </AnimatedPressable>
+
+          {/* Start over link */}
+          <Pressable
+            onPress={handleStartOver}
+            style={{ marginTop: 20, paddingVertical: 8, paddingHorizontal: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Start over"
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                color: 'rgba(47,62,47,0.45)',
+                textAlign: 'center',
+                textDecorationLine: 'underline',
+              }}
+            >
+              Start Over
+            </Text>
+          </Pressable>
+        </Animated.ScrollView>
+      </View>
+    );
+  }
+
+  // ── FRESH START MODE ─────────────────────────────────────────────────────────
   return (
     <View style={{ flex: 1, backgroundColor: '#F6F1E8' }}>
-      <ScrollView
+      <Animated.ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
           paddingHorizontal: 32,
@@ -39,6 +278,7 @@ export default function IntroScreen() {
           alignItems: 'center',
         }}
         showsVerticalScrollIndicator={false}
+        style={{ opacity: fadeAnim }}
       >
         {/* Top label */}
         <Text
@@ -52,7 +292,7 @@ export default function IntroScreen() {
             marginBottom: 28,
           }}
         >
-          A simple discovery process
+          A sacred discovery process
         </Text>
 
         {/* Main paragraph */}
@@ -63,10 +303,26 @@ export default function IntroScreen() {
             color: '#2F3E2F',
             textAlign: 'center',
             lineHeight: 31,
-            marginBottom: 28,
+            marginBottom: 20,
           }}
         >
           {"You'll answer a few simple questions to understand how you naturally think, feel, and show up."}
+        </Text>
+
+        {/* Deep assessment blurb — warm italic */}
+        <Text
+          style={{
+            fontFamily: 'Lora_400Regular',
+            fontSize: 15,
+            color: 'rgba(111,138,106,0.85)',
+            textAlign: 'center',
+            lineHeight: 25,
+            fontStyle: 'italic',
+            marginBottom: 28,
+            paddingHorizontal: 8,
+          }}
+        >
+          {"This is a deep, full-spectrum assessment of your sacred design — 37 questions across 4 dimensions of your soul. Most people complete it in one sitting (about 10–15 minutes), but you can save your progress and return anytime."}
         </Text>
 
         {/* Reassurance line */}
@@ -97,20 +353,22 @@ export default function IntroScreen() {
           {"At the end, you'll receive your Sacred Design."}
         </Text>
 
-        {/* Phase list — no bullets */}
+        {/* Phase list */}
         <View style={{ alignItems: 'center', gap: 18, marginBottom: 52 }}>
-          {PHASES.map((phase) => (
-            <Text
-              key={phase}
-              style={{
-                fontSize: 15,
-                color: '#6F8A6A',
-                textAlign: 'center',
-                lineHeight: 22,
-              }}
-            >
-              {phase}
-            </Text>
+          {PHASE_META.map((p) => (
+            <View key={p.num} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Text style={{ fontSize: 16 }}>{p.icon}</Text>
+              <Text
+                style={{
+                  fontSize: 15,
+                  color: '#6F8A6A',
+                  textAlign: 'center',
+                  lineHeight: 22,
+                }}
+              >
+                {p.name}
+              </Text>
+            </View>
           ))}
         </View>
 
@@ -144,7 +402,7 @@ export default function IntroScreen() {
         </Text>
 
         {/* Continue button */}
-        <Pressable
+        <AnimatedPressable
           onPress={handleContinue}
           style={{
             backgroundColor: '#6F8A6A',
@@ -159,7 +417,7 @@ export default function IntroScreen() {
             elevation: 4,
           }}
           accessibilityRole="button"
-          accessibilityLabel="Continue"
+          accessibilityLabel="Begin your discovery"
         >
           <Text
             style={{
@@ -169,10 +427,10 @@ export default function IntroScreen() {
               textAlign: 'center',
             }}
           >
-            Continue
+            Begin Your Discovery
           </Text>
-        </Pressable>
-      </ScrollView>
+        </AnimatedPressable>
+      </Animated.ScrollView>
     </View>
   );
 }

@@ -1,19 +1,21 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase2Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { OverallProgressBar } from '@/components/OverallProgressBar';
+import { saveCheckpoint } from '@/utils/quizCheckpoint';
 
 const PHASE_2_QUESTIONS = [
   { id: 'P2_Q1', text: 'I would rather compromise than let a disagreement damage a relationship.' },
-  { id: 'P2_Q2', text: 'I feel most alive when I\'m leading others toward a goal.' },
-  { id: 'P2_Q3', text: 'I feel other people\'s pain or joy as if it were my own.' },
+  { id: 'P2_Q2', text: "I feel most alive when I'm leading others toward a goal." },
+  { id: 'P2_Q3', text: "I feel other people's pain or joy as if it were my own." },
   { id: 'P2_Q4', text: 'I feel unsettled when responsibilities are left unfinished or unclear.' },
   { id: 'P2_Q5', text: 'I naturally encourage others and help them see their potential.' },
-  { id: 'P2_Q6', text: 'I need to understand the deeper reason behind what I\'m asked to do.' },
+  { id: 'P2_Q6', text: "I need to understand the deeper reason behind what I'm asked to do." },
   { id: 'P2_Q7', text: 'I feel a strong pull to speak up when someone is being treated unfairly.' },
   { id: 'P2_Q8', text: 'I feel most at peace when everyone around me is getting along.' },
   { id: 'P2_Q9', text: 'I am motivated by the chance to make a lasting impact.' },
@@ -78,7 +80,8 @@ export default function Phase2Screen() {
         };
         console.log('[Phase2] All questions answered, storing phase 2 answers:', phaseAnswers);
         computePhase2Scores(phaseAnswers);
-        router.push('/onboarding/phase-2-reflection');
+        saveCheckpoint([1, 2], updatedAnswers).catch(() => {});
+        router.push('/onboarding/phase-complete?phase=2');
       }
     }, 300);
   }
@@ -90,6 +93,16 @@ export default function Phase2Screen() {
     }
   }
 
+  async function handleSaveAndExit() {
+    console.log('[Phase2] Save & Continue Later pressed');
+    await saveCheckpoint([1], answers);
+    Alert.alert(
+      'Progress Saved',
+      'Your progress is saved. Come back anytime.',
+      [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+    );
+  }
+
   const guidanceText = 'Go with your first instinct.';
   const leftLabel = 'Never like me';
   const rightLabel = 'Always like me';
@@ -97,6 +110,7 @@ export default function Phase2Screen() {
   if (showIntro) {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+        <OverallProgressBar phase={2} questionIndex={0} />
         <Animated.View
           style={{
             flex: 1,
@@ -180,6 +194,8 @@ export default function Phase2Screen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <OverallProgressBar phase={2} questionIndex={currentIndex} />
+
       <Animated.View
         style={{
           flex: 1,
@@ -296,6 +312,24 @@ export default function Phase2Screen() {
             </Text>
           </AnimatedPressable>
         )}
+
+        <AnimatedPressable
+          onPress={handleSaveAndExit}
+          style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12, marginTop: 16 }}
+          accessibilityRole="button"
+          accessibilityLabel="Save and continue later"
+        >
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: 'Inter_400Regular',
+              color: 'rgba(47,62,47,0.38)',
+              textDecorationLine: 'underline',
+            }}
+          >
+            Save &amp; Continue Later
+          </Text>
+        </AnimatedPressable>
       </Animated.View>
     </View>
   );
