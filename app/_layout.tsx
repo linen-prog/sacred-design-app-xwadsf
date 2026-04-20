@@ -94,7 +94,6 @@ function RootNavigator() {
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
 
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
       <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
       <Stack.Screen name="reveal" options={{ headerShown: false }} />
