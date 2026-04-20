@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFonts, Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/lora';
 
 const PHASES = [
@@ -40,10 +40,11 @@ export default function IntroScreen() {
         <Pressable
           onPress={handleBack}
           style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <ChevronLeft size={22} color="#6F8A6A" />
+          <Ionicons name="chevron-back" size={26} color="#6F8A6A" />
         </Pressable>
       </View>
 
