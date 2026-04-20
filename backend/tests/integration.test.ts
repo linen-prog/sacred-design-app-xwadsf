@@ -291,4 +291,41 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 401);
     });
   });
+
+  describe("Progress", () => {
+    test("GET /api/progress returns user progress when authenticated", async () => {
+      const res = await authenticatedApi("/api/progress", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.day_count).toBeDefined();
+      expect(data.streak).toBeDefined();
+    });
+
+    test("GET /api/progress returns 401 without authentication", async () => {
+      const res = await api("/api/progress", {
+        method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+  });
+
+  describe("Reflections", () => {
+    test("GET /api/reflections returns reflections array when authenticated", async () => {
+      const res = await authenticatedApi("/api/reflections", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(Array.isArray(data)).toBe(true);
+    });
+
+    test("GET /api/reflections returns 401 without authentication", async () => {
+      const res = await api("/api/reflections", {
+        method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+  });
 });
