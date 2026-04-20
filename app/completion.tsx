@@ -84,13 +84,13 @@ export default function CompletionScreen() {
       duration: 100,
       useNativeDriver: true,
     }).start(() => {
-      router.back();
+      router.replace('/(tabs)');
     });
   };
 
   const handleReflect = () => {
     console.log('[CompletionScreen] "Reflect on this moment" pressed');
-    router.back();
+    router.replace('/(tabs)');
   };
 
   return (

@@ -18,6 +18,16 @@ const DIVIDER = "rgba(47,62,47,0.08)";
 const PLACEHOLDER_BG = "rgba(47,62,47,0.12)";
 const SECTION_LABEL_COLOR = "rgba(47,62,47,0.4)";
 
+const SECONDARY_INFLUENCE: Record<string, string> = {
+  'Peacemaker': 'Brings a calming, relational quality to how you show up.',
+  'Courageous Leader': 'Adds boldness and initiative to your expression.',
+  'Deep Feeler': 'Deepens emotional attunement and sensitivity.',
+  'Faithful Steward': 'Grounds your gifts in consistency and follow-through.',
+  'Light Bearer': 'Infuses your presence with warmth and encouragement.',
+  'Truth Seeker': 'Sharpens your discernment and desire for depth.',
+  'Justice Carrier': 'Fuels a passion for what matters and who is overlooked.',
+};
+
 const PLACEHOLDER_ROWS = [
   { label: "Blend Name" },
   { label: "Archetypes" },
@@ -139,7 +149,33 @@ export default function MyDesignScreen() {
 
       {/* Growth Path */}
       <SectionLabel text="YOUR GROWTH PATH" />
-      <Text style={styles.bodyText}>{content?.growthPath}</Text>
+      <View style={styles.growthPathCard}>
+        <Text style={styles.bodyText}>{content?.growthPath}</Text>
+      </View>
+
+      {/* Secondary archetype section */}
+      {secondary && ARCHETYPE_CONTENT[secondary] && (() => {
+        const secondaryContent = ARCHETYPE_CONTENT[secondary];
+        const secondaryInfluence = SECONDARY_INFLUENCE[secondary] ?? "";
+        return (
+          <>
+            <View style={styles.sectionDivider} />
+            <Text style={styles.secondaryEyebrow}>YOUR SECONDARY ARCHETYPE</Text>
+            <Text style={styles.secondaryName}>{secondary}</Text>
+            {secondaryInfluence ? (
+              <Text style={styles.secondaryInfluenceText}>{secondaryInfluence}</Text>
+            ) : null}
+            <Divider />
+            <SectionLabel text="SECONDARY STRENGTHS" />
+            {renderListOrString(secondaryContent.strengths)}
+            <Divider />
+            <SectionLabel text="GROWTH PATH" />
+            <View style={styles.growthPathCard}>
+              <Text style={styles.bodyText}>{secondaryContent.growthPath}</Text>
+            </View>
+          </>
+        );
+      })()}
     </ScrollView>
   );
 }
@@ -264,5 +300,37 @@ const styles = StyleSheet.create({
     color: TEXT_ITEM,
     lineHeight: 22,
     flex: 1,
+  },
+  growthPathCard: {
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT,
+    paddingLeft: 16,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: DIVIDER,
+    marginVertical: 32,
+  },
+  secondaryEyebrow: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: ACCENT,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  secondaryName: {
+    fontFamily: "Lora_700Bold",
+    fontSize: 24,
+    color: TEXT,
+    lineHeight: 32,
+    marginBottom: 10,
+  },
+  secondaryInfluenceText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: TEXT_MUTED,
+    lineHeight: 22,
+    marginBottom: 4,
   },
 });

@@ -92,11 +92,10 @@ export default function AlignmentDetailScreen() {
       Animated.parallel([
         Animated.timing(overlayOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
         Animated.spring(checkScale, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 8 }),
-      ]).start();
-      setTimeout(() => {
-        console.log("[AlignmentDetail] Auto-navigating back to home after reflection saved");
-        router.replace("/(tabs)");
-      }, 2200);
+      ]).start(() => {
+        console.log("[AlignmentDetail] Navigating to completion screen after reflection saved");
+        router.replace("/completion");
+      });
     } catch (e) {
       console.warn("[AlignmentDetail] handleSubmitReflection error:", e);
       setValidationMsg("Something went wrong. Please try again.");

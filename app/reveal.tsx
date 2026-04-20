@@ -5,12 +5,14 @@ import {
   ScrollView,
   Animated,
   StyleSheet,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { apiFetch } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';
 
 const REVEAL_COLORS = {
   background: '#F6F1E8',
@@ -101,8 +103,12 @@ function SectionLabel({ label }: { label: string }) {
 export default function RevealScreen() {
   const router = useRouter();
   const { sacredDesignResult } = useContext(DiscoveryContext);
+  const { user } = useAuth();
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const [saving, setSaving] = useState(false);
+  const [showSignInPrompt, setShowSignInPrompt] = useState(false);
+  const promptTranslateY = useRef(new Animated.Value(80)).current;
+  const promptOpacity = useRef(new Animated.Value(0)).current;
 
   const primary = sacredDesignResult?.primary_archetype as ArchetypeName | undefined;
   const secondary = sacredDesignResult?.secondary_archetype as ArchetypeName | undefined;
@@ -148,17 +154,21 @@ export default function RevealScreen() {
   const handleCTA = async () => {
     console.log('[Reveal] "Continue to My Daily Alignment" pressed');
     setSaving(true);
-    try {
-      await saveToBackend();
-    } catch (e) {
-      // don't block navigation on backend failure
-    }
-    try {
-      await AsyncStorage.setItem('hasCompletedQuiz', 'true');
-      console.log('[Reveal] hasCompletedQuiz set to true, navigating to tabs');
-    } catch (e) {}
+    try { await saveToBackend(); } catch (e) {}
+    try { await AsyncStorage.setItem('hasCompletedQuiz', 'true'); } catch (e) {}
     setSaving(false);
-    router.replace('/(tabs)');
+
+    if (user) {
+      console.log('[Reveal] User is signed in — navigating to tabs');
+      router.replace('/(tabs)');
+    } else {
+      console.log('[Reveal] User is not signed in — showing sign-in prompt');
+      setShowSignInPrompt(true);
+      Animated.parallel([
+        Animated.timing(promptTranslateY, { toValue: 0, duration: 400, useNativeDriver: true }),
+        Animated.timing(promptOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+      ]).start();
+    }
   };
 
   if (!sacredDesignResult || !content) {
@@ -171,6 +181,8 @@ export default function RevealScreen() {
       </View>
     );
   }
+
+  const ctaLabel = saving ? 'Saving…' : 'Continue to My Daily Alignment';
 
   return (
     <View style={styles.container}>
@@ -237,11 +249,47 @@ export default function RevealScreen() {
           style={[styles.ctaButton, saving && { opacity: 0.6 }]}
           disabled={saving}
         >
-          <Text style={styles.ctaLabel}>{saving ? 'Saving…' : 'Continue to My Daily Alignment'}</Text>
+          <Text style={styles.ctaLabel}>{ctaLabel}</Text>
         </AnimatedPressable>
 
       </Animated.View>
       </ScrollView>
+
+      {/* Sign-in prompt overlay */}
+      {showSignInPrompt && (
+        <Animated.View
+          style={[
+            styles.promptCard,
+            { transform: [{ translateY: promptTranslateY }], opacity: promptOpacity },
+          ]}
+        >
+          <View style={styles.promptHandle} />
+          <Text style={styles.promptTitle}>Save Your Sacred Design</Text>
+          <Text style={styles.promptBody}>
+            Create a free account to keep your results and daily alignments across devices.
+          </Text>
+          <TouchableOpacity
+            style={styles.promptPrimaryButton}
+            onPress={() => {
+              console.log('[Reveal] "Create Account" pressed — navigating to auth-screen');
+              router.push('/auth-screen');
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.promptPrimaryLabel}>Create Account</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.promptSecondaryButton}
+            onPress={() => {
+              console.log('[Reveal] "Continue without saving" pressed — navigating to tabs');
+              router.replace('/(tabs)');
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.promptSecondaryLabel}>Continue without saving</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -435,5 +483,68 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
     color: '#FFFFFF',
+  },
+  promptCard: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#F6F1E8',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 28,
+    paddingTop: 16,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  promptHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(47,62,47,0.18)',
+    alignSelf: 'center',
+    marginBottom: 24,
+  },
+  promptTitle: {
+    fontFamily: 'Lora_700Bold',
+    fontSize: 22,
+    color: REVEAL_COLORS.text,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  promptBody: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: REVEAL_COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  promptPrimaryButton: {
+    backgroundColor: REVEAL_COLORS.accent,
+    borderRadius: 14,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  promptPrimaryLabel: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  promptSecondaryButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  promptSecondaryLabel: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: REVEAL_COLORS.textMuted,
   },
 });

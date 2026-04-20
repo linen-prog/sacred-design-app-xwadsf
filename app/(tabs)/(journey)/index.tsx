@@ -11,6 +11,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { apiFetch } from "@/lib/auth";
 
+interface ReflectionItem {
+  id: string;
+  alignment_id: string;
+  reflection_text: string;
+  completed_at: string;
+  day_number: number;
+  action: string;
+}
+
 const BG = "#F6F1E8";
 const TEXT = "#3D3530";
 const TEXT_MUTED = "#8A8070";
@@ -107,10 +116,34 @@ export default function JourneyScreen() {
   const [history, setHistory] = useState<AlignmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reflections, setReflections] = useState<ReflectionItem[]>([]);
+  const [reflectionsLoading, setReflectionsLoading] = useState(true);
+  const [showAllReflections, setShowAllReflections] = useState(false);
 
   useEffect(() => {
     loadHistory();
+    loadReflections();
   }, []);
+
+  async function loadReflections() {
+    setReflectionsLoading(true);
+    console.log("[Journey] GET /api/reflections");
+    try {
+      const res = await apiFetch("/api/reflections");
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn("[Journey] /api/reflections failed:", res.status, errText);
+        return;
+      }
+      const data: ReflectionItem[] = await res.json();
+      console.log("[Journey] Reflections loaded:", data.length, "entries");
+      setReflections(data);
+    } catch (e) {
+      console.warn("[Journey] loadReflections error:", e);
+    } finally {
+      setReflectionsLoading(false);
+    }
+  }
 
   async function loadHistory() {
     setLoading(true);
@@ -159,6 +192,10 @@ export default function JourneyScreen() {
     ? `Day ${history[history.length - 1]?.day_number ?? totalDays} of your Sacred Design`
     : "Your Sacred Design journey";
 
+  const visibleReflections = showAllReflections ? reflections : reflections.slice(0, 3);
+  const hasMoreReflections = reflections.length > 3;
+  const viewAllLabel = `View all ${reflections.length} reflections`;
+
   return (
     <ScrollView
       style={styles.scroll}
@@ -171,6 +208,41 @@ export default function JourneyScreen() {
     >
       <Text style={styles.title}>Journey</Text>
       <Text style={styles.subtitle}>{subtitleText}</Text>
+
+      {/* Reflections section */}
+      {!reflectionsLoading && reflections.length > 0 && (
+        <View style={styles.reflectionsSection}>
+          <Text style={styles.reflectionsSectionTitle}>My Reflections</Text>
+          <View style={{ gap: 12 }}>
+            {visibleReflections.map((item) => {
+              const dateStr = formatDate(item.completed_at);
+              const dayLabel = `Day ${item.day_number}`;
+              const actionTruncated = item.action.length > 60 ? item.action.slice(0, 60).trimEnd() + "…" : item.action;
+              return (
+                <View key={item.id} style={styles.reflectionCard}>
+                  <View style={styles.reflectionCardTop}>
+                    <Text style={styles.reflectionDayLabel}>{dayLabel}</Text>
+                    <Text style={styles.reflectionDate}>{dateStr}</Text>
+                  </View>
+                  <Text style={styles.reflectionAction}>{actionTruncated}</Text>
+                  <Text style={styles.reflectionText} numberOfLines={3}>{item.reflection_text}</Text>
+                </View>
+              );
+            })}
+          </View>
+          {hasMoreReflections && !showAllReflections && (
+            <Pressable
+              onPress={() => {
+                console.log("[Journey] 'View all reflections' pressed");
+                setShowAllReflections(true);
+              }}
+              style={styles.viewAllButton}
+            >
+              <Text style={styles.viewAllText}>{viewAllLabel}</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
 
       {loading ? (
         <View style={{ gap: 12 }}>
@@ -348,5 +420,69 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: TEXT_MUTED,
     lineHeight: 22,
+  },
+  reflectionsSection: {
+    marginBottom: 32,
+  },
+  reflectionsSectionTitle: {
+    fontFamily: "Lora_400Regular",
+    fontSize: 22,
+    color: TEXT,
+    marginBottom: 16,
+    letterSpacing: -0.3,
+  },
+  reflectionCard: {
+    backgroundColor: CARD_BG,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: DIVIDER,
+  },
+  reflectionCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  reflectionDayLabel: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    color: ACCENT,
+    letterSpacing: 0.3,
+  },
+  reflectionDate: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: TEXT_MUTED,
+  },
+  reflectionAction: {
+    fontFamily: "Lora_400Regular",
+    fontSize: 14,
+    color: TEXT,
+    lineHeight: 21,
+    marginBottom: 8,
+  },
+  reflectionText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: TEXT_MUTED,
+    lineHeight: 21,
+  },
+  viewAllButton: {
+    marginTop: 12,
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  viewAllText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: ACCENT,
+    textAlign: "center",
   },
 });

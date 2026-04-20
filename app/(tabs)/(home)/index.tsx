@@ -109,6 +109,7 @@ export default function HomeScreen() {
   const [alignment, setAlignment] = useState<DailyAlignment | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [progress, setProgress] = useState<{ day_count: number; streak: number } | null>(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -145,8 +146,23 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!sacredDesignResult) return;
     loadTodayAlignment();
+    loadProgress();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sacredDesignResult]);
+
+  async function loadProgress() {
+    console.log("[Home] GET /api/progress");
+    try {
+      const res = await apiFetch("/api/progress");
+      if (res.ok) {
+        const data = await res.json();
+        console.log("[Home] /api/progress response:", data);
+        setProgress(data);
+      }
+    } catch (e) {
+      // non-critical, ignore
+    }
+  }
 
   async function loadTodayAlignment() {
     setLoading(true);
@@ -238,6 +254,15 @@ export default function HomeScreen() {
   if (!sacredDesignResult) {
     return (
       <View style={[styles.container, { paddingTop: topPadding }]}>
+        <Pressable
+          onPress={() => {
+            console.log("[Home] Settings button pressed");
+            router.push("/settings");
+          }}
+          style={[styles.settingsButton, { top: topPadding - 8 }]}
+        >
+          <Text style={styles.settingsIcon}>⚙</Text>
+        </Pressable>
         <Text style={styles.eyebrow}>SACRED DESIGN</Text>
         <Text style={styles.heroTitle}>Bring Your{"\n"}Design to Life</Text>
         <Text style={styles.subtitle}>One small step today makes it real.</Text>
@@ -270,12 +295,41 @@ export default function HomeScreen() {
   // ── State B: quiz complete ──────────────────────────────────────────────────
   const guidancePreview = alignment ? getFirstSentence(alignment.guidance) : "";
   const dayLabel = alignment ? `Day ${alignment.day_number}` : "";
+  const showStreakPill = progress !== null && progress.streak > 0;
+  const showDaysPill = progress !== null && progress.day_count > 0;
+  const showProgressRow = showStreakPill || showDaysPill;
+  const streakLabel = progress ? `🔥 ${progress.streak}-day streak` : "";
+  const daysLabel = progress ? `${progress.day_count} days total` : "";
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
+      <Pressable
+        onPress={() => {
+          console.log("[Home] Settings button pressed");
+          router.push("/settings");
+        }}
+        style={[styles.settingsButton, { top: topPadding - 8 }]}
+      >
+        <Text style={styles.settingsIcon}>⚙</Text>
+      </Pressable>
       <Text style={styles.eyebrow}>SACRED DESIGN</Text>
       <Text style={styles.heroTitle}>Today's{"\n"}Alignment</Text>
       <Text style={styles.subtitle}>Your daily practice awaits.</Text>
+
+      {showProgressRow && (
+        <View style={styles.progressRow}>
+          {showStreakPill && (
+            <View style={styles.statPill}>
+              <Text style={styles.statPillText}>{streakLabel}</Text>
+            </View>
+          )}
+          {showDaysPill && (
+            <View style={styles.statPill}>
+              <Text style={styles.statPillText}>{daysLabel}</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {loading ? (
         <>
@@ -461,5 +515,32 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     paddingVertical: 16,
     marginBottom: 16,
+  },
+  progressRow: {
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  statPill: {
+    backgroundColor: "rgba(111, 138, 106, 0.10)",
+    borderRadius: 50,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  statPillText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: BUTTON_BG,
+  },
+  settingsButton: {
+    position: "absolute",
+    right: 0,
+    padding: 8,
+    zIndex: 10,
+  },
+  settingsIcon: {
+    fontSize: 18,
+    color: TEXT_MUTED,
   },
 });
