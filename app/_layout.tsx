@@ -67,8 +67,24 @@ function RootNavigator() {
         console.log("[RootLayout] hasCompletedQuiz:", hasCompletedQuiz, "hasSeenOnboarding:", hasSeenOnboarding);
 
         if (hasCompletedQuiz === "true") {
-          console.log("[RootLayout] Quiz complete — navigating to home");
-          router.replace("/(tabs)");
+          // Check if user has a real (non-anonymous) account
+          let isRealUser = false;
+          try {
+            const session = await authClient.getSession();
+            const sessionUser = session?.data?.user as any;
+            isRealUser = !!(sessionUser && sessionUser.isAnonymous === false);
+            console.log("[RootLayout] Session user:", JSON.stringify(sessionUser), "isRealUser:", isRealUser);
+          } catch (e) {
+            console.log("[RootLayout] getSession failed:", e);
+          }
+
+          if (isRealUser) {
+            console.log("[RootLayout] Quiz complete + signed in — navigating to home");
+            router.replace("/(tabs)");
+          } else {
+            console.log("[RootLayout] Quiz complete but not signed in — navigating to auth-screen");
+            router.replace("/auth-screen");
+          }
         } else if (hasSeenOnboarding === "true") {
           console.log("[RootLayout] Seen onboarding — resuming quiz at phase-1");
           router.replace("/onboarding/intro");
