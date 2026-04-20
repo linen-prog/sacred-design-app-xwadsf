@@ -27,6 +27,13 @@ export interface SacredDesignResult {
   blend_name: string;
 }
 
+export interface Phase4Computed {
+  anxious_score: number;
+  avoidant_score: number;
+  overactive_score: number;
+  grounded_score: number;
+}
+
 // Explicit blend name map — order matters (primary first)
 const BLEND_NAME_MAP: Partial<Record<string, string>> = {
   'Truth Seeker|Light Bearer':          'The Wayfinder',
@@ -118,9 +125,12 @@ interface DiscoveryContextType {
   computePhase3Scores: (answers: Phase3Answers) => void;
   phase4Scores: Phase4Answers | null;
   computePhase4Scores: (answers: Phase4Answers) => void;
+  phase4Computed: Phase4Computed | null;
   sacredDesignResult: SacredDesignResult | null;
   computeSacredDesign: () => void;
   clearSacredDesign: () => void;
+  quizCompleted: boolean;
+  restoreFromBackend: (data: { primary_archetype: string; secondary_archetype: string; blend_name: string; scores: ArchetypeWeightScores }) => void;
 }
 
 export const DiscoveryContext = createContext<DiscoveryContextType>({
@@ -135,9 +145,12 @@ export const DiscoveryContext = createContext<DiscoveryContextType>({
   computePhase3Scores: () => {},
   phase4Scores: null,
   computePhase4Scores: () => {},
+  phase4Computed: null,
   sacredDesignResult: null,
   computeSacredDesign: () => {},
   clearSacredDesign: () => {},
+  quizCompleted: false,
+  restoreFromBackend: () => {},
 });
 
 export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
@@ -146,14 +159,18 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
   const [phase2Scores, setPhase2Scores] = useState<Phase2Answers | null>(null);
   const [phase3Scores, setPhase3Scores] = useState<Phase3Answers | null>(null);
   const [phase4Scores, setPhase4Scores] = useState<Phase4Answers | null>(null);
+  const [phase4Computed, setPhase4Computed] = useState<Phase4Computed | null>(null);
   const [sacredDesignResult, setSacredDesignResult] = useState<SacredDesignResult | null>(null);
+  const [quizCompleted, setQuizCompleted] = useState(false);
 
   // Restore persisted result on mount
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem('sacredDesignResult'),
       AsyncStorage.getItem('phase4Scores'),
-    ]).then(([storedResult, storedPhase4]) => {
+      AsyncStorage.getItem('phase4Computed'),
+      AsyncStorage.getItem('quizCompleted'),
+    ]).then(([storedResult, storedPhase4, storedPhase4Computed, storedQuizCompleted]) => {
       if (storedResult) {
         try {
           const parsed = JSON.parse(storedResult);
@@ -170,6 +187,18 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
           console.log('[DiscoveryContext] Failed to parse stored phase4Scores:', e);
         }
+      }
+      if (storedPhase4Computed) {
+        try {
+          setPhase4Computed(JSON.parse(storedPhase4Computed));
+          console.log('[DiscoveryContext] Restored phase4Computed from storage');
+        } catch (e) {
+          console.log('[DiscoveryContext] Failed to parse stored phase4Computed:', e);
+        }
+      }
+      if (storedQuizCompleted === 'true') {
+        setQuizCompleted(true);
+        console.log('[DiscoveryContext] Restored quizCompleted=true from storage');
       }
     });
   }, []);
@@ -193,14 +222,18 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     setPhase2Scores(null);
     setPhase3Scores(null);
     setPhase4Scores(null);
+    setPhase4Computed(null);
     setSacredDesignResult(null);
-    AsyncStorage.multiRemove(['sacredDesignResult', 'phase4Scores']).catch(() => {});
+    setQuizCompleted(false);
+    AsyncStorage.multiRemove(['sacredDesignResult', 'phase4Scores', 'phase4Computed', 'quizCompleted']).catch(() => {});
   }, []);
 
   const clearSacredDesign = useCallback(() => {
     console.log('[DiscoveryContext] clearSacredDesign — clearing result and quiz flags');
     setSacredDesignResult(null);
-    AsyncStorage.multiRemove(['sacredDesignResult', 'phase4Scores', 'hasCompletedQuiz', 'hasSeenOnboarding']).catch(() => {});
+    setPhase4Computed(null);
+    setQuizCompleted(false);
+    AsyncStorage.multiRemove(['sacredDesignResult', 'phase4Scores', 'phase4Computed', 'quizCompleted', 'hasCompletedQuiz', 'hasSeenOnboarding']).catch(() => {});
   }, []);
 
   // Each computePhaseNScores just stores the raw answers — no computation yet
@@ -304,10 +337,44 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
       blend_name,
     };
 
+    // Compute phase4Computed from raw P4 answers
+    const computed: Phase4Computed = {
+      anxious_score: (p4.P4_Q1 + p4.P4_Q2) / 2,
+      avoidant_score: (p4.P4_Q3 + p4.P4_Q4) / 2,
+      overactive_score: (p4.P4_Q5 + p4.P4_Q6) / 2,
+      grounded_score: p4.P4_Q7,
+    };
+
     console.log('[DiscoveryContext] sacredDesignResult computed:', result);
+    console.log('[DiscoveryContext] phase4Computed:', computed);
+
     setSacredDesignResult(result);
+    setPhase4Computed(computed);
+    setQuizCompleted(true);
+
     AsyncStorage.setItem('sacredDesignResult', JSON.stringify(result)).catch(() => {});
+    AsyncStorage.setItem('phase4Computed', JSON.stringify(computed)).catch(() => {});
+    AsyncStorage.setItem('quizCompleted', 'true').catch(() => {});
   }, [phase1Scores, phase2Scores, phase3Scores, phase4Scores]);
+
+  const restoreFromBackend = useCallback((data: {
+    primary_archetype: string;
+    secondary_archetype: string;
+    blend_name: string;
+    scores: ArchetypeWeightScores;
+  }) => {
+    console.log('[DiscoveryContext] restoreFromBackend:', data);
+    const result: SacredDesignResult = {
+      primary_archetype: data.primary_archetype as ArchetypeName,
+      secondary_archetype: data.secondary_archetype as ArchetypeName,
+      archetypeScores: data.scores,
+      blend_name: data.blend_name,
+    };
+    setSacredDesignResult(result);
+    setQuizCompleted(true);
+    AsyncStorage.setItem('sacredDesignResult', JSON.stringify(result)).catch(() => {});
+    AsyncStorage.setItem('quizCompleted', 'true').catch(() => {});
+  }, []);
 
   const value = useMemo(() => ({
     answers,
@@ -321,10 +388,13 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     computePhase3Scores,
     phase4Scores,
     computePhase4Scores,
+    phase4Computed,
     sacredDesignResult,
     computeSacredDesign,
     clearSacredDesign,
-  }), [answers, setAnswer, resetAnswers, phase1Scores, computePhase1Scores, phase2Scores, computePhase2Scores, phase3Scores, computePhase3Scores, phase4Scores, computePhase4Scores, sacredDesignResult, computeSacredDesign, clearSacredDesign]);
+    quizCompleted,
+    restoreFromBackend,
+  }), [answers, setAnswer, resetAnswers, phase1Scores, computePhase1Scores, phase2Scores, computePhase2Scores, phase3Scores, computePhase3Scores, phase4Scores, computePhase4Scores, phase4Computed, sacredDesignResult, computeSacredDesign, clearSacredDesign, quizCompleted, restoreFromBackend]);
 
   return (
     <DiscoveryContext.Provider value={value}>

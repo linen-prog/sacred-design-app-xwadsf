@@ -98,7 +98,7 @@ const apiCall = apiFetch;
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { sacredDesignResult, phase4Scores, clearSacredDesign } = useContext(DiscoveryContext);
+  const { sacredDesignResult, phase4Computed, quizCompleted, clearSacredDesign, restoreFromBackend } = useContext(DiscoveryContext);
   const { user } = useAuth();
   const isSignedIn = !!(user && (user as any).isAnonymous !== true);
 
@@ -108,11 +108,40 @@ export default function HomeScreen() {
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // On mount: if quiz is marked complete but result is missing, try to restore from backend
   useEffect(() => {
-    if (!sacredDesignResult || !phase4Scores) return;
+    if (!sacredDesignResult && quizCompleted) {
+      console.log('[Home] sacredDesignResult missing but quizCompleted=true — attempting restore from backend');
+      apiCall('/api/archetypes/me')
+        .then(async (res) => {
+          if (!res.ok) {
+            const errText = await res.text();
+            console.warn('[Home] GET /api/archetypes/me failed:', res.status, errText);
+            return;
+          }
+          const data = await res.json();
+          console.log('[Home] GET /api/archetypes/me response:', data);
+          if (data && data.quiz_completed === true) {
+            restoreFromBackend({
+              primary_archetype: data.primary_archetype,
+              secondary_archetype: data.secondary_archetype,
+              blend_name: data.blend_name,
+              scores: data.scores,
+            });
+          }
+        })
+        .catch((e) => {
+          console.warn('[Home] GET /api/archetypes/me error:', e);
+        });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!sacredDesignResult) return;
     generateAlignment();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sacredDesignResult, phase4Scores]);
+  }, [sacredDesignResult]);
 
   async function generateAlignment() {
     if (!sacredDesignResult) return;
@@ -124,10 +153,10 @@ export default function HomeScreen() {
         primary_archetype: sacredDesignResult.primary_archetype,
         secondary_archetype: sacredDesignResult.secondary_archetype,
         blend_name: sacredDesignResult.blend_name,
-        anxious_score: phase4Scores?.anxious_score ?? 0,
-        avoidant_score: phase4Scores?.avoidant_score ?? 0,
-        overactive_score: phase4Scores?.overactive_score ?? 0,
-        grounded_score: phase4Scores?.grounded_score ?? 0,
+        anxious_score: phase4Computed?.anxious_score ?? 0,
+        avoidant_score: phase4Computed?.avoidant_score ?? 0,
+        overactive_score: phase4Computed?.overactive_score ?? 0,
+        grounded_score: phase4Computed?.grounded_score ?? 0,
       };
       console.log("[Home] POST /api/alignments/generate", body);
       const res = await apiCall("/api/alignments/generate", {

@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { apiFetch } from '@/lib/auth';
 
 const REVEAL_COLORS = {
   background: '#F6F1E8',
@@ -118,11 +119,51 @@ export default function RevealScreen() {
     }).start();
   }, [screenOpacity, sacredDesignResult]);
 
+  async function saveToBackend() {
+    if (!sacredDesignResult) return;
+    console.log('[Reveal] Saving archetype to backend via POST /api/archetypes/save');
+    try {
+      const body = {
+        primary_archetype: sacredDesignResult.primary_archetype,
+        secondary_archetype: sacredDesignResult.secondary_archetype,
+        blend_name: sacredDesignResult.blend_name,
+        scores: sacredDesignResult.archetypeScores,
+      };
+      const res = await apiFetch('/api/archetypes/save', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn('[Reveal] /api/archetypes/save failed:', res.status, errText);
+      } else {
+        console.log('[Reveal] Archetype saved to backend successfully');
+      }
+    } catch (e) {
+      console.warn('[Reveal] /api/archetypes/save error (ignored):', e);
+    }
+  }
+
   const handleCTA = async () => {
     console.log('[Reveal] "Bring Your Design to Life" pressed');
+    // Fire-and-forget backend save
+    saveToBackend();
     try {
       await AsyncStorage.setItem('hasCompletedQuiz', 'true');
       console.log('[Reveal] hasCompletedQuiz set to true, navigating to tabs');
+    } catch (e) {
+      console.log('[Reveal] AsyncStorage error:', e);
+    }
+    router.replace('/(tabs)');
+  };
+
+  const handleDailyAlignment = async () => {
+    console.log('[Reveal] "Go to My Daily Alignment" pressed');
+    // Fire-and-forget backend save
+    saveToBackend();
+    try {
+      await AsyncStorage.setItem('hasCompletedQuiz', 'true');
+      console.log('[Reveal] hasCompletedQuiz set to true, navigating to tabs (daily alignment)');
     } catch (e) {
       console.log('[Reveal] AsyncStorage error:', e);
     }
@@ -198,9 +239,14 @@ export default function RevealScreen() {
           </View>
         </View>
 
-        {/* Section 9 — CTA Button */}
+        {/* Section 9 — Primary CTA Button */}
         <AnimatedPressable onPress={handleCTA} style={styles.ctaButton}>
           <Text style={styles.ctaLabel}>Bring Your Design to Life</Text>
+        </AnimatedPressable>
+
+        {/* Section 10 — Secondary CTA Button */}
+        <AnimatedPressable onPress={handleDailyAlignment} style={styles.ctaSecondaryButton}>
+          <Text style={styles.ctaSecondaryLabel}>Go to My Daily Alignment</Text>
         </AnimatedPressable>
 
       </Animated.View>
@@ -339,7 +385,7 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   ctaButton: {
-    marginBottom: 0,
+    marginBottom: 12,
     backgroundColor: REVEAL_COLORS.accent,
     borderRadius: 14,
     height: 56,
@@ -351,6 +397,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  ctaSecondaryButton: {
+    marginBottom: 0,
+    borderRadius: 14,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: REVEAL_COLORS.accent,
+    backgroundColor: 'transparent',
+  },
+  ctaSecondaryLabel: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 16,
+    fontWeight: '600',
+    color: REVEAL_COLORS.accent,
   },
   fallbackContainer: {
     flex: 1,
