@@ -3,20 +3,19 @@ import { View, Text, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { DiscoveryContext } from '@/contexts/DiscoveryContext';
+import { DiscoveryContext, Phase4Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 const QUESTIONS = [
-  { id: 'P4_Q1', text: 'When I feel overwhelmed, I tend to shut down or withdraw.' },
-  { id: 'P4_Q2', text: 'When something feels stressful, I feel it strongly in my body.' },
-  { id: 'P4_Q3', text: 'I can usually return to a calm state after stress without much difficulty.' },
-  { id: 'P4_Q4', text: 'I often stay busy or distracted to avoid uncomfortable feelings.' },
-  { id: 'P4_Q5', text: 'I feel most at ease when things are predictable and steady.' },
-  { id: 'P4_Q6', text: 'I can stay present and connected without feeling overwhelmed or shut down.' },
-  { id: 'P4_Q7', text: 'I notice tension in my body when I\'m stressed (tight chest, shoulders, etc.).' },
-  { id: 'P4_Q8', text: 'It\'s hard for me to slow down, even when I need rest.' },
+  { id: 'P4_Q1', text: 'I need peace and low conflict in my environment to feel safe.' },
+  { id: 'P4_Q2', text: 'I recharge by taking on challenges and moving forward, not by resting.' },
+  { id: 'P4_Q3', text: 'I need time to process my emotions before I can move on.' },
+  { id: 'P4_Q4', text: 'Having a clear plan or routine helps me feel grounded.' },
+  { id: 'P4_Q5', text: 'Being around people who are positive and hopeful restores me.' },
+  { id: 'P4_Q6', text: 'I need solitude and reflection to feel centered.' },
+  { id: 'P4_Q7', text: 'I feel most grounded when I\'m working toward something that matters.' },
 ];
 
 const INTRO_TEXT = "Growth becomes lasting when it feels supported in your body.";
@@ -63,8 +62,18 @@ export default function Phase4Screen() {
       if (currentIndex < QUESTIONS.length - 1) {
         transitionToQuestion(currentIndex + 1);
       } else {
-        console.log('[Phase4] All questions answered, computing phase4 scores');
-        computePhase4Scores();
+        const updatedAnswers = { ...answers, [currentQuestion.id]: value };
+        const phaseAnswers: Phase4Answers = {
+          P4_Q1: updatedAnswers['P4_Q1'] ?? 3,
+          P4_Q2: updatedAnswers['P4_Q2'] ?? 3,
+          P4_Q3: updatedAnswers['P4_Q3'] ?? 3,
+          P4_Q4: updatedAnswers['P4_Q4'] ?? 3,
+          P4_Q5: updatedAnswers['P4_Q5'] ?? 3,
+          P4_Q6: updatedAnswers['P4_Q6'] ?? 3,
+          P4_Q7: updatedAnswers['P4_Q7'] ?? 3,
+        };
+        console.log('[Phase4] All questions answered, storing phase 4 answers:', phaseAnswers);
+        computePhase4Scores(phaseAnswers);
         console.log('[Phase4] Navigating to phase-4-reflection');
         router.push('/onboarding/phase-4-reflection');
       }
@@ -79,8 +88,8 @@ export default function Phase4Screen() {
   }
 
   const guidanceText = 'Go with your first instinct.';
-  const leftLabel = 'Not like me';
-  const rightLabel = 'Feels very true';
+  const leftLabel = 'Never like me';
+  const rightLabel = 'Always like me';
 
   if (showIntro) {
     return (

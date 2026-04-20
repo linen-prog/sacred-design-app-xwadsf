@@ -3,22 +3,19 @@ import { View, Text, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { DiscoveryContext } from '@/contexts/DiscoveryContext';
+import { DiscoveryContext, Phase1Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 const PHASE_1_QUESTIONS = [
-  { id: 'Q1', text: 'I feel energized being around people and engaging in conversation.' },
-  { id: 'Q2', text: 'I often need quiet or alone time to reset.' },
-  { id: 'Q3', text: 'I tend to notice and feel what others are experiencing emotionally.' },
-  { id: 'Q4', text: 'I feel a strong pull to take responsibility and follow through.' },
-  { id: 'Q5', text: 'I enjoy exploring new ideas and deeper meaning.' },
-  { id: 'Q6', text: 'I can become overwhelmed when things feel uncertain.' },
-  { id: 'Q7', text: 'I naturally step into leadership when needed.' },
-  { id: 'Q8', text: 'I prefer structure and clear expectations.' },
-  { id: 'Q9', text: 'I value harmony and avoid conflict when possible.' },
-  { id: 'Q10', text: 'I am drawn to purpose and deeper meaning in life.' },
+  { id: 'Q1', text: 'When conflict arises, I tend to step back and let others work it out.' },
+  { id: 'Q2', text: 'I naturally take charge when a group needs direction.' },
+  { id: 'Q3', text: 'I process experiences through how they made me feel, not just what happened.' },
+  { id: 'Q4', text: 'I follow through on commitments even when it\'s inconvenient.' },
+  { id: 'Q5', text: 'I find it easy to connect with new people and make them feel welcome.' },
+  { id: 'Q6', text: 'I ask "why" more than most people around me.' },
+  { id: 'Q7', text: 'When I see something unfair, I feel compelled to do something about it.' },
 ];
 
 const scaleValues = [1, 2, 3, 4, 5];
@@ -57,8 +54,18 @@ export default function Phase1Screen() {
       if (currentIndex < PHASE_1_QUESTIONS.length - 1) {
         transitionToQuestion(currentIndex + 1);
       } else {
-        console.log('[Phase1] All questions answered, computing scores and navigating to reflection');
-        computePhase1Scores();
+        const updatedAnswers = { ...answers, [currentQuestion.id]: value };
+        const phaseAnswers: Phase1Answers = {
+          Q1: updatedAnswers['Q1'] ?? 3,
+          Q2: updatedAnswers['Q2'] ?? 3,
+          Q3: updatedAnswers['Q3'] ?? 3,
+          Q4: updatedAnswers['Q4'] ?? 3,
+          Q5: updatedAnswers['Q5'] ?? 3,
+          Q6: updatedAnswers['Q6'] ?? 3,
+          Q7: updatedAnswers['Q7'] ?? 3,
+        };
+        console.log('[Phase1] All questions answered, storing phase 1 answers:', phaseAnswers);
+        computePhase1Scores(phaseAnswers);
         router.push('/onboarding/phase-1-reflection');
       }
     }, 300);
@@ -72,8 +79,8 @@ export default function Phase1Screen() {
   }
 
   const guidanceText = 'Go with your first instinct.';
-  const leftLabel = 'Not like me';
-  const rightLabel = 'Feels very true';
+  const leftLabel = 'Never like me';
+  const rightLabel = 'Always like me';
 
   return (
     <Animated.View

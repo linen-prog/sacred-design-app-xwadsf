@@ -3,24 +3,19 @@ import { View, Text, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { DiscoveryContext } from '@/contexts/DiscoveryContext';
+import { DiscoveryContext, Phase2Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 const PHASE_2_QUESTIONS = [
-  { id: 'P2_Q1',  text: 'I tend to keep the peace, even if it means not fully expressing myself.' },
-  { id: 'P2_Q2',  text: 'I feel a strong responsibility to step up and take charge.' },
-  { id: 'P2_Q3',  text: 'I experience emotions deeply and they often shape my day.' },
-  { id: 'P2_Q4',  text: 'I feel most secure when things are organized and under control.' },
-  { id: 'P2_Q5',  text: 'I sense when I\'m meant to step forward and influence.' },
-  { id: 'P2_Q6',  text: 'I am driven to understand the deeper meaning behind things.' },
-  { id: 'P2_Q7',  text: 'I feel a strong pull to stand up for what is right.' },
-  { id: 'P2_Q8',  text: 'I avoid conflict because it feels uncomfortable.' },
-  { id: 'P2_Q9',  text: 'I feel pressure to do things well and follow through.' },
-  { id: 'P2_Q10', text: 'I sometimes hold back from being fully seen.' },
-  { id: 'P2_Q11', text: 'I can get stuck thinking instead of taking action.' },
-  { id: 'P2_Q12', text: 'When something feels unjust, I feel it strongly.' },
+  { id: 'P2_Q1', text: 'I would rather compromise than let a disagreement damage a relationship.' },
+  { id: 'P2_Q2', text: 'I feel most alive when I\'m leading others toward a goal.' },
+  { id: 'P2_Q3', text: 'I feel other people\'s pain or joy as if it were my own.' },
+  { id: 'P2_Q4', text: 'I feel unsettled when responsibilities are left unfinished or unclear.' },
+  { id: 'P2_Q5', text: 'I naturally encourage others and help them see their potential.' },
+  { id: 'P2_Q6', text: 'I need to understand the deeper reason behind what I\'m asked to do.' },
+  { id: 'P2_Q7', text: 'I feel a strong pull to speak up when someone is being treated unfairly.' },
 ];
 
 const INTRO_TEXT = "Now we'll explore what moves you beneath the surface—your motivations and patterns.";
@@ -67,8 +62,18 @@ export default function Phase2Screen() {
       if (currentIndex < PHASE_2_QUESTIONS.length - 1) {
         transitionToQuestion(currentIndex + 1);
       } else {
-        console.log('[Phase2] All questions answered, computing phase2 scores');
-        computePhase2Scores();
+        const updatedAnswers = { ...answers, [currentQuestion.id]: value };
+        const phaseAnswers: Phase2Answers = {
+          P2_Q1: updatedAnswers['P2_Q1'] ?? 3,
+          P2_Q2: updatedAnswers['P2_Q2'] ?? 3,
+          P2_Q3: updatedAnswers['P2_Q3'] ?? 3,
+          P2_Q4: updatedAnswers['P2_Q4'] ?? 3,
+          P2_Q5: updatedAnswers['P2_Q5'] ?? 3,
+          P2_Q6: updatedAnswers['P2_Q6'] ?? 3,
+          P2_Q7: updatedAnswers['P2_Q7'] ?? 3,
+        };
+        console.log('[Phase2] All questions answered, storing phase 2 answers:', phaseAnswers);
+        computePhase2Scores(phaseAnswers);
         router.push('/onboarding/phase-2-reflection');
       }
     }, 300);
@@ -82,8 +87,8 @@ export default function Phase2Screen() {
   }
 
   const guidanceText = 'Go with your first instinct.';
-  const leftLabel = 'Not like me';
-  const rightLabel = 'Feels very true';
+  const leftLabel = 'Never like me';
+  const rightLabel = 'Always like me';
 
   if (showIntro) {
     return (

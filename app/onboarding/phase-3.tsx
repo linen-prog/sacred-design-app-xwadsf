@@ -3,22 +3,19 @@ import { View, Text, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { DiscoveryContext } from '@/contexts/DiscoveryContext';
+import { DiscoveryContext, Phase3Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 const QUESTIONS = [
-  { id: 'P3_Q1',  text: 'I naturally see what could be different or better and want to bring change.' },
-  { id: 'P3_Q2',  text: 'I sense truth beneath the surface and feel drawn to name it.' },
-  { id: 'P3_Q3',  text: 'I feel energized helping others feel seen or included.' },
-  { id: 'P3_Q4',  text: 'I naturally care for and support others\' growth.' },
-  { id: 'P3_Q5',  text: 'I enjoy explaining things and helping others understand.' },
-  { id: 'P3_Q6',  text: 'I tend to initiate rather than wait for direction.' },
-  { id: 'P3_Q7',  text: 'I feel responsible for helping others feel supported and grounded.' },
-  { id: 'P3_Q8',  text: 'I feel drawn to speak up when something feels off.' },
-  { id: 'P3_Q9',  text: 'I enjoy bringing encouragement or energy into a space.' },
-  { id: 'P3_Q10', text: 'I feel fulfilled when I bring clarity to others.' },
+  { id: 'P3_Q1', text: 'I work hard to keep the atmosphere around me calm and positive.' },
+  { id: 'P3_Q2', text: 'I tend to initiate rather than wait for someone else to lead.' },
+  { id: 'P3_Q3', text: 'I notice subtle shifts in the emotional tone of a room.' },
+  { id: 'P3_Q4', text: 'I take pride in being someone others can count on.' },
+  { id: 'P3_Q5', text: 'I bring energy and enthusiasm that others often notice.' },
+  { id: 'P3_Q6', text: 'I am drawn to ideas, patterns, and hidden meaning.' },
+  { id: 'P3_Q7', text: 'I find it hard to stay silent when I witness injustice.' },
 ];
 
 const INTRO_TEXT = "You were created with a unique way of showing up in the world.";
@@ -65,8 +62,18 @@ export default function Phase3Screen() {
       if (currentIndex < QUESTIONS.length - 1) {
         transitionToQuestion(currentIndex + 1);
       } else {
-        console.log('[Phase3] All questions answered, computing phase3 scores');
-        computePhase3Scores();
+        const updatedAnswers = { ...answers, [currentQuestion.id]: value };
+        const phaseAnswers: Phase3Answers = {
+          P3_Q1: updatedAnswers['P3_Q1'] ?? 3,
+          P3_Q2: updatedAnswers['P3_Q2'] ?? 3,
+          P3_Q3: updatedAnswers['P3_Q3'] ?? 3,
+          P3_Q4: updatedAnswers['P3_Q4'] ?? 3,
+          P3_Q5: updatedAnswers['P3_Q5'] ?? 3,
+          P3_Q6: updatedAnswers['P3_Q6'] ?? 3,
+          P3_Q7: updatedAnswers['P3_Q7'] ?? 3,
+        };
+        console.log('[Phase3] All questions answered, storing phase 3 answers:', phaseAnswers);
+        computePhase3Scores(phaseAnswers);
         router.push('/onboarding/phase-3-reflection');
       }
     }, 300);
@@ -80,8 +87,8 @@ export default function Phase3Screen() {
   }
 
   const guidanceText = 'Go with your first instinct.';
-  const leftLabel = 'Not like me';
-  const rightLabel = 'Feels very true';
+  const leftLabel = 'Never like me';
+  const rightLabel = 'Always like me';
 
   if (showIntro) {
     return (

@@ -72,57 +72,52 @@ function getBlendName(primary: ArchetypeName, secondary: ArchetypeName): string 
   if (BLEND_NAME_MAP[key]) {
     return BLEND_NAME_MAP[key]!;
   }
-  // Fallback: "The [Primary Trait] [Secondary Expression]"
   const traitWord = ARCHETYPE_TRAIT_WORD[primary];
   const expressionWord = ARCHETYPE_EXPRESSION_WORD[secondary];
   return `The ${traitWord} ${expressionWord}`;
 }
 
-export interface Phase1Scores {
-  social_energy_score: number;
-  emotional_score: number;
-  drive_score: number;
-  openness_score: number;
-  stress_score: number;
+// New phase answer interfaces — raw 1–5 answers per question
+export interface Phase1Answers {
+  Q1: number; Q2: number; Q3: number; Q4: number;
+  Q5: number; Q6: number; Q7: number;
 }
 
-export interface Phase2Scores {
-  peacemaker_score: number;
-  leader_score: number;
-  deep_feeler_score: number;
-  steward_score: number;
-  light_bearer_score: number;
-  truth_seeker_score: number;
-  justice_carrier_score: number;
+export interface Phase2Answers {
+  P2_Q1: number; P2_Q2: number; P2_Q3: number; P2_Q4: number;
+  P2_Q5: number; P2_Q6: number; P2_Q7: number;
 }
 
-export interface Phase3Scores {
-  apostle_score: number;
-  prophet_score: number;
-  evangelist_score: number;
-  shepherd_score: number;
-  teacher_score: number;
+export interface Phase3Answers {
+  P3_Q1: number; P3_Q2: number; P3_Q3: number; P3_Q4: number;
+  P3_Q5: number; P3_Q6: number; P3_Q7: number;
 }
 
-export interface Phase4Scores {
-  avoidant_score: number;
-  anxious_score: number;
-  overactive_score: number;
-  grounded_score: number;
+export interface Phase4Answers {
+  P4_Q1: number; P4_Q2: number; P4_Q3: number; P4_Q4: number;
+  P4_Q5: number; P4_Q6: number; P4_Q7: number;
 }
+
+// Keep legacy type aliases so any external code referencing Phase1Scores etc. still compiles
+export type Phase1Scores = Phase1Answers;
+export type Phase2Scores = Phase2Answers;
+export type Phase3Scores = Phase3Answers;
+export type Phase4Scores = Phase4Answers;
+
+const MIN_GAP = 1.5;
 
 interface DiscoveryContextType {
   answers: Record<string, number>;
   setAnswer: (id: string, value: number) => void;
   resetAnswers: () => void;
-  phase1Scores: Phase1Scores | null;
-  computePhase1Scores: () => void;
-  phase2Scores: Phase2Scores | null;
-  computePhase2Scores: () => void;
-  phase3Scores: Phase3Scores | null;
-  computePhase3Scores: () => void;
-  phase4Scores: Phase4Scores | null;
-  computePhase4Scores: () => void;
+  phase1Scores: Phase1Answers | null;
+  computePhase1Scores: (answers: Phase1Answers) => void;
+  phase2Scores: Phase2Answers | null;
+  computePhase2Scores: (answers: Phase2Answers) => void;
+  phase3Scores: Phase3Answers | null;
+  computePhase3Scores: (answers: Phase3Answers) => void;
+  phase4Scores: Phase4Answers | null;
+  computePhase4Scores: (answers: Phase4Answers) => void;
   sacredDesignResult: SacredDesignResult | null;
   computeSacredDesign: () => void;
   clearSacredDesign: () => void;
@@ -147,10 +142,10 @@ export const DiscoveryContext = createContext<DiscoveryContextType>({
 
 export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [phase1Scores, setPhase1Scores] = useState<Phase1Scores | null>(null);
-  const [phase2Scores, setPhase2Scores] = useState<Phase2Scores | null>(null);
-  const [phase3Scores, setPhase3Scores] = useState<Phase3Scores | null>(null);
-  const [phase4Scores, setPhase4Scores] = useState<Phase4Scores | null>(null);
+  const [phase1Scores, setPhase1Scores] = useState<Phase1Answers | null>(null);
+  const [phase2Scores, setPhase2Scores] = useState<Phase2Answers | null>(null);
+  const [phase3Scores, setPhase3Scores] = useState<Phase3Answers | null>(null);
+  const [phase4Scores, setPhase4Scores] = useState<Phase4Answers | null>(null);
   const [sacredDesignResult, setSacredDesignResult] = useState<SacredDesignResult | null>(null);
 
   // Restore persisted result on mount
@@ -208,144 +203,32 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.multiRemove(['sacredDesignResult', 'phase4Scores', 'hasCompletedQuiz', 'hasSeenOnboarding']).catch(() => {});
   }, []);
 
-  const computePhase1Scores = useCallback(() => {
-    console.log('[DiscoveryContext] computePhase1Scores called');
-    setAnswers(current => {
-      const Q1 = current['Q1'] ?? 0;
-      const Q2 = current['Q2'] ?? 0;
-      const Q3 = current['Q3'] ?? 0;
-      const Q4 = current['Q4'] ?? 0;
-      const Q5 = current['Q5'] ?? 0;
-      const Q6 = current['Q6'] ?? 0;
-      const Q7 = current['Q7'] ?? 0;
-      const Q8 = current['Q8'] ?? 0;
-      const Q9 = current['Q9'] ?? 0;
-      const Q10 = current['Q10'] ?? 0;
-
-      const SocialEnergy = Q1 + (6 - Q2);
-      const EmotionalAttunement = Q3 + Q9;
-      const Drive = Q4 + Q8 + (Q7 * 0.5);
-      const Openness = Q5 + Q10;
-      const Stress = Q6;
-
-      const scores: Phase1Scores = {
-        social_energy_score: (SocialEnergy / 10) * 10,
-        emotional_score: (EmotionalAttunement / 10) * 10,
-        drive_score: (Drive / 12) * 10,
-        openness_score: (Openness / 10) * 10,
-        stress_score: (Stress / 5) * 10,
-      };
-
-      console.log('[DiscoveryContext] phase1Scores computed:', scores);
-      setPhase1Scores(scores);
-      return current;
-    });
+  // Each computePhaseNScores just stores the raw answers — no computation yet
+  const computePhase1Scores = useCallback((phaseAnswers: Phase1Answers) => {
+    console.log('[DiscoveryContext] computePhase1Scores — storing answers:', phaseAnswers);
+    setPhase1Scores(phaseAnswers);
+    setAnswers(prev => ({ ...prev, ...phaseAnswers }));
   }, []);
 
-  const computePhase2Scores = useCallback(() => {
-    console.log('[DiscoveryContext] computePhase2Scores called');
-    setAnswers(current => {
-      const Q1  = current['P2_Q1']  ?? 0;
-      const Q2  = current['P2_Q2']  ?? 0;
-      const Q3  = current['P2_Q3']  ?? 0;
-      const Q4  = current['P2_Q4']  ?? 0;
-      const Q5  = current['P2_Q5']  ?? 0;
-      const Q6  = current['P2_Q6']  ?? 0;
-      const Q7  = current['P2_Q7']  ?? 0;
-      const Q8  = current['P2_Q8']  ?? 0;
-      const Q9  = current['P2_Q9']  ?? 0;
-      const Q10 = current['P2_Q10'] ?? 0;
-      const Q11 = current['P2_Q11'] ?? 0;
-      const Q12 = current['P2_Q12'] ?? 0;
-
-      const Peacemaker     = Q1 + Q8;
-      const Leader         = Q2 + (Q9 * 0.5);
-      const DeepFeeler     = Q3;
-      const Steward        = Q4 + (Q9 * 0.5);
-      const LightBearer    = Q5 + (6 - Q10);
-      const TruthSeeker    = Q6 + (6 - Q11);
-      const JusticeCarrier = Q7 + Q12;
-
-      const scores: Phase2Scores = {
-        peacemaker_score:     (Peacemaker     / 10)  * 10,
-        leader_score:         (Leader         / 7.5) * 10,
-        deep_feeler_score:    (DeepFeeler     / 5)   * 10,
-        steward_score:        (Steward        / 7.5) * 10,
-        light_bearer_score:   (LightBearer    / 10)  * 10,
-        truth_seeker_score:   (TruthSeeker    / 10)  * 10,
-        justice_carrier_score:(JusticeCarrier / 10)  * 10,
-      };
-
-      console.log('[DiscoveryContext] phase2Scores computed:', scores);
-      setPhase2Scores(scores);
-      return current;
-    });
+  const computePhase2Scores = useCallback((phaseAnswers: Phase2Answers) => {
+    console.log('[DiscoveryContext] computePhase2Scores — storing answers:', phaseAnswers);
+    setPhase2Scores(phaseAnswers);
+    setAnswers(prev => ({ ...prev, ...phaseAnswers }));
   }, []);
 
-  const computePhase3Scores = useCallback(() => {
-    console.log('[DiscoveryContext] computePhase3Scores called');
-    setAnswers(current => {
-      const Q1  = current['P3_Q1']  ?? 0;
-      const Q2  = current['P3_Q2']  ?? 0;
-      const Q3  = current['P3_Q3']  ?? 0;
-      const Q4  = current['P3_Q4']  ?? 0;
-      const Q5  = current['P3_Q5']  ?? 0;
-      const Q6  = current['P3_Q6']  ?? 0;
-      const Q7  = current['P3_Q7']  ?? 0;
-      const Q8  = current['P3_Q8']  ?? 0;
-      const Q9  = current['P3_Q9']  ?? 0;
-      const Q10 = current['P3_Q10'] ?? 0;
-
-      const Apostle    = Q1 + Q6;
-      const Prophet    = Q2 + Q8;
-      const Evangelist = Q3 + Q9;
-      const Shepherd   = Q4 + Q7;
-      const Teacher    = Q5 + Q10;
-
-      const scores: Phase3Scores = {
-        apostle_score:    (Apostle    / 10) * 10,
-        prophet_score:    (Prophet    / 10) * 10,
-        evangelist_score: (Evangelist / 10) * 10,
-        shepherd_score:   (Shepherd   / 10) * 10,
-        teacher_score:    (Teacher    / 10) * 10,
-      };
-
-      console.log('[DiscoveryContext] phase3Scores computed:', scores);
-      setPhase3Scores(scores);
-      return current;
-    });
+  const computePhase3Scores = useCallback((phaseAnswers: Phase3Answers) => {
+    console.log('[DiscoveryContext] computePhase3Scores — storing answers:', phaseAnswers);
+    setPhase3Scores(phaseAnswers);
+    setAnswers(prev => ({ ...prev, ...phaseAnswers }));
   }, []);
 
-  const computePhase4Scores = useCallback(() => {
-    console.log('[DiscoveryContext] computePhase4Scores called');
-    setAnswers(current => {
-      const Q1 = current['P4_Q1'] ?? 0;
-      const Q2 = current['P4_Q2'] ?? 0;
-      const Q3 = current['P4_Q3'] ?? 0;
-      const Q4 = current['P4_Q4'] ?? 0;
-      const Q5 = current['P4_Q5'] ?? 0;
-      const Q6 = current['P4_Q6'] ?? 0;
-      const Q7 = current['P4_Q7'] ?? 0;
-      const Q8 = current['P4_Q8'] ?? 0;
-
-      const Avoidant   = Q1 + Q4;              // max = 10
-      const Anxious    = Q2 + Q7;              // max = 10
-      const Overactive = Q5 + Q8;              // max = 10
-      const Grounded   = (6 - Q3) + (6 - Q6); // max = 10
-
-      const scores: Phase4Scores = {
-        avoidant_score:   (Avoidant   / 10) * 10,
-        anxious_score:    (Anxious    / 10) * 10,
-        overactive_score: (Overactive / 10) * 10,
-        grounded_score:   (Grounded   / 10) * 10,
-      };
-
-      console.log('[DiscoveryContext] phase4Scores computed:', scores);
-      setPhase4Scores(scores);
-      return current;
-    });
+  const computePhase4Scores = useCallback((phaseAnswers: Phase4Answers) => {
+    console.log('[DiscoveryContext] computePhase4Scores — storing answers:', phaseAnswers);
+    setPhase4Scores(phaseAnswers);
+    setAnswers(prev => ({ ...prev, ...phaseAnswers }));
   }, []);
 
+  // All archetype computation happens here from stored answers
   const computeSacredDesign = useCallback(() => {
     console.log('[DiscoveryContext] computeSacredDesign called');
 
@@ -355,117 +238,61 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     const p4 = phase4Scores;
 
     if (!p1 || !p2 || !p3 || !p4) {
-      console.log('[DiscoveryContext] computeSacredDesign: missing phase scores, aborting');
+      console.log('[DiscoveryContext] computeSacredDesign: missing phase answers, aborting');
       return;
     }
 
-    const { social_energy_score, emotional_score, drive_score, openness_score, stress_score } = p1;
-    const { peacemaker_score, leader_score, deep_feeler_score, steward_score, light_bearer_score, truth_seeker_score, justice_carrier_score } = p2;
-    const { apostle_score, prophet_score, evangelist_score, shepherd_score, teacher_score } = p3;
-    const { avoidant_score, anxious_score, overactive_score } = p4;
+    // Per-archetype raw score = sum of 4 answers (one per phase), range 4–20
+    // Normalized to 0–10: (rawScore - 4) / 16 * 10
+    function normalize(raw: number): number {
+      return ((raw - 4) / 16) * 10;
+    }
 
-    const PeacemakerScore =
-      (peacemaker_score * 0.4) +
-      (emotional_score * 0.2) +
-      (shepherd_score * 0.2) +
-      (anxious_score * 0.1) +
-      (avoidant_score * 0.1);
+    const peacemakerRaw      = p1.Q1    + p2.P2_Q1 + p3.P3_Q1 + p4.P4_Q1;
+    const leaderRaw          = p1.Q2    + p2.P2_Q2 + p3.P3_Q2 + p4.P4_Q2;
+    const deepFeelerRaw      = p1.Q3    + p2.P2_Q3 + p3.P3_Q3 + p4.P4_Q3;
+    const stewardRaw         = p1.Q4    + p2.P2_Q4 + p3.P3_Q4 + p4.P4_Q4;
+    const lightBearerRaw     = p1.Q5    + p2.P2_Q5 + p3.P3_Q5 + p4.P4_Q5;
+    const truthSeekerRaw     = p1.Q6    + p2.P2_Q6 + p3.P3_Q6 + p4.P4_Q6;
+    const justiceCarrierRaw  = p1.Q7    + p2.P2_Q7 + p3.P3_Q7 + p4.P4_Q7;
 
-    const LeaderScore =
-      (leader_score * 0.4) +
-      (drive_score * 0.2) +
-      (apostle_score * 0.2) +
-      (social_energy_score * 0.1) +
-      ((10 - stress_score) * 0.1);
-
-    const DeepFeelerScore =
-      (deep_feeler_score * 0.4) +
-      (emotional_score * 0.2) +
-      (openness_score * 0.2) +
-      (anxious_score * 0.1) +
-      (shepherd_score * 0.1);
-
-    const StewardScore =
-      (steward_score * 0.4) +
-      (drive_score * 0.3) +
-      (teacher_score * 0.1) +
-      ((10 - openness_score) * 0.1) +
-      ((10 - emotional_score) * 0.1);
-
-    const LightBearerScore =
-      (light_bearer_score * 0.4) +
-      (social_energy_score * 0.2) +
-      (evangelist_score * 0.2) +
-      (openness_score * 0.1) +
-      ((10 - avoidant_score) * 0.1);
-
-    const TruthSeekerScore =
-      (truth_seeker_score * 0.4) +
-      (openness_score * 0.3) +
-      (teacher_score * 0.2) +
-      ((10 - social_energy_score) * 0.1);
-
-    const JusticeCarrierScore =
-      (justice_carrier_score * 0.4) +
-      (drive_score * 0.2) +
-      (prophet_score * 0.2) +
-      (anxious_score * 0.1) +
-      (overactive_score * 0.1);
+    console.log('[DiscoveryContext] raw scores:', {
+      Peacemaker: peacemakerRaw,
+      'Courageous Leader': leaderRaw,
+      'Deep Feeler': deepFeelerRaw,
+      'Faithful Steward': stewardRaw,
+      'Light Bearer': lightBearerRaw,
+      'Truth Seeker': truthSeekerRaw,
+      'Justice Carrier': justiceCarrierRaw,
+    });
 
     const archetypeScores: ArchetypeWeightScores = {
-      'Peacemaker': PeacemakerScore,
-      'Courageous Leader': LeaderScore,
-      'Deep Feeler': DeepFeelerScore,
-      'Faithful Steward': StewardScore,
-      'Light Bearer': LightBearerScore,
-      'Truth Seeker': TruthSeekerScore,
-      'Justice Carrier': JusticeCarrierScore,
+      'Peacemaker':        normalize(peacemakerRaw),
+      'Courageous Leader': normalize(leaderRaw),
+      'Deep Feeler':       normalize(deepFeelerRaw),
+      'Faithful Steward':  normalize(stewardRaw),
+      'Light Bearer':      normalize(lightBearerRaw),
+      'Truth Seeker':      normalize(truthSeekerRaw),
+      'Justice Carrier':   normalize(justiceCarrierRaw),
     };
 
+    console.log('[DiscoveryContext] normalized scores:', archetypeScores);
+
+    // Sort descending by score
     const sorted = (Object.entries(archetypeScores) as [ArchetypeName, number][])
       .sort((a, b) => b[1] - a[1]);
 
-    const primary = sorted[0];
-    const primaryName = primary[0];
-    const primaryScore = primary[1];
+    let primaryName: ArchetypeName = sorted[0][0];
+    let secondaryName: ArchetypeName = sorted[1][0];
 
-    const callingInfluence: Record<ArchetypeName, number> = {
-      'Peacemaker': shepherd_score,
-      'Courageous Leader': apostle_score,
-      'Deep Feeler': shepherd_score,
-      'Faithful Steward': teacher_score,
-      'Light Bearer': evangelist_score,
-      'Truth Seeker': teacher_score,
-      'Justice Carrier': prophet_score,
-    };
-
-    let secondaryName: ArchetypeName | null = null;
-
-    for (let i = 1; i < sorted.length; i++) {
-      const candidate = sorted[i];
-      if (candidate[0] === primaryName) continue;
-
-      const meetsThreshold = candidate[1] >= primaryScore * 0.6;
-
-      if (meetsThreshold) {
-        const next = sorted[i + 1];
-        if (
-          next &&
-          next[0] !== primaryName &&
-          Math.abs(candidate[1] - next[1]) < 0.5
-        ) {
-          const candidateCalling = callingInfluence[candidate[0]];
-          const nextCalling = callingInfluence[next[0]];
-          secondaryName = nextCalling > candidateCalling ? next[0] : candidate[0];
-        } else {
-          secondaryName = candidate[0];
-        }
-        break;
-      }
-    }
-
-    if (!secondaryName) {
-      secondaryName = sorted.find(([name]) => name !== primaryName)![0];
+    // Score-gap tie-break: if gap between #1 and #2 is less than MIN_GAP,
+    // use alphabetical order on archetype name for deterministic stability
+    const gap = sorted[0][1] - sorted[1][1];
+    if (gap < MIN_GAP) {
+      const top2 = [sorted[0][0], sorted[1][0]].sort((a, b) => a.localeCompare(b));
+      primaryName = top2[0];
+      secondaryName = top2[1];
+      console.log(`[DiscoveryContext] gap=${gap.toFixed(3)} < MIN_GAP=${MIN_GAP}, applied alphabetical tie-break`);
     }
 
     const blend_name = getBlendName(primaryName, secondaryName);
@@ -479,6 +306,7 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
 
     console.log('[DiscoveryContext] sacredDesignResult computed:', result);
     setSacredDesignResult(result);
+    AsyncStorage.setItem('sacredDesignResult', JSON.stringify(result)).catch(() => {});
   }, [phase1Scores, phase2Scores, phase3Scores, phase4Scores]);
 
   const value = useMemo(() => ({
