@@ -417,6 +417,18 @@ export default function PaywallScreen() {
                 Payment charged to your {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account after free trial.
                 Cancel anytime in your account settings.
               </Text>
+              {__DEV__ && (
+                <TouchableOpacity
+                  style={styles.devSkipButton}
+                  onPress={async () => {
+                    console.log("[Paywall][DEV] Skip (Dev Only) pressed — simulating subscription");
+                    await mockNativePurchase();
+                    navigateAfterPurchase();
+                  }}
+                >
+                  <Text style={styles.devSkipText}>Skip (Dev Only)</Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
         </View>
@@ -872,5 +884,15 @@ const styles = StyleSheet.create({
   },
   webDialogButtonText: {
     fontSize: 17,
+  },
+  devSkipButton: {
+    paddingVertical: 8,
+    alignItems: "center",
+  },
+  devSkipText: {
+    fontSize: 11,
+    color: "rgba(245,240,232,0.3)",
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.3,
   },
 });
