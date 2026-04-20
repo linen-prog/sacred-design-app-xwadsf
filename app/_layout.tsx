@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Stack, useRouter, Redirect, usePathname } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import { Stack, useRouter, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -47,7 +47,7 @@ function RootNavigator() {
   const [_navigationReady, setNavigationReady] = useState(false);
 
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
-  const pathname = usePathname();
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
     isOnboardingComplete().then((complete) => {
@@ -58,8 +58,8 @@ function RootNavigator() {
   useEffect(() => {
     if (onboardingComplete === null) return;
     async function checkOnboarding() {
+      if (hasNavigated.current) return;
       if (isQuizJustCompleted()) return; // synchronous flag wins over any async race
-      if (pathname === '/reveal' || pathname === '/completion') return;
       try {
         const [hasCompletedQuiz, hasSeenOnboarding] = await Promise.all([
           AsyncStorage.getItem("hasCompletedQuiz"),
@@ -67,6 +67,7 @@ function RootNavigator() {
         ]);
         console.log("[RootLayout] hasCompletedQuiz:", hasCompletedQuiz, "hasSeenOnboarding:", hasSeenOnboarding);
 
+        hasNavigated.current = true;
         if (hasCompletedQuiz === "true") {
           console.log("[RootLayout] Quiz complete — navigating to home");
           router.replace("/(tabs)");
@@ -79,13 +80,14 @@ function RootNavigator() {
         }
       } catch (e) {
         console.log("[RootLayout] AsyncStorage error:", e);
+        hasNavigated.current = true;
         router.replace("/onboarding/welcome");
       } finally {
         setNavigationReady(true);
       }
     }
     checkOnboarding();
-  }, [onboardingComplete, pathname, router]);
+  }, [onboardingComplete, router]);
 
   if (onboardingComplete === null) {
     return null;
@@ -157,7 +159,7 @@ function SubscriptionRedirect() {
       }
     });
     return () => { cancelled = true; };
-  }, [isSubscribed, loading, authLoading, pathname, user, router]);
+  }, [isSubscribed, loading, authLoading, user, router]);
 
   return null;
 }
