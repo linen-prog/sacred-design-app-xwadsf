@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OverallProgressBar } from '@/components/OverallProgressBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 const BG = '#0A0E1A';
 const TEXT = '#F5F0E8';
@@ -26,9 +27,9 @@ export default function Phase4ReflectionScreen() {
   const insets = useSafeAreaInsets();
   const [reflectionText, setReflectionText] = useState('');
   const [saving, setSaving] = useState(false);
+  const { isSubscribed } = useSubscription();
 
-  async function handleContinue() {
-    console.log('[Phase4Reflection] Continue pressed — reflection length:', reflectionText.trim().length);
+  async function saveReflection() {
     if (reflectionText.trim()) {
       setSaving(true);
       try {
@@ -40,12 +41,31 @@ export default function Phase4ReflectionScreen() {
         setSaving(false);
       }
     }
-    router.push('/onboarding/preparing');
   }
 
-  function handleSkip() {
-    console.log('[Phase4Reflection] Skip pressed — navigating to preparing');
-    router.push('/onboarding/preparing');
+  async function handleContinue() {
+    console.log('[Phase4Reflection] Continue pressed — reflection length:', reflectionText.trim().length);
+    await saveReflection();
+
+    if (isSubscribed) {
+      console.log('[Phase4Reflection] User is pro — navigating to /onboarding/preparing');
+      router.push('/onboarding/preparing');
+    } else {
+      console.log('[Phase4Reflection] User is not pro — navigating to /paywall?source=quiz_complete');
+      router.push('/paywall?source=quiz_complete');
+    }
+  }
+
+  async function handleSkip() {
+    console.log('[Phase4Reflection] Skip pressed — checking subscription status');
+
+    if (isSubscribed) {
+      console.log('[Phase4Reflection] User is pro — navigating to /onboarding/preparing');
+      router.push('/onboarding/preparing');
+    } else {
+      console.log('[Phase4Reflection] User is not pro — navigating to /paywall?source=quiz_complete');
+      router.push('/paywall?source=quiz_complete');
+    }
   }
 
   const buttonLabel = saving ? 'Saving…' : 'Continue →';

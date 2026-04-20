@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useRouter, Redirect, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -14,7 +14,8 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { DiscoveryProvider } from "@/contexts/DiscoveryContext";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -28,6 +29,7 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
 } from "@expo-google-fonts/inter";
+import { isOnboardingComplete } from "@/utils/onboardingStorage";
 
 const DevErrorBoundary = __DEV__
   ? ErrorBoundary
@@ -43,7 +45,17 @@ function RootNavigator() {
   const router = useRouter();
   const [_navigationReady, setNavigationReady] = useState(false);
 
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+  const pathname = usePathname();
+
   useEffect(() => {
+    isOnboardingComplete().then((complete) => {
+      setOnboardingComplete(complete);
+    });
+  }, [pathname]);
+
+  useEffect(() => {
+    if (onboardingComplete === null) return;
     async function checkOnboarding() {
       try {
         const [hasCompletedQuiz, hasSeenOnboarding] = await Promise.all([
@@ -70,11 +82,17 @@ function RootNavigator() {
       }
     }
     checkOnboarding();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onboardingComplete, router]);
+
+  if (onboardingComplete === null) {
+    return null;
+  }
 
   return (
+
     <Stack>
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
@@ -95,6 +113,49 @@ function RootNavigator() {
       />
     </Stack>
   );
+}
+
+function SubscriptionRedirect() {
+  const { isSubscribed, loading } = useSubscription();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (loading || authLoading) return;
+    const onAuthScreen = pathname === "/auth-screen";
+    if (onAuthScreen) return;
+    if (!user) {
+      router.replace("/auth-screen");
+      return;
+    }
+    const onOnboarding = pathname.startsWith("/onboarding");
+    if (onOnboarding) return;
+
+    let cancelled = false;
+    isOnboardingComplete().then((done) => {
+      if (cancelled) return;
+      if (!done) {
+        router.replace("/onboarding");
+        return;
+      }
+      const onPaywall = pathname === "/paywall";
+      if (onPaywall) return;
+      if (!isSubscribed) {
+        router.replace("/paywall");
+      }
+    }).catch(() => {
+      if (cancelled) return;
+      const onPaywall = pathname === "/paywall";
+      if (onPaywall) return;
+      if (!isSubscribed) {
+        router.replace("/paywall");
+      }
+    });
+    return () => { cancelled = true; };
+  }, [isSubscribed, loading, authLoading, pathname, user]);
+
+  return null;
 }
 
 export default function RootLayout() {
@@ -146,6 +207,8 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}>
         <SafeAreaProvider>
           <AuthProvider>
+        <SubscriptionProvider>
+          <SubscriptionRedirect />
             <DiscoveryProvider>
               <WidgetProvider>
                 <GestureHandlerRootView style={{ flex: 1 }}>
@@ -154,7 +217,8 @@ export default function RootLayout() {
                 </GestureHandlerRootView>
               </WidgetProvider>
             </DiscoveryProvider>
-          </AuthProvider>
+          </SubscriptionProvider>
+        </AuthProvider>
         </SafeAreaProvider>
       </ThemeProvider>
     </DevErrorBoundary>

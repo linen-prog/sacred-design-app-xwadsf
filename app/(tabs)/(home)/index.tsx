@@ -13,6 +13,7 @@ import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 import { apiFetch } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 const BG = "#F5F0EB";
 const TEXT = "#2C3A2C";
@@ -25,6 +26,10 @@ const SUCCESS_TEXT = "#4A7A4A";
 const BANNER_BG = "#FDF6E3";
 const BANNER_BORDER = "#C9A84C";
 const BANNER_TEXT = "#7A5C1E";
+const UPSELL_BG = "#0A0E1A";
+const UPSELL_GOLD = "#C9A84C";
+const UPSELL_TEXT = "#F5F0E8";
+const UPSELL_MUTED = "rgba(245,240,232,0.65)";
 
 interface DailyAlignment {
   id: string;
@@ -77,7 +82,7 @@ function getDaysAway(lastActiveDateStr: string): number {
   }
 }
 
-function SkeletonLine({ width, height = 14 }: { width: number | string; height?: number }) {
+function SkeletonLine({ width, height = 14 }: { width: number | `${number}%`; height?: number }) {
   const opacity = useRef(new Animated.Value(0.3)).current;
   useEffect(() => {
     const loop = Animated.loop(
@@ -133,6 +138,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { sacredDesignResult, quizCompleted, clearSacredDesign, restoreFromBackend } = useContext(DiscoveryContext);
   const { user } = useAuth();
+  const { isSubscribed } = useSubscription();
   const isSignedIn = !!(user && (user as any).isAnonymous !== true);
 
   const [alignment, setAlignment] = useState<DailyAlignment | null>(null);
@@ -189,7 +195,7 @@ export default function HomeScreen() {
         const data: ProgressData = await res.json();
         console.log("[Home] /api/progress response:", data);
         setProgress(data);
-        // Animate banner in if needed
+        // Animate re-engagement banner in if needed
         if (data.last_active_date) {
           const daysAway = getDaysAway(data.last_active_date);
           if (daysAway >= 2) {
@@ -293,6 +299,11 @@ export default function HomeScreen() {
     });
   }
 
+  function handleUnlockFullAccess() {
+    console.log("[Home] 'Unlock Full Access' pressed — navigating to /paywall?source=day2_upsell");
+    router.push("/paywall?source=day2_upsell");
+  }
+
   const topPadding = insets.top + 20;
 
   // Compute greeting
@@ -321,6 +332,10 @@ export default function HomeScreen() {
 
   const daysAwayCount = progress?.last_active_date ? getDaysAway(progress.last_active_date) : 0;
   const bannerMessage = `You were away for ${daysAwayCount} days. Your sacred design is waiting for you. 🌿`;
+
+  // Day 2+ upsell: show when user has completed Day 1 and is not subscribed
+  const dayCount = progress?.day_count ?? 0;
+  const showDay2Upsell = !isSubscribed && dayCount >= 1 && sacredDesignResult != null;
 
   // ── State A: quiz not complete ──────────────────────────────────────────────
   if (!sacredDesignResult) {
@@ -416,6 +431,24 @@ export default function HomeScreen() {
               <Text style={styles.statPillText}>{daysLabel}</Text>
             </View>
           )}
+        </View>
+      )}
+
+      {/* Day 2+ upsell banner — shown inline, non-blocking */}
+      {showDay2Upsell && (
+        <View style={styles.upsellCard}>
+          <View style={styles.upsellTopRow}>
+            <Text style={styles.upsellHeading}>You're on a streak 🔥</Text>
+          </View>
+          <Text style={styles.upsellBody}>
+            Unlock your full Sacred Design journey — daily alignments, reflections, and growth tracking.
+          </Text>
+          <Pressable
+            style={styles.upsellButton}
+            onPress={handleUnlockFullAccess}
+          >
+            <Text style={styles.upsellButtonText}>Unlock Full Access</Text>
+          </Pressable>
         </View>
       )}
 
@@ -553,6 +586,52 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: BANNER_TEXT,
     opacity: 0.6,
+  },
+  // Day 2+ upsell card
+  upsellCard: {
+    width: "100%",
+    backgroundColor: UPSELL_BG,
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "rgba(201,168,76,0.2)",
+  },
+  upsellTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  upsellHeading: {
+    fontFamily: "Lora_700Bold",
+    fontSize: 18,
+    color: UPSELL_TEXT,
+    lineHeight: 26,
+  },
+  upsellBody: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: UPSELL_MUTED,
+    lineHeight: 21,
+    marginBottom: 16,
+  },
+  upsellButton: {
+    backgroundColor: UPSELL_GOLD,
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: "center",
+  },
+  upsellButtonText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: "#0A0E1A",
+    letterSpacing: 0.2,
   },
   card: {
     width: "100%",
