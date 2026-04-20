@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, timestamp, jsonb, boolean } from 'drizzle-orm/pg-core';
 import { user } from './auth-schema.js';
 
 export const userProgress = pgTable('user_progress', {
@@ -32,4 +32,16 @@ export const alignmentReflections = pgTable('alignment_reflections', {
   alignmentId: uuid('alignment_id').notNull().references(() => dailyAlignments.id, { onDelete: 'cascade' }),
   reflectionText: text('reflection_text').notNull(),
   completedAt: timestamp('completed_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const userArchetypes = pgTable('user_archetypes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().unique().references(() => user.id, { onDelete: 'cascade' }),
+  primaryArchetype: text('primary_archetype').notNull(),
+  secondaryArchetype: text('secondary_archetype').notNull(),
+  blendName: text('blend_name').notNull(),
+  scores: jsonb('scores').notNull(),
+  quizCompleted: boolean('quiz_completed').notNull().default(true),
+  completedAt: timestamp('completed_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
