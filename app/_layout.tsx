@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Stack, useRouter, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
@@ -44,60 +44,73 @@ export const unstable_settings = {
 
 function RootNavigator() {
   const router = useRouter();
-  const [_navigationReady, setNavigationReady] = useState(false);
-
-  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+  // hasNavigated ensures router.replace is called AT MOST ONCE, ever.
+  // It is set to true before any router call so re-renders can never
+  // trigger a second redirect.
   const hasNavigated = useRef(false);
 
   useEffect(() => {
-    isOnboardingComplete().then((complete) => {
-      setOnboardingComplete(complete);
-    });
-  }, []); // run once on mount — pathname changes must not re-trigger this
+    // This effect runs exactly once on mount (empty deps).
+    // It is the ONLY place that decides the initial route.
+    async function determineInitialRoute() {
+      // If the quiz was just completed in this JS session (preparing.tsx
+      // already called markQuizComplete + router.replace('/reveal')), do
+      // nothing — the navigation is already in flight.
+      if (isQuizJustCompleted()) {
+        console.log('[RootNavigator] Quiz just completed in-session — skipping initial route check');
+        return;
+      }
 
-  useEffect(() => {
-    if (onboardingComplete === null) return;
-    async function checkOnboarding() {
+      // Guard: only navigate once.
       if (hasNavigated.current) return;
-      if (isQuizJustCompleted()) return; // synchronous flag wins over any async race
+
       try {
+        // Read both flags in parallel.
         const [hasCompletedQuiz, hasSeenOnboarding] = await Promise.all([
-          AsyncStorage.getItem("hasCompletedQuiz"),
-          AsyncStorage.getItem("hasSeenOnboarding"),
+          AsyncStorage.getItem('hasCompletedQuiz'),
+          AsyncStorage.getItem('hasSeenOnboarding'),
         ]);
-        console.log("[RootLayout] hasCompletedQuiz:", hasCompletedQuiz, "hasSeenOnboarding:", hasSeenOnboarding);
+
+        console.log('[RootNavigator] hasCompletedQuiz:', hasCompletedQuiz, '| hasSeenOnboarding:', hasSeenOnboarding);
+
+        // Re-check the in-session flag after the async gap — preparing.tsx
+        // may have fired while we were awaiting AsyncStorage.
+        if (isQuizJustCompleted()) {
+          console.log('[RootNavigator] Quiz completed during AsyncStorage read — skipping redirect');
+          return;
+        }
 
         hasNavigated.current = true;
-        if (hasCompletedQuiz === "true") {
-          console.log("[RootLayout] Quiz complete — navigating to home");
-          router.replace("/(tabs)");
-        } else if (hasSeenOnboarding === "true") {
-          console.log("[RootLayout] Seen onboarding — resuming quiz at phase-1");
-          router.replace("/onboarding/intro");
+
+        if (hasCompletedQuiz === 'true' && (await isOnboardingComplete())) {
+          // Returning user who has finished everything → home.
+          console.log('[RootNavigator] Returning user — navigating to /(tabs)');
+          router.replace('/(tabs)');
+        } else if (hasSeenOnboarding === 'true') {
+          // Partially through onboarding → resume at intro.
+          console.log('[RootNavigator] Partial onboarding — resuming at /onboarding/intro');
+          router.replace('/onboarding/intro');
         } else {
-          console.log("[RootLayout] First launch — navigating to welcome");
-          router.replace("/onboarding/welcome");
+          // Brand new user → welcome screen.
+          console.log('[RootNavigator] First launch — navigating to /onboarding/welcome');
+          router.replace('/onboarding/welcome');
         }
       } catch (e) {
-        console.log("[RootLayout] AsyncStorage error:", e);
-        hasNavigated.current = true;
-        router.replace("/onboarding/welcome");
-      } finally {
-        setNavigationReady(true);
+        console.warn('[RootNavigator] Storage error during initial route check:', e);
+        if (!hasNavigated.current) {
+          hasNavigated.current = true;
+          router.replace('/onboarding/welcome');
+        }
       }
     }
-    checkOnboarding();
-  }, [onboardingComplete, router]);
 
-  if (onboardingComplete === null) {
-    return null;
-  }
+    determineInitialRoute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-
     <Stack>
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
       <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
@@ -119,6 +132,16 @@ function RootNavigator() {
   );
 }
 
+// Screens where SubscriptionRedirect must never interfere.
+const SUBSCRIPTION_REDIRECT_BLOCKLIST = [
+  '/reveal',
+  '/completion',
+  '/auth-screen',
+  '/auth-popup',
+  '/auth-callback',
+  '/paywall',
+];
+
 function SubscriptionRedirect() {
   const { isSubscribed, loading } = useSubscription();
   const { user, loading: authLoading } = useAuth();
@@ -126,41 +149,48 @@ function SubscriptionRedirect() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (isQuizJustCompleted()) return; // synchronous flag wins over any async race
-    if (loading || authLoading) return;
-    if (pathname === '/reveal' || pathname === '/completion') return;
-    const onAuthScreen = pathname === "/auth-screen";
-    if (onAuthScreen) return;
-    if (!user) {
-      router.replace("/auth-screen");
+    // Check in-session quiz flag first — we may be mid-flow (preparing → reveal).
+    if (isQuizJustCompleted()) {
+      console.log('[SubscriptionRedirect] Quiz just completed — skipping redirect');
       return;
     }
-    const onOnboarding = pathname.startsWith("/onboarding");
-    if (onOnboarding) return;
 
-    let cancelled = false;
-    isOnboardingComplete().then((done) => {
-      if (isQuizJustCompleted()) return; // guard inside async callback — flag is still true when Promise resolves
-      if (cancelled) return;
-      if (!done) {
-        router.replace("/onboarding");
-        return;
-      }
-      const onPaywall = pathname === "/paywall";
-      if (onPaywall) return;
-      if (!isSubscribed) {
-        router.replace("/paywall");
-      }
-    }).catch(() => {
-      if (cancelled) return;
-      const onPaywall = pathname === "/paywall";
-      if (onPaywall) return;
-      if (!isSubscribed) {
-        router.replace("/paywall");
-      }
-    });
-    return () => { cancelled = true; };
-  }, [isSubscribed, loading, authLoading, user, router]);
+    // Still loading — wait.
+    if (loading || authLoading) return;
+
+    // Use pathname directly from the closure (it's in the dep array so it's
+    // always the current value when the effect fires).
+    const currentPath = pathname;
+
+    // Never redirect away from these screens.
+    const isBlocked =
+      SUBSCRIPTION_REDIRECT_BLOCKLIST.some((p) => currentPath === p) ||
+      currentPath.startsWith('/onboarding') ||
+      currentPath.startsWith('/reveal') ||
+      currentPath.startsWith('/completion');
+    if (isBlocked) {
+      console.log('[SubscriptionRedirect] Blocked path — skipping:', currentPath);
+      return;
+    }
+
+    // Not signed in → send to auth.
+    if (!user) {
+      console.log('[SubscriptionRedirect] No user — redirecting to auth-screen');
+      router.replace('/auth-screen');
+      return;
+    }
+
+    // Signed in but not subscribed → send to paywall.
+    // We intentionally do NOT call isOnboardingComplete() here — that is
+    // RootNavigator's sole responsibility. Calling it here created a race
+    // condition where the SecureStore write from preparing.tsx hadn't landed
+    // yet, causing this effect to see done=false and redirect to /onboarding,
+    // which then bounced the user to tabs.
+    if (!isSubscribed) {
+      console.log('[SubscriptionRedirect] User not subscribed — redirecting to paywall');
+      router.replace('/paywall');
+    }
+  }, [isSubscribed, loading, authLoading, user, router, pathname]);
 
   return null;
 }
