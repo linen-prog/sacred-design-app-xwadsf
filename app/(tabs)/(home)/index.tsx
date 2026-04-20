@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 import { apiFetch } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 const BG = "#F5F0EB";
 const TEXT = "#2C3A2C";
@@ -98,6 +99,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { sacredDesignResult, phase4Scores, clearSacredDesign } = useContext(DiscoveryContext);
+  const { user } = useAuth();
+  const isSignedIn = !!(user && (user as any).isAnonymous !== true);
 
   const [alignment, setAlignment] = useState<AlignmentData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -270,6 +273,19 @@ export default function HomeScreen() {
           Retake Discovery
         </Text>
       </Pressable>
+      {!isSignedIn && (
+        <Pressable
+          onPress={() => {
+            console.log("[Home] 'Sign in to save your progress' pressed — navigating to auth-screen");
+            router.push("/auth-screen");
+          }}
+          style={{ marginTop: 8, padding: 8 }}
+        >
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: TEXT_MUTED, textAlign: 'center' }}>
+            Sign in to save your progress
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }

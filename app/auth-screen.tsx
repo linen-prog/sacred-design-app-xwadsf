@@ -178,6 +178,17 @@ export default function AuthScreen() {
           <Text style={styles.backLinkText}>Back</Text>
         </Pressable>
 
+        {/* Continue without signing in */}
+        <Pressable
+          style={styles.backLink}
+          onPress={() => {
+            console.log("[AuthScreen] Continue without signing in pressed — navigating to tabs");
+            router.replace("/(tabs)");
+          }}
+        >
+          <Text style={styles.backLinkText}>Continue without signing in</Text>
+        </Pressable>
+
         {__DEV__ && (
           <Pressable
             onPress={() => {

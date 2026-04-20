@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -28,7 +28,6 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
 } from "@expo-google-fonts/inter";
-import { authClient } from "@/lib/auth";
 
 const DevErrorBoundary = __DEV__
   ? ErrorBoundary
@@ -47,19 +46,6 @@ function RootNavigator() {
   useEffect(() => {
     async function checkOnboarding() {
       try {
-        // Silently create anonymous session on first launch
-        const anonCreated = await AsyncStorage.getItem("anon_session_created");
-        if (!anonCreated) {
-          console.log("[RootLayout] Creating anonymous session...");
-          try {
-            await authClient.signIn.anonymous();
-            await AsyncStorage.setItem("anon_session_created", "true");
-            console.log("[RootLayout] Anonymous session created");
-          } catch (e) {
-            console.log("[RootLayout] Anonymous sign-in failed (silent):", e);
-          }
-        }
-
         const [hasCompletedQuiz, hasSeenOnboarding] = await Promise.all([
           AsyncStorage.getItem("hasCompletedQuiz"),
           AsyncStorage.getItem("hasSeenOnboarding"),
@@ -67,24 +53,8 @@ function RootNavigator() {
         console.log("[RootLayout] hasCompletedQuiz:", hasCompletedQuiz, "hasSeenOnboarding:", hasSeenOnboarding);
 
         if (hasCompletedQuiz === "true") {
-          // Check if user has a real (non-anonymous) account
-          let isRealUser = false;
-          try {
-            const session = await authClient.getSession();
-            const sessionUser = session?.data?.user as any;
-            isRealUser = !!(sessionUser && sessionUser.isAnonymous === false);
-            console.log("[RootLayout] Session user:", JSON.stringify(sessionUser), "isRealUser:", isRealUser);
-          } catch (e) {
-            console.log("[RootLayout] getSession failed:", e);
-          }
-
-          if (isRealUser) {
-            console.log("[RootLayout] Quiz complete + signed in — navigating to home");
-            router.replace("/(tabs)");
-          } else {
-            console.log("[RootLayout] Quiz complete but not signed in — navigating to auth-screen");
-            router.replace("/auth-screen");
-          }
+          console.log("[RootLayout] Quiz complete — navigating to home");
+          router.replace("/(tabs)");
         } else if (hasSeenOnboarding === "true") {
           console.log("[RootLayout] Seen onboarding — resuming quiz at phase-1");
           router.replace("/onboarding/intro");
