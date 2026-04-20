@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
-import { authClient, setBearerToken, clearAuthTokens } from "@/lib/auth";
+import { authClient, setBearerToken, clearAuthTokens, getSessionToken } from "@/lib/auth";
 
 interface User {
   id: string;
@@ -94,10 +94,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[AuthContext] fetchUser session.data:", JSON.stringify(session?.data));
       if (session?.data?.user) {
         setUser(session.data.user as User);
-        const token = (session as any)?.data?.session?.token;
+        // Read token from cookie store and persist it for API calls
+        const token = await getSessionToken();
         if (token) {
           await setBearerToken(token);
-          console.log("[AuthContext] Stored token from getSession");
+          console.log("[AuthContext] Stored token from cookie store");
+        } else {
+          console.warn("[AuthContext] Session exists but no token found in cookie store");
         }
       } else {
         setUser(null);
@@ -113,13 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      const result = await authClient.signIn.email({ email, password });
-      console.log('[AuthContext] signIn result:', JSON.stringify(result?.data));
-      const token = (result as any)?.data?.token ?? (result as any)?.data?.session?.token;
-      if (token) {
-        console.log('[AuthContext] Storing token from signIn response');
-        await setBearerToken(token);
-      }
+      await authClient.signIn.email({ email, password });
       await fetchUser();
     } catch (error) {
       console.error("Email sign in failed:", error);
@@ -129,13 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
     try {
-      const result = await authClient.signUp.email({ email, password, name: name ?? '' });
-      console.log('[AuthContext] signUp result:', JSON.stringify(result?.data));
-      const token = (result as any)?.data?.token ?? (result as any)?.data?.session?.token;
-      if (token) {
-        console.log('[AuthContext] Storing token from signUp response');
-        await setBearerToken(token);
-      }
+      await authClient.signUp.email({ email, password, name });
       await fetchUser();
     } catch (error) {
       console.error("Email sign up failed:", error);

@@ -10,7 +10,7 @@ export default function AuthPopupScreen() {
   useEffect(() => {
     if (Platform.OS !== "web") return;
 
-    if (!provider || !"[]".includes(provider)) {
+    if (!provider || !"[\"email\"]".includes(provider)) {
       window.opener?.postMessage({ type: "oauth-error", error: "Invalid provider" }, window.location.origin);
       return;
     }
