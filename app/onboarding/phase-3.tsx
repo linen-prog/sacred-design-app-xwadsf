@@ -15,6 +15,9 @@ const QUESTIONS = [
   { id: 'P3_Q5', text: 'I bring energy and enthusiasm that others often notice.' },
   { id: 'P3_Q6', text: 'I am drawn to ideas, patterns, and hidden meaning.' },
   { id: 'P3_Q7', text: 'I find it hard to stay silent when I witness injustice.' },
+  { id: 'P3_Q8', text: 'I tend to smooth over disagreements rather than let them escalate.' },
+  { id: 'P3_Q9', text: 'People often look to me to set the tone or direction in a group.' },
+  { id: 'P3_Q10', text: 'I naturally offer encouragement when someone is struggling.' },
 ];
 
 const INTRO_TEXT = "You were created with a unique way of showing up in the world.";
@@ -69,6 +72,9 @@ export default function Phase3Screen() {
           P3_Q5: updatedAnswers['P3_Q5'] ?? 3,
           P3_Q6: updatedAnswers['P3_Q6'] ?? 3,
           P3_Q7: updatedAnswers['P3_Q7'] ?? 3,
+          P3_Q8: updatedAnswers['P3_Q8'] ?? 3,
+          P3_Q9: updatedAnswers['P3_Q9'] ?? 3,
+          P3_Q10: updatedAnswers['P3_Q10'] ?? 3,
         };
         console.log('[Phase3] All questions answered, storing phase 3 answers:', phaseAnswers);
         computePhase3Scores(phaseAnswers);

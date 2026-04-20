@@ -88,16 +88,19 @@ function getBlendName(primary: ArchetypeName, secondary: ArchetypeName): string 
 export interface Phase1Answers {
   Q1: number; Q2: number; Q3: number; Q4: number;
   Q5: number; Q6: number; Q7: number;
+  Q8: number; Q9: number; Q10: number;
 }
 
 export interface Phase2Answers {
   P2_Q1: number; P2_Q2: number; P2_Q3: number; P2_Q4: number;
   P2_Q5: number; P2_Q6: number; P2_Q7: number;
+  P2_Q8: number; P2_Q9: number; P2_Q10: number;
 }
 
 export interface Phase3Answers {
   P3_Q1: number; P3_Q2: number; P3_Q3: number; P3_Q4: number;
   P3_Q5: number; P3_Q6: number; P3_Q7: number;
+  P3_Q8: number; P3_Q9: number; P3_Q10: number;
 }
 
 export interface Phase4Answers {
@@ -275,19 +278,28 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Per-archetype raw score = sum of 4 answers (one per phase), range 4–20
-    // Normalized to 0–10: (rawScore - 4) / 16 * 10
-    function normalize(raw: number): number {
-      return ((raw - 4) / 16) * 10;
+    // Normalize a raw score to 0–10 given the number of questions contributing to it.
+    // Each question is 1–5, so min = n*1, max = n*5, range = n*4.
+    function normalizeN(raw: number, n: number): number {
+      return ((raw - n) / (n * 4)) * 10;
     }
 
-    const peacemakerRaw      = p1.Q1    + p2.P2_Q1 + p3.P3_Q1 + p4.P4_Q1;
-    const leaderRaw          = p1.Q2    + p2.P2_Q2 + p3.P3_Q2 + p4.P4_Q2;
-    const deepFeelerRaw      = p1.Q3    + p2.P2_Q3 + p3.P3_Q3 + p4.P4_Q3;
-    const stewardRaw         = p1.Q4    + p2.P2_Q4 + p3.P3_Q4 + p4.P4_Q4;
-    const lightBearerRaw     = p1.Q5    + p2.P2_Q5 + p3.P3_Q5 + p4.P4_Q5;
-    const truthSeekerRaw     = p1.Q6    + p2.P2_Q6 + p3.P3_Q6 + p4.P4_Q6;
-    const justiceCarrierRaw  = p1.Q7    + p2.P2_Q7 + p3.P3_Q7 + p4.P4_Q7;
+    // Question counts per archetype (across all phases):
+    // Peacemaker:       Q1, Q8, P2_Q1, P2_Q8, P3_Q1, P3_Q8, P4_Q1  → 7 questions
+    // Courageous Leader: Q2, Q9, P2_Q2, P2_Q9, P3_Q2, P3_Q9, P4_Q2 → 7 questions
+    // Deep Feeler:      Q3, Q10, P2_Q3, P3_Q3, P4_Q3                → 5 questions
+    // Faithful Steward: Q4, P2_Q4, P2_Q10, P3_Q4, P4_Q4             → 5 questions
+    // Light Bearer:     Q5, P2_Q5, P3_Q5, P3_Q10, P4_Q5             → 5 questions
+    // Truth Seeker:     Q6, P2_Q6, P3_Q6, P4_Q6                     → 4 questions
+    // Justice Carrier:  Q7, P2_Q7, P3_Q7, P4_Q7                     → 4 questions
+
+    const peacemakerRaw      = p1.Q1 + p1.Q8  + p2.P2_Q1 + p2.P2_Q8  + p3.P3_Q1 + p3.P3_Q8  + p4.P4_Q1;
+    const leaderRaw          = p1.Q2 + p1.Q9  + p2.P2_Q2 + p2.P2_Q9  + p3.P3_Q2 + p3.P3_Q9  + p4.P4_Q2;
+    const deepFeelerRaw      = p1.Q3 + p1.Q10 + p2.P2_Q3              + p3.P3_Q3              + p4.P4_Q3;
+    const stewardRaw         = p1.Q4          + p2.P2_Q4 + p2.P2_Q10  + p3.P3_Q4              + p4.P4_Q4;
+    const lightBearerRaw     = p1.Q5          + p2.P2_Q5              + p3.P3_Q5 + p3.P3_Q10  + p4.P4_Q5;
+    const truthSeekerRaw     = p1.Q6          + p2.P2_Q6              + p3.P3_Q6              + p4.P4_Q6;
+    const justiceCarrierRaw  = p1.Q7          + p2.P2_Q7              + p3.P3_Q7              + p4.P4_Q7;
 
     console.log('[DiscoveryContext] raw scores:', {
       Peacemaker: peacemakerRaw,
@@ -300,13 +312,13 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     });
 
     const archetypeScores: ArchetypeWeightScores = {
-      'Peacemaker':        normalize(peacemakerRaw),
-      'Courageous Leader': normalize(leaderRaw),
-      'Deep Feeler':       normalize(deepFeelerRaw),
-      'Faithful Steward':  normalize(stewardRaw),
-      'Light Bearer':      normalize(lightBearerRaw),
-      'Truth Seeker':      normalize(truthSeekerRaw),
-      'Justice Carrier':   normalize(justiceCarrierRaw),
+      'Peacemaker':        normalizeN(peacemakerRaw,     7),
+      'Courageous Leader': normalizeN(leaderRaw,         7),
+      'Deep Feeler':       normalizeN(deepFeelerRaw,     5),
+      'Faithful Steward':  normalizeN(stewardRaw,        5),
+      'Light Bearer':      normalizeN(lightBearerRaw,    5),
+      'Truth Seeker':      normalizeN(truthSeekerRaw,    4),
+      'Justice Carrier':   normalizeN(justiceCarrierRaw, 4),
     };
 
     console.log('[DiscoveryContext] normalized scores:', archetypeScores);

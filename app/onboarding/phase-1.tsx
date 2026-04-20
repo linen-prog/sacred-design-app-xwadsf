@@ -15,6 +15,9 @@ const PHASE_1_QUESTIONS = [
   { id: 'Q5', text: 'I find it easy to connect with new people and make them feel welcome.' },
   { id: 'Q6', text: 'I ask "why" more than most people around me.' },
   { id: 'Q7', text: 'When I see something unfair, I feel compelled to do something about it.' },
+  { id: 'Q8', text: 'I often put others\' needs before my own to avoid tension.' },
+  { id: 'Q9', text: 'I feel energized when I can rally people around a shared goal.' },
+  { id: 'Q10', text: 'I notice when someone in the room is hurting, even if they haven\'t said anything.' },
 ];
 
 const scaleValues = [1, 2, 3, 4, 5];
@@ -61,6 +64,9 @@ export default function Phase1Screen() {
           Q5: updatedAnswers['Q5'] ?? 3,
           Q6: updatedAnswers['Q6'] ?? 3,
           Q7: updatedAnswers['Q7'] ?? 3,
+          Q8: updatedAnswers['Q8'] ?? 3,
+          Q9: updatedAnswers['Q9'] ?? 3,
+          Q10: updatedAnswers['Q10'] ?? 3,
         };
         console.log('[Phase1] All questions answered, storing phase 1 answers:', phaseAnswers);
         computePhase1Scores(phaseAnswers);

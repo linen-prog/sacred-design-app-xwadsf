@@ -15,6 +15,9 @@ const PHASE_2_QUESTIONS = [
   { id: 'P2_Q5', text: 'I naturally encourage others and help them see their potential.' },
   { id: 'P2_Q6', text: 'I need to understand the deeper reason behind what I\'m asked to do.' },
   { id: 'P2_Q7', text: 'I feel a strong pull to speak up when someone is being treated unfairly.' },
+  { id: 'P2_Q8', text: 'I feel most at peace when everyone around me is getting along.' },
+  { id: 'P2_Q9', text: 'I am motivated by the chance to make a lasting impact.' },
+  { id: 'P2_Q10', text: 'I find deep meaning in small, faithful acts that others might overlook.' },
 ];
 
 const INTRO_TEXT = "Now we'll explore what moves you beneath the surface—your motivations and patterns.";
@@ -69,6 +72,9 @@ export default function Phase2Screen() {
           P2_Q5: updatedAnswers['P2_Q5'] ?? 3,
           P2_Q6: updatedAnswers['P2_Q6'] ?? 3,
           P2_Q7: updatedAnswers['P2_Q7'] ?? 3,
+          P2_Q8: updatedAnswers['P2_Q8'] ?? 3,
+          P2_Q9: updatedAnswers['P2_Q9'] ?? 3,
+          P2_Q10: updatedAnswers['P2_Q10'] ?? 3,
         };
         console.log('[Phase2] All questions answered, storing phase 2 answers:', phaseAnswers);
         computePhase2Scores(phaseAnswers);
