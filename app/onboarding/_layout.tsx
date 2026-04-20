@@ -21,14 +21,15 @@ export default function OnboardingLayout() {
       <Stack.Screen name="phase-2" />
       <Stack.Screen name="phase-2-reflection" />
       <Stack.Screen name="phase-3" />
-      <Stack.Screen name="phase-3-reflection" />
-      <Stack.Screen name="phase-4" />
+      <Stack.Screen name="phase-3-reflection" options={{ contentStyle: { backgroundColor: '#0A0E1A' } }} />
+      <Stack.Screen name="phase-4" options={{ contentStyle: { backgroundColor: '#F7F4EF' } }} />
       <Stack.Screen name="phase-4-reflection" />
       <Stack.Screen
         name="phase-complete"
         options={{
           headerShown: false,
           animation: 'fade',
+          contentStyle: { backgroundColor: '#1A1F2E' },
         }}
       />
       <Stack.Screen name="preparing" options={{ headerShown: false }} />
