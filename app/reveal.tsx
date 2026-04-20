@@ -13,6 +13,7 @@ import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { apiFetch } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
+import { completeOnboarding } from '@/utils/onboardingStorage';
 
 const REVEAL_COLORS = {
   background: '#F6F1E8',
@@ -156,6 +157,12 @@ export default function RevealScreen() {
     setSaving(true);
     try { await saveToBackend(); } catch (e) {}
     try { await AsyncStorage.setItem('hasCompletedQuiz', 'true'); } catch (e) {}
+    try {
+      await completeOnboarding();
+      console.log('[Reveal] completeOnboarding() written to SecureStore');
+    } catch (e) {
+      console.warn('[Reveal] completeOnboarding() failed:', e);
+    }
     setSaving(false);
 
     if (user) {
