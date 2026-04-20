@@ -5,6 +5,7 @@ export const userProgress = pgTable('user_progress', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: text('user_id').notNull().unique().references(() => user.id, { onDelete: 'cascade' }),
   dayCount: integer('day_count').notNull().default(1),
+  streak: integer('streak').notNull().default(0),
   lastActiveDate: text('last_active_date').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

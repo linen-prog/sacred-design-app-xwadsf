@@ -5,6 +5,7 @@ import { gateway } from '@specific-dev/framework';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import * as schema from '../db/schema/schema.js';
+import { calculateNewStreak } from './progress.js';
 import type { App } from '../index.js';
 
 interface CreateAlignmentBody {
@@ -161,15 +162,17 @@ export function register(app: App, fastify: any) {
         if (userProgressRecord.lastActiveDate !== today) {
           // New day, increment
           dayCount = userProgressRecord.dayCount + 1;
+          const newStreak = calculateNewStreak(userProgressRecord.lastActiveDate, userProgressRecord.streak);
           await app.db
             .update(schema.userProgress)
             .set({
               dayCount,
+              streak: newStreak,
               lastActiveDate: today,
               updatedAt: new Date(),
             })
             .where(eq(schema.userProgress.userId, userId));
-          app.logger.info({ userId, dayCount }, 'Updated user progress for new day');
+          app.logger.info({ userId, dayCount, streak: newStreak }, 'Updated user progress for new day');
         } else {
           // Same day, use existing day count
           dayCount = userProgressRecord.dayCount;
@@ -179,6 +182,7 @@ export function register(app: App, fastify: any) {
         await app.db.insert(schema.userProgress).values({
           userId,
           dayCount: 1,
+          streak: 1,
           lastActiveDate: today,
         });
         app.logger.info({ userId }, 'Created initial user progress');

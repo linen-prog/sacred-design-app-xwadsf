@@ -8,32 +8,33 @@ function getTodayDate(): string {
   return now.toISOString().split('T')[0];
 }
 
-async function calculateStreak(app: App, userId: string): Promise<number> {
+function getYesterdayDate(): string {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return yesterday.toISOString().split('T')[0];
+}
+
+export function calculateNewStreak(lastActiveDate: string | null | undefined, currentStreak: number): number {
   const today = getTodayDate();
-  let streak = 0;
-  let checkDate = new Date(today);
+  const yesterday = getYesterdayDate();
 
-  // Check consecutive days backwards from today
-  while (true) {
-    const dateStr = checkDate.toISOString().split('T')[0];
-
-    const alignments = await app.db
-      .select()
-      .from(schema.dailyAlignments)
-      .where(
-        sql`${schema.dailyAlignments.userId} = ${userId} AND DATE(${schema.dailyAlignments.generatedAt}) = ${dateStr}`
-      )
-      .limit(1);
-
-    if (alignments.length === 0) {
-      break;
-    }
-
-    streak++;
-    checkDate.setDate(checkDate.getDate() - 1);
+  if (!lastActiveDate || lastActiveDate === '') {
+    // No previous activity, start streak at 1
+    return 1;
   }
 
-  return streak;
+  if (lastActiveDate === today) {
+    // Already active today, don't change streak
+    return currentStreak;
+  }
+
+  if (lastActiveDate === yesterday) {
+    // Was active yesterday, increment streak
+    return currentStreak + 1;
+  }
+
+  // More than 1 day gap, reset streak to 1
+  return 1;
 }
 
 export function register(app: App, fastify: any) {
@@ -94,13 +95,12 @@ export function register(app: App, fastify: any) {
       }
 
       const progress = progressRows[0];
-      const streak = await calculateStreak(app, userId);
 
-      app.logger.info({ userId, dayCount: progress.dayCount, streak }, 'Retrieved user progress');
+      app.logger.info({ userId, dayCount: progress.dayCount, streak: progress.streak }, 'Retrieved user progress');
 
       return {
         day_count: progress.dayCount,
-        streak,
+        streak: progress.streak,
         last_active_date: progress.lastActiveDate || null,
       };
     } catch (error) {

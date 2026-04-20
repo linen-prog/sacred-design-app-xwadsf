@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
 import * as schema from '../db/schema/schema.js';
+import { calculateNewStreak } from './progress.js';
 import type { App } from '../index.js';
 
 interface GenerateAlignmentBody {
@@ -40,6 +41,8 @@ const FALLBACK_ALIGNMENT = {
 };
 
 export function register(app: App, fastify: any) {
+  const requireAuth = app.requireAuth();
+
   // POST /api/alignments/generate
   fastify.post('/api/alignments/generate', {
     schema: {
@@ -94,7 +97,6 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: GenerateAlignmentBody }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const requireAuth = app.requireAuth();
     const session = await requireAuth(request, reply);
     if (!session) return;
 
@@ -116,6 +118,7 @@ export function register(app: App, fastify: any) {
         await app.db.insert(schema.userProgress).values({
           userId,
           dayCount: 0,
+          streak: 1,
           lastActiveDate: '',
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -262,10 +265,12 @@ Return ONLY valid JSON with exactly these fields:
       const created = insertResult[0];
 
       // Update user_progress
+      const newStreak = calculateNewStreak(userProgress[0]?.lastActiveDate || '', userProgress[0]?.streak || 0);
       await app.db
         .update(schema.userProgress)
         .set({
           dayCount,
+          streak: newStreak,
           lastActiveDate: today,
           updatedAt: new Date(),
         })
@@ -290,6 +295,112 @@ Return ONLY valid JSON with exactly these fields:
       };
     } catch (error) {
       app.logger.error({ err: error, userId }, 'Failed to generate alignment');
+      throw error;
+    }
+  });
+
+  // GET /api/alignments/today
+  fastify.get('/api/alignments/today', {
+    schema: {
+      description: "Get today's alignment with reflection status",
+      tags: ['alignments'],
+      response: {
+        200: {
+          description: "Today's alignment or null",
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            day_number: { type: 'integer' },
+            level: { type: 'integer' },
+            action: { type: 'string' },
+            guidance: { type: 'string' },
+            somatic_cue: { type: 'string' },
+            scripture: { type: 'string' },
+            reflection_prompt: { type: ['string', 'null'] },
+            primary_archetype: { type: 'string' },
+            secondary_archetype: { type: 'string' },
+            blend_name: { type: 'string' },
+            generated_at: { type: 'string', format: 'date-time' },
+            hasReflection: { type: 'boolean' },
+          },
+        },
+        401: {
+          description: 'Unauthorized',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+        500: {
+          description: 'Server error',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+      },
+    },
+  }, async (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<any | void> => {
+    const session = await requireAuth(request, reply);
+    if (!session) return;
+
+    const userId = session.user.id;
+    const today = getTodayDate();
+
+    app.logger.info({ userId }, "Fetching today's alignment");
+
+    try {
+      const alignments = await app.db
+        .select()
+        .from(schema.dailyAlignments)
+        .where(
+          and(
+            eq(schema.dailyAlignments.userId, userId),
+            sql`DATE(${schema.dailyAlignments.generatedAt}) = ${today}`
+          )
+        )
+        .orderBy(desc(schema.dailyAlignments.generatedAt))
+        .limit(1);
+
+      if (alignments.length === 0) {
+        app.logger.info({ userId }, 'No alignment found for today');
+        return null;
+      }
+
+      const alignment = alignments[0];
+
+      // Check if reflection exists
+      const reflections = await app.db
+        .select()
+        .from(schema.alignmentReflections)
+        .where(
+          and(
+            eq(schema.alignmentReflections.alignmentId, alignment.id),
+            eq(schema.alignmentReflections.userId, userId)
+          )
+        )
+        .limit(1);
+
+      const hasReflection = reflections.length > 0;
+
+      app.logger.info({ alignmentId: alignment.id, userId, hasReflection }, "Retrieved today's alignment");
+
+      return {
+        id: alignment.id,
+        day_number: alignment.dayNumber,
+        level: alignment.level,
+        action: alignment.action,
+        guidance: alignment.guidance,
+        somatic_cue: alignment.somaticCue,
+        scripture: alignment.scripture,
+        reflection_prompt: alignment.reflectionPrompt,
+        primary_archetype: alignment.primaryArchetype,
+        secondary_archetype: alignment.secondaryArchetype,
+        blend_name: alignment.blendName,
+        generated_at: alignment.generatedAt.toISOString(),
+        hasReflection,
+      };
+    } catch (error) {
+      app.logger.error({ err: error, userId }, "Failed to fetch today's alignment");
       throw error;
     }
   });
@@ -348,7 +459,6 @@ Return ONLY valid JSON with exactly these fields:
     request: FastifyRequest<{ Params: { id: string }; Body: CompleteAlignmentBody }>,
     reply: FastifyReply
   ): Promise<{ success: boolean; message: string } | void> => {
-    const requireAuth = app.requireAuth();
     const session = await requireAuth(request, reply);
     if (!session) return;
 
@@ -379,13 +489,30 @@ Return ONLY valid JSON with exactly these fields:
         return reply.status(403).send({ error: 'Access denied' });
       }
 
-      // Insert reflection
-      await app.db.insert(schema.alignmentReflections).values({
-        userId,
-        alignmentId: id,
-        reflectionText: reflection_text,
-        completedAt: new Date(),
-      });
+      // Check if reflection already exists
+      const existingReflections = await app.db
+        .select()
+        .from(schema.alignmentReflections)
+        .where(
+          and(
+            eq(schema.alignmentReflections.alignmentId, id),
+            eq(schema.alignmentReflections.userId, userId)
+          )
+        )
+        .limit(1);
+
+      if (existingReflections.length === 0) {
+        // Insert reflection only if it doesn't exist
+        await app.db.insert(schema.alignmentReflections).values({
+          userId,
+          alignmentId: id,
+          reflectionText: reflection_text,
+          completedAt: new Date(),
+        });
+        app.logger.info({ alignmentId: id, userId }, 'Reflection created');
+      } else {
+        app.logger.info({ alignmentId: id, userId }, 'Reflection already exists, skipping insert');
+      }
 
       app.logger.info({ alignmentId: id, userId }, 'Alignment completed');
 

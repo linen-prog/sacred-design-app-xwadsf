@@ -174,6 +174,25 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 403);
     });
 
+    test("GET /api/alignments/today returns alignment with reflection status when authenticated", async () => {
+      const res = await authenticatedApi("/api/alignments/today", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      // Response contains alignment data with hasReflection field
+      if (data && typeof data === "object") {
+        expect(data.hasReflection).toBeDefined();
+      }
+    });
+
+    test("GET /api/alignments/today returns 401 without authentication", async () => {
+      const res = await api("/api/alignments/today", {
+        method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+
     test("GET /api/alignments/history returns alignment history when authenticated", async () => {
       const res = await authenticatedApi("/api/alignments/history", authToken, {
         method: "GET",
