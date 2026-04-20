@@ -153,7 +153,7 @@ function SubscriptionRedirect() {
       }
     });
     return () => { cancelled = true; };
-  }, [isSubscribed, loading, authLoading, pathname, user]);
+  }, [isSubscribed, loading, authLoading, pathname, user, router]);
 
   return null;
 }
