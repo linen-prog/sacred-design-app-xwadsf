@@ -11,18 +11,12 @@ export default function Phase4ReflectionScreen() {
     router.push('/onboarding/preparing');
   }
 
-  function handleBack() {
-    console.log('[Phase4Reflection] Back pressed');
-    router.back();
-  }
-
   return (
     <ReflectionScreen
       icon={Anchor}
       text={"Your body has been supporting you all along.\nNow you'll learn how to work with it."}
       buttonLabel="See My Sacred Design"
       onContinue={handleContinue}
-      onBack={handleBack}
     />
   );
 }

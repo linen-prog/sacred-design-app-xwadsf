@@ -1,8 +1,6 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated, Pressable } from 'react-native';
+import { View, Text, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase3Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
@@ -25,7 +23,6 @@ const scaleValues = [1, 2, 3, 4, 5];
 
 export default function Phase3Screen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { answers, setAnswer, computePhase3Scores } = useContext(DiscoveryContext);
   const [showIntro, setShowIntro] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -42,17 +39,6 @@ export default function Phase3Screen() {
 
   const currentQuestion = QUESTIONS[currentIndex];
   const selectedValue = answers[currentQuestion?.id ?? ''];
-
-  function handleBack() {
-    console.log('[Phase3] Back pressed');
-    if (!showIntro && currentIndex > 0) {
-      transitionToQuestion(currentIndex - 1);
-    } else if (!showIntro) {
-      setShowIntro(true);
-    } else {
-      router.back();
-    }
-  }
 
   function handleBegin() {
     console.log('[Phase3] Begin questions pressed');
@@ -104,224 +90,207 @@ export default function Phase3Screen() {
 
   if (showIntro) {
     return (
+      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+        <Animated.View
+          style={{
+            flex: 1,
+            paddingHorizontal: 32,
+            paddingBottom: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: screenOpacity,
+            transform: [{ translateY: screenTranslateY }],
+          }}
+        >
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Text
+              style={{
+                fontSize: 10,
+                fontFamily: 'Inter_400Regular',
+                color: '#2F3E2F',
+                opacity: 0.45,
+                textTransform: 'uppercase',
+                letterSpacing: 2.5,
+                textAlign: 'center',
+                marginBottom: 12,
+              }}
+            >
+              Phase 3 of 4
+            </Text>
+            <Text
+              style={{
+                fontSize: 22,
+                fontFamily: 'Lora_700Bold',
+                color: '#2F3E2F',
+                textAlign: 'center',
+                marginBottom: 32,
+              }}
+            >
+              How You Show Up
+            </Text>
+            <Text
+              style={{
+                fontSize: 17,
+                fontFamily: 'Inter_400Regular',
+                color: COLORS.textSecondary,
+                lineHeight: 28,
+                textAlign: 'center',
+                maxWidth: 300,
+              }}
+            >
+              {INTRO_TEXT}
+            </Text>
+          </View>
+
+          <View style={{ width: '100%' }}>
+            <AnimatedPressable
+              onPress={handleBegin}
+              style={{
+                backgroundColor: COLORS.primary,
+                borderRadius: 14,
+                height: 54,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Begin"
+            >
+              <Text
+                style={{
+                  color: COLORS.white,
+                  fontSize: 16,
+                  fontFamily: 'Inter_600SemiBold',
+                  fontWeight: '600',
+                }}
+              >
+                Begin
+              </Text>
+            </AnimatedPressable>
+          </View>
+        </Animated.View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <Animated.View
         style={{
           flex: 1,
-          backgroundColor: COLORS.background,
-          paddingTop: insets.top + 8,
-          paddingBottom: insets.bottom + 32,
-          paddingHorizontal: 32,
-          alignItems: 'center',
-          justifyContent: 'center',
+          paddingTop: 16,
+          paddingBottom: 24,
+          paddingHorizontal: 28,
           opacity: screenOpacity,
           transform: [{ translateY: screenTranslateY }],
         }}
       >
-        <Pressable
-          onPress={handleBack}
-          style={{ position: 'absolute', top: insets.top + 8, left: 16, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
+        <PhaseHeader
+          phase={3}
+          title="How You Show Up"
+          current={currentIndex + 1}
+          total={QUESTIONS.length}
+        />
+
+        <Animated.View
+          style={{
+            opacity: questionOpacity,
+            alignItems: 'center',
+            marginTop: 32,
+          }}
         >
-          <Ionicons name="chevron-back" size={26} color="#6F8A6A" />
-        </Pressable>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text
-            style={{
-              fontSize: 10,
-              fontFamily: 'Inter_400Regular',
-              color: '#2F3E2F',
-              opacity: 0.45,
-              textTransform: 'uppercase',
-              letterSpacing: 2.5,
-              textAlign: 'center',
-              marginBottom: 12,
-            }}
-          >
-            Phase 3 of 4
-          </Text>
           <Text
             style={{
               fontSize: 22,
               fontFamily: 'Lora_700Bold',
               color: '#2F3E2F',
+              lineHeight: 32,
               textAlign: 'center',
-              marginBottom: 32,
             }}
           >
-            How You Show Up
+            {currentQuestion.text}
           </Text>
+
           <Text
             style={{
-              fontSize: 17,
+              marginTop: 10,
+              fontSize: 12,
               fontFamily: 'Inter_400Regular',
-              color: COLORS.textSecondary,
-              lineHeight: 28,
+              color: 'rgba(47,62,47,0.45)',
               textAlign: 'center',
-              maxWidth: 300,
+              letterSpacing: 0.3,
             }}
           >
-            {INTRO_TEXT}
+            {guidanceText}
           </Text>
-        </View>
 
-        <View style={{ width: '100%' }}>
-          <AnimatedPressable
-            onPress={handleBegin}
+          <View
             style={{
-              backgroundColor: COLORS.primary,
-              borderRadius: 14,
-              height: 54,
-              alignItems: 'center',
-              justifyContent: 'center',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              width: '100%',
+              paddingHorizontal: 4,
+              marginTop: 40,
             }}
-            accessibilityRole="button"
-            accessibilityLabel="Begin"
+          >
+            {scaleValues.map((v) => (
+              <ScaleButton
+                key={v}
+                value={v}
+                selected={selectedValue === v}
+                onPress={() => handleSelect(v)}
+              />
+            ))}
+          </View>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              width: '100%',
+              paddingHorizontal: 4,
+              marginTop: 10,
+            }}
           >
             <Text
               style={{
-                color: COLORS.white,
-                fontSize: 16,
-                fontFamily: 'Inter_600SemiBold',
-                fontWeight: '600',
+                fontSize: 11,
+                fontFamily: 'Inter_400Regular',
+                color: 'rgba(47,62,47,0.45)',
               }}
             >
-              Begin
+              {leftLabel}
+            </Text>
+            <Text
+              style={{
+                fontSize: 11,
+                fontFamily: 'Inter_400Regular',
+                color: 'rgba(47,62,47,0.45)',
+              }}
+            >
+              {rightLabel}
+            </Text>
+          </View>
+        </Animated.View>
+
+        {currentIndex > 0 && (
+          <AnimatedPressable
+            onPress={handlePrevious}
+            style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 4, marginTop: 32 }}
+            accessibilityRole="button"
+            accessibilityLabel="Previous question"
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontFamily: 'Inter_400Regular',
+                color: COLORS.textSecondary,
+              }}
+            >
+              ← Previous
             </Text>
           </AnimatedPressable>
-        </View>
+        )}
       </Animated.View>
-    );
-  }
-
-  return (
-    <Animated.View
-      style={{
-        flex: 1,
-        backgroundColor: COLORS.background,
-        paddingTop: insets.top + 8,
-        paddingBottom: insets.bottom + 24,
-        paddingHorizontal: 28,
-        opacity: screenOpacity,
-        transform: [{ translateY: screenTranslateY }],
-      }}
-    >
-      <Pressable
-        onPress={handleBack}
-        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-      >
-        <Ionicons name="chevron-back" size={26} color="#6F8A6A" />
-      </Pressable>
-      <PhaseHeader
-        phase={3}
-        title="How You Show Up"
-        current={currentIndex + 1}
-        total={QUESTIONS.length}
-      />
-
-      <Animated.View
-        style={{
-          opacity: questionOpacity,
-          alignItems: 'center',
-          marginTop: 32,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 22,
-            fontFamily: 'Lora_700Bold',
-            color: '#2F3E2F',
-            lineHeight: 32,
-            textAlign: 'center',
-          }}
-        >
-          {currentQuestion.text}
-        </Text>
-
-        <Text
-          style={{
-            marginTop: 10,
-            fontSize: 12,
-            fontFamily: 'Inter_400Regular',
-            color: 'rgba(47,62,47,0.45)',
-            textAlign: 'center',
-            letterSpacing: 0.3,
-          }}
-        >
-          {guidanceText}
-        </Text>
-
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            paddingHorizontal: 4,
-            marginTop: 40,
-          }}
-        >
-          {scaleValues.map((v) => (
-            <ScaleButton
-              key={v}
-              value={v}
-              selected={selectedValue === v}
-              onPress={() => handleSelect(v)}
-            />
-          ))}
-        </View>
-
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            paddingHorizontal: 4,
-            marginTop: 10,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 11,
-              fontFamily: 'Inter_400Regular',
-              color: 'rgba(47,62,47,0.45)',
-            }}
-          >
-            {leftLabel}
-          </Text>
-          <Text
-            style={{
-              fontSize: 11,
-              fontFamily: 'Inter_400Regular',
-              color: 'rgba(47,62,47,0.45)',
-            }}
-          >
-            {rightLabel}
-          </Text>
-        </View>
-      </Animated.View>
-
-      {currentIndex > 0 && (
-        <AnimatedPressable
-          onPress={handlePrevious}
-          style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 4, marginTop: 32 }}
-          accessibilityRole="button"
-          accessibilityLabel="Previous question"
-        >
-          <Text
-            style={{
-              fontSize: 14,
-              fontFamily: 'Inter_400Regular',
-              color: COLORS.textSecondary,
-            }}
-          >
-            ← Previous
-          </Text>
-        </AnimatedPressable>
-      )}
-    </Animated.View>
+    </View>
   );
 }

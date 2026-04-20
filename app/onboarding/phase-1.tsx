@@ -1,8 +1,6 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated, Pressable } from 'react-native';
+import { View, Text, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase1Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
@@ -23,7 +21,6 @@ const scaleValues = [1, 2, 3, 4, 5];
 
 export default function Phase1Screen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { answers, setAnswer, computePhase1Scores } = useContext(DiscoveryContext);
   const [currentIndex, setCurrentIndex] = useState(0);
   const questionOpacity = useRef(new Animated.Value(1)).current;
@@ -72,15 +69,6 @@ export default function Phase1Screen() {
     }, 300);
   }
 
-  function handleBack() {
-    console.log('[Phase1] Back pressed');
-    if (currentIndex > 0) {
-      transitionToQuestion(currentIndex - 1);
-    } else {
-      router.back();
-    }
-  }
-
   function handlePrevious() {
     console.log('[Phase1] Previous question pressed');
     if (currentIndex > 0) {
@@ -93,132 +81,125 @@ export default function Phase1Screen() {
   const rightLabel = 'Always like me';
 
   return (
-    <Animated.View
-      style={{
-        flex: 1,
-        backgroundColor: COLORS.background,
-        paddingTop: insets.top + 8,
-        paddingBottom: insets.bottom + 24,
-        paddingHorizontal: 28,
-        opacity: screenOpacity,
-        transform: [{ translateY: screenTranslateY }],
-      }}
-    >
-      <Pressable
-        onPress={handleBack}
-        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-      >
-        <Ionicons name="chevron-back" size={26} color="#6F8A6A" />
-      </Pressable>
-      <PhaseHeader
-        phase={1}
-        title="How You Operate"
-        current={currentIndex + 1}
-        total={PHASE_1_QUESTIONS.length}
-      />
-
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      {/* Animated content area */}
       <Animated.View
         style={{
-          opacity: questionOpacity,
-          alignItems: 'center',
-          marginTop: 32,
+          flex: 1,
+          paddingTop: 16,
+          paddingBottom: 24,
+          paddingHorizontal: 28,
+          opacity: screenOpacity,
+          transform: [{ translateY: screenTranslateY }],
         }}
       >
-        <Text
-          style={{
-            fontSize: 22,
-            fontFamily: 'Lora_700Bold',
-            color: '#2F3E2F',
-            lineHeight: 32,
-            textAlign: 'center',
-          }}
-        >
-          {currentQuestion.text}
-        </Text>
+        <PhaseHeader
+          phase={1}
+          title="How You Operate"
+          current={currentIndex + 1}
+          total={PHASE_1_QUESTIONS.length}
+        />
 
-        <Text
+        <Animated.View
           style={{
-            marginTop: 10,
-            fontSize: 12,
-            fontFamily: 'Inter_400Regular',
-            color: 'rgba(47,62,47,0.45)',
-            textAlign: 'center',
-            letterSpacing: 0.3,
-          }}
-        >
-          {guidanceText}
-        </Text>
-
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            paddingHorizontal: 4,
-            marginTop: 40,
-          }}
-        >
-          {scaleValues.map((v) => (
-            <ScaleButton
-              key={v}
-              value={v}
-              selected={selectedValue === v}
-              onPress={() => handleSelect(v)}
-            />
-          ))}
-        </View>
-
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            paddingHorizontal: 4,
-            marginTop: 10,
+            opacity: questionOpacity,
+            alignItems: 'center',
+            marginTop: 32,
           }}
         >
           <Text
             style={{
-              fontSize: 11,
-              fontFamily: 'Inter_400Regular',
-              color: 'rgba(47,62,47,0.45)',
+              fontSize: 22,
+              fontFamily: 'Lora_700Bold',
+              color: '#2F3E2F',
+              lineHeight: 32,
+              textAlign: 'center',
             }}
           >
-            {leftLabel}
+            {currentQuestion.text}
           </Text>
+
           <Text
             style={{
-              fontSize: 11,
+              marginTop: 10,
+              fontSize: 12,
               fontFamily: 'Inter_400Regular',
               color: 'rgba(47,62,47,0.45)',
+              textAlign: 'center',
+              letterSpacing: 0.3,
             }}
           >
-            {rightLabel}
+            {guidanceText}
           </Text>
-        </View>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              width: '100%',
+              paddingHorizontal: 4,
+              marginTop: 40,
+            }}
+          >
+            {scaleValues.map((v) => (
+              <ScaleButton
+                key={v}
+                value={v}
+                selected={selectedValue === v}
+                onPress={() => handleSelect(v)}
+              />
+            ))}
+          </View>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              width: '100%',
+              paddingHorizontal: 4,
+              marginTop: 10,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 11,
+                fontFamily: 'Inter_400Regular',
+                color: 'rgba(47,62,47,0.45)',
+              }}
+            >
+              {leftLabel}
+            </Text>
+            <Text
+              style={{
+                fontSize: 11,
+                fontFamily: 'Inter_400Regular',
+                color: 'rgba(47,62,47,0.45)',
+              }}
+            >
+              {rightLabel}
+            </Text>
+          </View>
+        </Animated.View>
+
+        {currentIndex > 0 && (
+          <AnimatedPressable
+            onPress={handlePrevious}
+            style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 4, marginTop: 32 }}
+            accessibilityRole="button"
+            accessibilityLabel="Previous question"
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontFamily: 'Inter_400Regular',
+                color: COLORS.textSecondary,
+              }}
+            >
+              ← Previous
+            </Text>
+          </AnimatedPressable>
+        )}
       </Animated.View>
-
-      {currentIndex > 0 && (
-        <AnimatedPressable
-          onPress={handlePrevious}
-          style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 4, marginTop: 32 }}
-          accessibilityRole="button"
-          accessibilityLabel="Previous question"
-        >
-          <Text
-            style={{
-              fontSize: 14,
-              fontFamily: 'Inter_400Regular',
-              color: COLORS.textSecondary,
-            }}
-          >
-            ← Previous
-          </Text>
-        </AnimatedPressable>
-      )}
-    </Animated.View>
+    </View>
   );
 }

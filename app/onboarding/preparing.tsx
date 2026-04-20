@@ -1,7 +1,8 @@
 import React, { useContext, useEffect, useRef } from 'react';
-import { Text, Animated, Image } from 'react-native';
+import { Text, Animated, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 
@@ -56,6 +57,30 @@ export default function PreparingScreen() {
         transform: [{ translateY: screenTranslateY }],
       }}
     >
+      {/* Back button */}
+      <Pressable
+        onPress={() => {
+          console.log('[Preparing] Back pressed');
+          router.back();
+        }}
+        style={{
+          position: 'absolute',
+          top: insets.top + 8,
+          left: 16,
+          zIndex: 999,
+          width: 44,
+          height: 44,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 22,
+        }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <Ionicons name="chevron-back" size={26} color="rgba(255,255,255,0.7)" />
+      </Pressable>
+
       {/* logo */}
       <Animated.Image
         source={require('@/assets/images/c5285e11-d314-42f2-b5cc-3466932600b8.jpeg')}

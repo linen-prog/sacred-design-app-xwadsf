@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useFonts, Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/lora';
+
 
 const PHASES = [
   'How You Operate',
@@ -16,11 +16,6 @@ export default function IntroScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({ Lora_400Regular, Lora_600SemiBold });
-
-  function handleBack() {
-    console.log('[Intro] Back pressed');
-    router.back();
-  }
 
   function handleContinue() {
     console.log('[Intro] Continue pressed');
@@ -35,24 +30,11 @@ export default function IntroScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F6F1E8' }}>
-      {/* Back button */}
-      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16 }}>
-        <Pressable
-          onPress={handleBack}
-          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Ionicons name="chevron-back" size={26} color="#6F8A6A" />
-        </Pressable>
-      </View>
-
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
           paddingHorizontal: 32,
-          paddingTop: 36,
+          paddingTop: 16,
           paddingBottom: bottomPadding + 100,
           alignItems: 'center',
         }}

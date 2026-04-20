@@ -157,19 +157,6 @@ export default function RevealScreen() {
     router.replace('/(tabs)');
   };
 
-  const handleDailyAlignment = async () => {
-    console.log('[Reveal] "Go to My Daily Alignment" pressed');
-    // Fire-and-forget backend save
-    saveToBackend();
-    try {
-      await AsyncStorage.setItem('hasCompletedQuiz', 'true');
-      console.log('[Reveal] hasCompletedQuiz set to true, navigating to tabs (daily alignment)');
-    } catch (e) {
-      console.log('[Reveal] AsyncStorage error:', e);
-    }
-    router.replace('/(tabs)');
-  };
-
   if (!sacredDesignResult || !content) {
     return (
       <View style={styles.fallbackContainer}>
@@ -182,12 +169,13 @@ export default function RevealScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
       <Animated.View style={{ opacity: screenOpacity }}>
 
         {/* Section 1 — Header */}
@@ -239,22 +227,22 @@ export default function RevealScreen() {
           </View>
         </View>
 
-        {/* Section 9 — Primary CTA Button */}
+        {/* Section 9 — CTA Button */}
         <AnimatedPressable onPress={handleCTA} style={styles.ctaButton}>
-          <Text style={styles.ctaLabel}>Bring Your Design to Life</Text>
-        </AnimatedPressable>
-
-        {/* Section 10 — Secondary CTA Button */}
-        <AnimatedPressable onPress={handleDailyAlignment} style={styles.ctaSecondaryButton}>
-          <Text style={styles.ctaSecondaryLabel}>Go to My Daily Alignment</Text>
+          <Text style={styles.ctaLabel}>Begin Your Journey</Text>
         </AnimatedPressable>
 
       </Animated.View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: REVEAL_COLORS.background,
+  },
   scroll: {
     flex: 1,
     backgroundColor: REVEAL_COLORS.background,
