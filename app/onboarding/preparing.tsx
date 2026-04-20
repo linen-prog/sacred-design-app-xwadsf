@@ -22,17 +22,14 @@ export default function PreparingScreen() {
   useEffect(() => {
     if (sacredDesignResult && !hasNavigated.current) {
       hasNavigated.current = true;
-      console.log('[Preparing] sacredDesignResult ready — writing completion state before navigating to reveal');
-      markQuizComplete(); // synchronous — blocks guard immediately
+      console.log('[Preparing] sacredDesignResult ready — navigating to /reveal immediately');
+      markQuizComplete(); // synchronous flag — must be first
+      router.replace('/reveal'); // navigate immediately — don't wait for writes
+      // writes happen in background — they'll be done before user taps CTA
       Promise.all([
         completeOnboarding(),
         AsyncStorage.setItem('hasCompletedQuiz', 'true'),
-      ])
-        .catch((e) => console.warn('[Preparing] Failed to write completion state:', e))
-        .finally(() => {
-          console.log('[Preparing] Completion state written, navigating to /reveal');
-          router.replace('/reveal');
-        });
+      ]).catch((e) => console.warn('[Preparing] Failed to write completion state:', e));
     }
   }, [sacredDesignResult, router]);
 
@@ -59,17 +56,14 @@ export default function PreparingScreen() {
     const timer = setTimeout(() => {
       if (!hasNavigated.current) {
         hasNavigated.current = true;
-        console.log('[Preparing] Fallback timeout — writing completion state before navigating to reveal');
-        markQuizComplete(); // synchronous — blocks guard immediately
+        console.log('[Preparing] Fallback timeout — navigating to /reveal immediately');
+        markQuizComplete(); // synchronous flag — must be first
+        router.replace('/reveal'); // navigate immediately — don't wait for writes
+        // writes happen in background — they'll be done before user taps CTA
         Promise.all([
           completeOnboarding(),
           AsyncStorage.setItem('hasCompletedQuiz', 'true'),
-        ])
-          .catch((e) => console.warn('[Preparing] Fallback: failed to write completion state:', e))
-          .finally(() => {
-            console.log('[Preparing] Fallback: completion state written, navigating to /reveal');
-            router.replace('/reveal');
-          });
+        ]).catch((e) => console.warn('[Preparing] Fallback: failed to write completion state:', e));
       }
     }, 4000);
 

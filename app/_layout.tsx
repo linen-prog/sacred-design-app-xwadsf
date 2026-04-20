@@ -140,6 +140,7 @@ function SubscriptionRedirect() {
 
     let cancelled = false;
     isOnboardingComplete().then((done) => {
+      if (isQuizJustCompleted()) return; // guard inside async callback — flag is still true when Promise resolves
       if (cancelled) return;
       if (!done) {
         router.replace("/onboarding");
