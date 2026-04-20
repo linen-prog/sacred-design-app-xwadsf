@@ -8,36 +8,77 @@ import {
   Platform,
   ScrollView,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
 
-const BG = "#F6F1E8";
-const TEXT = "#2F3E2F";
-const TEXT_MUTED = "#9A9A8E";
-const ACCENT = "#6F8A6A";
-const BORDER = "rgba(47,62,47,0.12)";
+const BG = "#0A0E1A";
+const CARD_BG = "#131929";
+const TEXT = "#F5F0E8";
+const TEXT_MUTED = "#8B7355";
+const ACCENT = "#C9A84C";
+const BORDER = "rgba(201,168,76,0.18)";
+const DIVIDER_COLOR = "rgba(201,168,76,0.15)";
 const DANGER = "#C0392B";
+const INPUT_BG = "#1A2035";
 
 type Mode = "signin" | "signup";
 
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { signInWithEmail, signUpWithEmail, fetchUser } = useAuth();
+  const { signInWithEmail, signUpWithEmail, signInWithApple, signInWithGoogle, fetchUser } = useAuth() as any;
 
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
   function handleModeSwitch(next: Mode) {
     console.log("[AuthScreen] Switching mode to:", next);
     setMode(next);
     setError("");
+  }
+
+  async function handleAppleSignIn() {
+    console.log("[AuthScreen] 'Continue with Apple' pressed");
+    setError("");
+    setAppleLoading(true);
+    try {
+      await signInWithApple();
+      console.log("[AuthScreen] Apple sign-in succeeded — fetching user and navigating to tabs");
+      await fetchUser?.();
+      router.replace("/(tabs)");
+    } catch (e: any) {
+      console.warn("[AuthScreen] Apple sign-in error:", e);
+      setError(e?.message || "Apple sign-in failed. Please try again.");
+    } finally {
+      setAppleLoading(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    console.log("[AuthScreen] 'Continue with Google' pressed");
+    setError("");
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+      console.log("[AuthScreen] Google sign-in succeeded — fetching user and navigating to tabs");
+      await fetchUser?.();
+      router.replace("/(tabs)");
+    } catch (e: any) {
+      console.warn("[AuthScreen] Google sign-in error:", e);
+      setError(e?.message || "Google sign-in failed. Please try again.");
+    } finally {
+      setGoogleLoading(false);
+    }
   }
 
   async function handleSubmit() {
@@ -62,7 +103,7 @@ export default function AuthScreen() {
         await signInWithEmail(email.trim(), password);
       }
       console.log("[AuthScreen] Auth succeeded — calling fetchUser then navigating to tabs");
-      await fetchUser();
+      await fetchUser?.();
       router.replace("/(tabs)");
     } catch (e: any) {
       console.warn("[AuthScreen] Auth error:", e);
@@ -79,7 +120,8 @@ export default function AuthScreen() {
   }
 
   const isSignUp = mode === "signup";
-  const submitLabel = loading ? "..." : isSignUp ? "Create Account" : "Sign In";
+  const submitLabel = isSignUp ? "Create Account" : "Sign In";
+  const anyLoading = loading || appleLoading || googleLoading;
 
   return (
     <KeyboardAvoidingView
@@ -115,6 +157,45 @@ export default function AuthScreen() {
               Sign Up
             </Text>
           </Pressable>
+        </View>
+
+        {/* Apple Sign In — FIRST (App Store requirement) */}
+        <Pressable
+          style={[styles.appleButton, (appleLoading || anyLoading) && styles.buttonDisabled]}
+          onPress={handleAppleSignIn}
+          disabled={anyLoading}
+        >
+          {appleLoading ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <>
+              <MaterialCommunityIcons name="apple" size={20} color="#FFFFFF" style={styles.socialIcon} />
+              <Text style={styles.appleButtonText}>Continue with Apple</Text>
+            </>
+          )}
+        </Pressable>
+
+        {/* Google Sign In */}
+        <Pressable
+          style={[styles.googleButton, (googleLoading || anyLoading) && styles.buttonDisabled]}
+          onPress={handleGoogleSignIn}
+          disabled={anyLoading}
+        >
+          {googleLoading ? (
+            <ActivityIndicator color="#333333" size="small" />
+          ) : (
+            <>
+              <AntDesign name="google" size={18} color="#4285F4" style={styles.socialIcon} />
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </>
+          )}
+        </Pressable>
+
+        {/* Divider */}
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or continue with email</Text>
+          <View style={styles.dividerLine} />
         </View>
 
         {/* Fields */}
@@ -157,11 +238,15 @@ export default function AuthScreen() {
 
         {/* Submit */}
         <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[styles.button, (loading || anyLoading) && styles.buttonDisabled]}
           onPress={handleSubmit}
-          disabled={loading}
+          disabled={anyLoading}
         >
-          <Text style={styles.buttonText}>{submitLabel}</Text>
+          {loading ? (
+            <ActivityIndicator color="#0A0E1A" size="small" />
+          ) : (
+            <Text style={styles.buttonText}>{submitLabel}</Text>
+          )}
         </Pressable>
 
         {/* Error */}
@@ -197,7 +282,7 @@ export default function AuthScreen() {
             }}
             style={{ marginTop: 8, padding: 8, alignSelf: "center" }}
           >
-            <Text style={{ fontSize: 11, color: "rgba(47,62,47,0.3)" }}>🔍 Debug Auth</Text>
+            <Text style={{ fontSize: 11, color: "rgba(201,168,76,0.3)" }}>🔍 Debug Auth</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -229,10 +314,10 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: "row",
-    backgroundColor: "rgba(47,62,47,0.07)",
+    backgroundColor: "rgba(201,168,76,0.08)",
     borderRadius: 50,
     padding: 4,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   tab: {
     flex: 1,
@@ -249,14 +334,68 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
   },
   tabTextActive: {
+    color: "#0A0E1A",
+  },
+  appleButton: {
+    backgroundColor: "#000000",
+    borderRadius: 12,
+    paddingVertical: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  appleButtonText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
     color: "#FFFFFF",
+    letterSpacing: 0.2,
+  },
+  googleButton: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingVertical: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.10)",
+  },
+  googleButtonText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
+    color: "#333333",
+    letterSpacing: 0.2,
+  },
+  socialIcon: {
+    marginRight: 10,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 24,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: DIVIDER_COLOR,
+  },
+  dividerText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: TEXT_MUTED,
+    letterSpacing: 0.3,
   },
   fields: {
     gap: 14,
     marginBottom: 24,
   },
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: INPUT_BG,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
@@ -268,18 +407,20 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: ACCENT,
-    borderRadius: 50,
+    borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
+    minHeight: 52,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.55,
   },
   buttonText: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 15,
-    color: "#FFFFFF",
+    color: "#0A0E1A",
     letterSpacing: 0.2,
   },
   errorText: {
@@ -299,5 +440,9 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     color: TEXT_MUTED,
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _cardBg: {
+    backgroundColor: CARD_BG,
   },
 });

@@ -26,6 +26,7 @@ const TEXT_MUTED = "#8A8070";
 const TEXT_LIGHT = "#A8B5A2";
 const CARD_BG = "#FFFDF7";
 const ACCENT = "#6F8A6A";
+const GOLD = "#C9A84C";
 const DIVIDER = "rgba(61,53,48,0.07)";
 
 interface AlignmentHistoryItem {
@@ -41,6 +42,7 @@ interface AlignmentHistoryItem {
   secondary_archetype: string;
   blend_name: string;
   generated_at: string;
+  hasReflection?: boolean;
 }
 
 function formatDate(iso: string): string {
@@ -110,6 +112,15 @@ function AnimatedCard({ index, children }: { index: number; children: React.Reac
   );
 }
 
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionHeaderText}>{title}</Text>
+      <View style={styles.sectionHeaderLine} />
+    </View>
+  );
+}
+
 export default function JourneyScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -118,7 +129,7 @@ export default function JourneyScreen() {
   const [error, setError] = useState("");
   const [reflections, setReflections] = useState<ReflectionItem[]>([]);
   const [reflectionsLoading, setReflectionsLoading] = useState(true);
-  const [showAllReflections, setShowAllReflections] = useState(false);
+  const [expandedReflections, setExpandedReflections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadHistory();
@@ -159,7 +170,6 @@ export default function JourneyScreen() {
       }
       const data: AlignmentHistoryItem[] = await res.json();
       console.log("[Journey] History loaded:", data.length, "entries");
-      // Newest first
       const sorted = [...data].sort((a, b) => b.day_number - a.day_number);
       setHistory(sorted);
     } catch (e) {
@@ -187,14 +197,23 @@ export default function JourneyScreen() {
     });
   }
 
+  function toggleReflectionExpand(id: string) {
+    console.log("[Journey] Toggle reflection expand — id:", id);
+    setExpandedReflections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
   const totalDays = history.length;
   const subtitleText = totalDays > 0
     ? `Day ${history[history.length - 1]?.day_number ?? totalDays} of your Sacred Design`
     : "Your Sacred Design journey";
-
-  const visibleReflections = showAllReflections ? reflections : reflections.slice(0, 3);
-  const hasMoreReflections = reflections.length > 3;
-  const viewAllLabel = `View all ${reflections.length} reflections`;
 
   return (
     <ScrollView
@@ -209,40 +228,8 @@ export default function JourneyScreen() {
       <Text style={styles.title}>Journey</Text>
       <Text style={styles.subtitle}>{subtitleText}</Text>
 
-      {/* Reflections section */}
-      {!reflectionsLoading && reflections.length > 0 && (
-        <View style={styles.reflectionsSection}>
-          <Text style={styles.reflectionsSectionTitle}>My Reflections</Text>
-          <View style={{ gap: 12 }}>
-            {visibleReflections.map((item) => {
-              const dateStr = formatDate(item.completed_at);
-              const dayLabel = `Day ${item.day_number}`;
-              const actionTruncated = item.action.length > 60 ? item.action.slice(0, 60).trimEnd() + "…" : item.action;
-              return (
-                <View key={item.id} style={styles.reflectionCard}>
-                  <View style={styles.reflectionCardTop}>
-                    <Text style={styles.reflectionDayLabel}>{dayLabel}</Text>
-                    <Text style={styles.reflectionDate}>{dateStr}</Text>
-                  </View>
-                  <Text style={styles.reflectionAction}>{actionTruncated}</Text>
-                  <Text style={styles.reflectionText} numberOfLines={3}>{item.reflection_text}</Text>
-                </View>
-              );
-            })}
-          </View>
-          {hasMoreReflections && !showAllReflections && (
-            <Pressable
-              onPress={() => {
-                console.log("[Journey] 'View all reflections' pressed");
-                setShowAllReflections(true);
-              }}
-              style={styles.viewAllButton}
-            >
-              <Text style={styles.viewAllText}>{viewAllLabel}</Text>
-            </Pressable>
-          )}
-        </View>
-      )}
+      {/* ── Section 1: Past Alignments ── */}
+      <SectionHeader title="Past Alignments" />
 
       {loading ? (
         <View style={{ gap: 12 }}>
@@ -281,6 +268,7 @@ export default function JourneyScreen() {
             const dateStr = formatDate(item.generated_at);
             const dayLevelLabel = `Day ${item.day_number}`;
             const actionTruncated = truncateAction(item.action);
+            const hasReflection = item.hasReflection === true;
             return (
               <AnimatedCard key={item.id} index={index}>
                 <Pressable
@@ -292,7 +280,14 @@ export default function JourneyScreen() {
                 >
                   <View style={styles.historyCardTop}>
                     <Text style={styles.historyMeta}>{dayLevelLabel}</Text>
-                    <Text style={styles.historyDate}>{dateStr}</Text>
+                    <View style={styles.historyCardTopRight}>
+                      {hasReflection && (
+                        <View style={styles.reflectedBadge}>
+                          <Text style={styles.reflectedBadgeText}>✓ Reflected</Text>
+                        </View>
+                      )}
+                      <Text style={styles.historyDate}>{dateStr}</Text>
+                    </View>
                   </View>
                   <Text style={styles.historyAction}>
                     {actionTruncated}
@@ -305,6 +300,46 @@ export default function JourneyScreen() {
               </AnimatedCard>
             );
           })}
+        </View>
+      )}
+
+      {/* ── Section 2: Your Reflections ── */}
+      {!reflectionsLoading && reflections.length > 0 && (
+        <View style={styles.reflectionsSection}>
+          <SectionHeader title="Your Reflections" />
+          <View style={{ gap: 12 }}>
+            {reflections.map((item) => {
+              const dateStr = formatDate(item.completed_at);
+              const dayLabel = `Day ${item.day_number}`;
+              const actionTruncated = item.action.length > 60 ? item.action.slice(0, 60).trimEnd() + "…" : item.action;
+              const isExpanded = expandedReflections.has(item.id);
+              return (
+                <AnimatedCard key={item.id} index={0}>
+                  <Pressable
+                    onPress={() => toggleReflectionExpand(item.id)}
+                    style={styles.reflectionCard}
+                  >
+                    <View style={styles.reflectionCardTop}>
+                      <Text style={styles.reflectionDayLabel}>{dayLabel}</Text>
+                      <Text style={styles.reflectionDate}>{dateStr}</Text>
+                    </View>
+                    <Text style={styles.reflectionAction}>{actionTruncated}</Text>
+                    <Text
+                      style={styles.reflectionText}
+                      numberOfLines={isExpanded ? undefined : 3}
+                    >
+                      {item.reflection_text}
+                    </Text>
+                    {item.reflection_text && item.reflection_text.length > 120 && (
+                      <Text style={styles.expandToggle}>
+                        {isExpanded ? "Show less ↑" : "Read more ↓"}
+                      </Text>
+                    )}
+                  </Pressable>
+                </AnimatedCard>
+              );
+            })}
+          </View>
         </View>
       )}
     </ScrollView>
@@ -331,12 +366,30 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: TEXT_MUTED,
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: 28,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 12,
+  },
+  sectionHeaderText: {
+    fontFamily: "Lora_400Regular",
+    fontSize: 20,
+    color: TEXT,
+    letterSpacing: -0.3,
+    flexShrink: 0,
+  },
+  sectionHeaderLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: DIVIDER,
   },
   emptyArea: {
     backgroundColor: CARD_BG,
     borderRadius: 20,
-    minHeight: 220,
+    minHeight: 180,
     alignItems: "center",
     justifyContent: "center",
     // @ts-expect-error — RN web supports boxShadow
@@ -387,6 +440,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
+  historyCardTopRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   historyMeta: {
     fontFamily: "Inter_500Medium",
     fontSize: 12,
@@ -397,6 +455,18 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 12,
     color: TEXT_MUTED,
+  },
+  reflectedBadge: {
+    backgroundColor: "rgba(201,168,76,0.12)",
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  reflectedBadgeText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+    color: GOLD,
+    letterSpacing: 0.2,
   },
   historyAction: {
     fontFamily: "Lora_400Regular",
@@ -422,14 +492,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   reflectionsSection: {
-    marginBottom: 32,
-  },
-  reflectionsSectionTitle: {
-    fontFamily: "Lora_400Regular",
-    fontSize: 22,
-    color: TEXT,
-    marginBottom: 16,
-    letterSpacing: -0.3,
+    marginTop: 36,
   },
   reflectionCard: {
     backgroundColor: CARD_BG,
@@ -474,15 +537,10 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
     lineHeight: 21,
   },
-  viewAllButton: {
-    marginTop: 12,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  viewAllText: {
+  expandToggle: {
     fontFamily: "Inter_400Regular",
-    fontSize: 13,
+    fontSize: 12,
     color: ACCENT,
-    textAlign: "center",
+    marginTop: 6,
   },
 });

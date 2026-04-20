@@ -1,22 +1,40 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
+  Pressable,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 import { ARCHETYPE_CONTENT, ArchetypeName } from "@/app/reveal";
+import { apiFetch } from "@/lib/auth";
 
 const BG = "#F6F1E8";
 const TEXT = "#2F3E2F";
 const ACCENT = "#6F8A6A";
+const GOLD = "#C9A84C";
 const TEXT_MUTED = "rgba(47,62,47,0.55)";
 const TEXT_BODY = "rgba(47,62,47,0.8)";
 const TEXT_ITEM = "rgba(47,62,47,0.75)";
 const DIVIDER = "rgba(47,62,47,0.08)";
 const PLACEHOLDER_BG = "rgba(47,62,47,0.12)";
 const SECTION_LABEL_COLOR = "rgba(47,62,47,0.4)";
+const FOCUS_CARD_BG = "#1A2035";
+const FOCUS_CARD_TEXT = "#F5F0E8";
+const FOCUS_CARD_MUTED = "rgba(245,240,232,0.55)";
+
+interface TodayAlignment {
+  id: string;
+  action: string;
+  guidance: string;
+  somatic_cue: string;
+  scripture: string;
+  reflection_prompt: string;
+  day_number: number;
+  blend_name?: string;
+}
 
 const SECONDARY_INFLUENCE: Record<string, string> = {
   'Peacemaker': 'Brings a calming, relational quality to how you show up.',
@@ -70,6 +88,100 @@ function renderListOrString(value: string[] | string | undefined, fallback?: str
   return <Text style={styles.bodyText}>{value}</Text>;
 }
 
+function TodayFocusCard() {
+  const router = useRouter();
+  const [todayAlignment, setTodayAlignment] = useState<TodayAlignment | null>(null);
+  const [loadingFocus, setLoadingFocus] = useState(true);
+
+  useEffect(() => {
+    loadTodayFocus();
+  }, []);
+
+  async function loadTodayFocus() {
+    console.log("[MyDesign] GET /api/alignments/today");
+    try {
+      const res = await apiFetch("/api/alignments/today");
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn("[MyDesign] GET /api/alignments/today failed:", res.status, errText);
+        setLoadingFocus(false);
+        return;
+      }
+      const data: { alignment: TodayAlignment | null } = await res.json();
+      console.log("[MyDesign] Today alignment:", data.alignment ? data.alignment.id : "null");
+      setTodayAlignment(data.alignment);
+    } catch (e) {
+      console.warn("[MyDesign] loadTodayFocus error:", e);
+    } finally {
+      setLoadingFocus(false);
+    }
+  }
+
+  function handleViewAlignment() {
+    if (!todayAlignment) return;
+    console.log("[MyDesign] 'View Full Alignment' pressed — id:", todayAlignment.id);
+    router.push({
+      pathname: "/alignment-detail",
+      params: {
+        alignmentId: todayAlignment.id,
+        action: todayAlignment.action,
+        guidance: todayAlignment.guidance,
+        somatic_cue: todayAlignment.somatic_cue,
+        scripture: todayAlignment.scripture,
+        reflection_prompt: todayAlignment.reflection_prompt,
+        day_number: String(todayAlignment.day_number),
+        blend_name: todayAlignment.blend_name ?? "",
+      },
+    });
+  }
+
+  function handleGenerateAlignment() {
+    console.log("[MyDesign] 'Generate Today's Alignment' pressed — navigating to home tab");
+    router.push("/(tabs)");
+  }
+
+  if (loadingFocus) {
+    return (
+      <View style={styles.focusCard}>
+        <Text style={styles.focusLabel}>TODAY'S FOCUS</Text>
+        <Text style={styles.focusLoadingText}>Loading…</Text>
+      </View>
+    );
+  }
+
+  if (!todayAlignment) {
+    return (
+      <View style={styles.focusCard}>
+        <Text style={styles.focusLabel}>TODAY'S FOCUS</Text>
+        <Text style={styles.focusEmptyText}>No alignment yet for today.</Text>
+        <Pressable
+          onPress={handleGenerateAlignment}
+          style={styles.focusButton}
+        >
+          <Text style={styles.focusButtonText}>Generate Today's Alignment →</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const actionTruncated = todayAlignment.action.length > 120
+    ? todayAlignment.action.slice(0, 120).trimEnd() + "…"
+    : todayAlignment.action;
+
+  return (
+    <View style={styles.focusCard}>
+      <Text style={styles.focusLabel}>TODAY'S FOCUS</Text>
+      <Text style={styles.focusAction} numberOfLines={2}>{actionTruncated}</Text>
+      <Pressable
+        onPress={handleViewAlignment}
+        style={styles.focusButton}
+      >
+        <Text style={styles.focusButtonText}>View Full Alignment →</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function MyDesignScreen() {
   const { sacredDesignResult } = useContext(DiscoveryContext);
 
@@ -119,6 +231,9 @@ export default function MyDesignScreen() {
       contentContainerStyle={styles.resultContent}
       showsVerticalScrollIndicator={false}
     >
+      {/* Today's Focus card — top of Design tab */}
+      <TodayFocusCard />
+
       {/* Top section */}
       <Text style={styles.eyebrow}>YOUR SACRED DESIGN</Text>
       <Text style={styles.blendName}>{sacredDesignResult.blend_name}</Text>
@@ -194,6 +309,58 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 24,
     paddingBottom: 120,
+  },
+
+  // Today's Focus card
+  focusCard: {
+    backgroundColor: FOCUS_CARD_BG,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    marginBottom: 32,
+    borderLeftWidth: 3,
+    borderLeftColor: GOLD,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  focusLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 10,
+    letterSpacing: 2.5,
+    color: GOLD,
+    marginBottom: 10,
+  },
+  focusAction: {
+    fontFamily: "Lora_400Regular",
+    fontSize: 16,
+    color: FOCUS_CARD_TEXT,
+    lineHeight: 25,
+    marginBottom: 16,
+  },
+  focusEmptyText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: FOCUS_CARD_MUTED,
+    lineHeight: 21,
+    marginBottom: 14,
+  },
+  focusLoadingText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: FOCUS_CARD_MUTED,
+    lineHeight: 21,
+  },
+  focusButton: {
+    alignSelf: "flex-start",
+  },
+  focusButtonText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 14,
+    color: GOLD,
+    letterSpacing: 0.2,
   },
 
   // Empty state

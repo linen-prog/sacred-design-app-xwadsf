@@ -22,6 +22,9 @@ const BUTTON_BG = "#6F8A6A";
 const SKELETON_BG = "#E8E3DA";
 const SUCCESS_TINT = "#EAF2EA";
 const SUCCESS_TEXT = "#4A7A4A";
+const BANNER_BG = "#FDF6E3";
+const BANNER_BORDER = "#C9A84C";
+const BANNER_TEXT = "#7A5C1E";
 
 interface DailyAlignment {
   id: string;
@@ -39,6 +42,12 @@ interface DailyAlignment {
   generated_at: string;
 }
 
+interface ProgressData {
+  day_count: number;
+  streak: number;
+  last_active_date?: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resolveImageSource(
   source: string | number | ImageSourcePropType | undefined
@@ -46,6 +55,26 @@ function resolveImageSource(
   if (!source) return { uri: "" };
   if (typeof source === "string") return { uri: source };
   return source as ImageSourcePropType;
+}
+
+function getTimeGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "Good morning";
+  if (hour >= 12 && hour < 17) return "Good afternoon";
+  if (hour >= 17 && hour < 21) return "Good evening";
+  return "Good night";
+}
+
+function getDaysAway(lastActiveDateStr: string): number {
+  try {
+    const last = new Date(lastActiveDateStr);
+    const today = new Date();
+    last.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return Math.floor((today.getTime() - last.getTime()) / 86400000);
+  } catch {
+    return 0;
+  }
 }
 
 function SkeletonLine({ width, height = 14 }: { width: number | string; height?: number }) {
@@ -109,9 +138,11 @@ export default function HomeScreen() {
   const [alignment, setAlignment] = useState<DailyAlignment | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [progress, setProgress] = useState<{ day_count: number; streak: number } | null>(null);
+  const [progress, setProgress] = useState<ProgressData | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const bannerOpacity = useRef(new Animated.Value(0)).current;
 
   // On mount: if result is missing and user is signed in, try to restore from backend
   useEffect(() => {
@@ -155,9 +186,17 @@ export default function HomeScreen() {
     try {
       const res = await apiFetch("/api/progress");
       if (res.ok) {
-        const data = await res.json();
+        const data: ProgressData = await res.json();
         console.log("[Home] /api/progress response:", data);
         setProgress(data);
+        // Animate banner in if needed
+        if (data.last_active_date) {
+          const daysAway = getDaysAway(data.last_active_date);
+          if (daysAway >= 2) {
+            console.log("[Home] User was away for", daysAway, "days — showing re-engagement banner");
+            Animated.timing(bannerOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+          }
+        }
       }
     } catch (e) {
       // non-critical, ignore
@@ -184,7 +223,6 @@ export default function HomeScreen() {
         setAlignment(data.alignment);
         Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
       } else {
-        // No alignment yet today — generate one
         await generateAlignment();
       }
     } catch (e) {
@@ -248,7 +286,41 @@ export default function HomeScreen() {
     });
   }
 
+  function handleDismissBanner() {
+    console.log("[Home] Re-engagement banner dismissed");
+    Animated.timing(bannerOpacity, { toValue: 0, duration: 250, useNativeDriver: true }).start(() => {
+      setBannerDismissed(true);
+    });
+  }
+
   const topPadding = insets.top + 20;
+
+  // Compute greeting
+  const firstName = user ? (String((user as any).name ?? "")).split(" ")[0] : "";
+  const blendName = sacredDesignResult?.blend_name ?? "";
+
+  let greetingLine = getTimeGreeting();
+  let isWelcomeBack = false;
+  if (progress?.last_active_date) {
+    const daysAway = getDaysAway(progress.last_active_date);
+    if (daysAway >= 1) {
+      isWelcomeBack = true;
+    }
+  }
+
+  if (isWelcomeBack && firstName) {
+    greetingLine = `Welcome back, ${firstName}`;
+  } else if (firstName) {
+    greetingLine = `${getTimeGreeting()}, ${firstName}`;
+  }
+
+  const showBanner =
+    !bannerDismissed &&
+    progress?.last_active_date != null &&
+    getDaysAway(progress.last_active_date) >= 2;
+
+  const daysAwayCount = progress?.last_active_date ? getDaysAway(progress.last_active_date) : 0;
+  const bannerMessage = `You were away for ${daysAwayCount} days. Your sacred design is waiting for you. 🌿`;
 
   // ── State A: quiz not complete ──────────────────────────────────────────────
   if (!sacredDesignResult) {
@@ -313,8 +385,24 @@ export default function HomeScreen() {
         <Text style={styles.settingsIcon}>⚙</Text>
       </Pressable>
       <Text style={styles.eyebrow}>SACRED DESIGN</Text>
-      <Text style={styles.heroTitle}>Today's{"\n"}Alignment</Text>
-      <Text style={styles.subtitle}>Your daily practice awaits.</Text>
+
+      {/* Dynamic greeting */}
+      <Text style={styles.heroTitle}>{greetingLine}</Text>
+      {blendName ? (
+        <Text style={styles.blendSubtitle}>Your sacred design: {blendName}</Text>
+      ) : (
+        <Text style={styles.subtitle}>Your daily practice awaits.</Text>
+      )}
+
+      {/* Re-engagement banner */}
+      {showBanner && (
+        <Animated.View style={[styles.reengageBanner, { opacity: bannerOpacity }]}>
+          <Text style={styles.reengageText}>{bannerMessage}</Text>
+          <Pressable onPress={handleDismissBanner} style={styles.reengageDismiss}>
+            <Text style={styles.reengageDismissText}>✕</Text>
+          </Pressable>
+        </Animated.View>
+      )}
 
       {showProgressRow && (
         <View style={styles.progressRow}>
@@ -405,15 +493,15 @@ const styles = StyleSheet.create({
     letterSpacing: 3.5,
     color: TEXT_MUTED,
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 16,
   },
   heroTitle: {
     fontFamily: "Lora_700Bold",
-    fontSize: 42,
+    fontSize: 34,
     color: TEXT,
     textAlign: "center",
-    lineHeight: 52,
-    marginBottom: 16,
+    lineHeight: 44,
+    marginBottom: 8,
   },
   subtitle: {
     fontFamily: "Inter_400Regular",
@@ -421,7 +509,50 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
     textAlign: "center",
     lineHeight: 22,
-    marginBottom: 48,
+    marginBottom: 24,
+  },
+  blendSubtitle: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: TEXT_MUTED,
+    textAlign: "center",
+    fontStyle: "italic",
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  reengageBanner: {
+    width: "100%",
+    backgroundColor: BANNER_BG,
+    borderRadius: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: BANNER_BORDER,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    shadowColor: "#C9A84C",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  reengageText: {
+    flex: 1,
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: BANNER_TEXT,
+    lineHeight: 21,
+    fontStyle: "italic",
+  },
+  reengageDismiss: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  reengageDismissText: {
+    fontSize: 14,
+    color: BANNER_TEXT,
+    opacity: 0.6,
   },
   card: {
     width: "100%",
@@ -542,5 +673,9 @@ const styles = StyleSheet.create({
   settingsIcon: {
     fontSize: 18,
     color: TEXT_MUTED,
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _unused: {
+    backgroundColor: SUCCESS_TEXT,
   },
 });

@@ -20,6 +20,7 @@ const TEXT_MUTED = "#9A9A8E";
 const TEXT_LIGHT = "#B8B0A4";
 const CARD_BG = "#FFFFFF";
 const BUTTON_BG = "#6F8A6A";
+const GOLD = "#C9A84C";
 const DIVIDER = "rgba(44,58,44,0.08)";
 const SUCCESS_TINT = "#EAF2EA";
 const SUCCESS_TEXT = "#4A7A4A";
@@ -37,12 +38,20 @@ export default function AlignmentDetailScreen() {
     scripture: string;
     reflection_prompt: string;
     day_number: string;
+    blend_name?: string;
+    hasReflection?: string;
   }>();
 
   const [reflectionText, setReflectionText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [validationMsg, setValidationMsg] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Mark as Done state
+  const alreadyDone = params.hasReflection === "true";
+  const [markDoneLoading, setMarkDoneLoading] = useState(false);
+  const [markDoneSuccess, setMarkDoneSuccess] = useState(alreadyDone);
+  const [markDoneMsg, setMarkDoneMsg] = useState("");
 
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const checkScale = useRef(new Animated.Value(0.6)).current;
@@ -62,6 +71,33 @@ export default function AlignmentDetailScreen() {
   function handleBack() {
     console.log("[AlignmentDetail] Back button pressed");
     router.back();
+  }
+
+  async function handleMarkDone() {
+    if (markDoneSuccess || markDoneLoading) return;
+    console.log("[AlignmentDetail] 'Mark as Done' pressed — alignmentId:", alignmentId);
+    setMarkDoneLoading(true);
+    setMarkDoneMsg("");
+    try {
+      const res = await apiFetch(`/api/alignments/${alignmentId}/complete`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn("[AlignmentDetail] POST /complete failed:", res.status, errText);
+        setMarkDoneMsg("Couldn't mark as done. Try again.");
+        setMarkDoneLoading(false);
+        return;
+      }
+      console.log("[AlignmentDetail] Alignment marked as done:", alignmentId);
+      setMarkDoneSuccess(true);
+      setMarkDoneMsg("Done! Great work today.");
+    } catch (e) {
+      console.warn("[AlignmentDetail] handleMarkDone error:", e);
+      setMarkDoneMsg("Couldn't mark as done. Try again.");
+    } finally {
+      setMarkDoneLoading(false);
+    }
   }
 
   async function handleSubmitReflection() {
@@ -87,7 +123,6 @@ export default function AlignmentDetailScreen() {
       }
       const data = await res.json();
       console.log("[AlignmentDetail] Reflection saved:", data);
-      // Show success overlay
       setShowSuccess(true);
       Animated.parallel([
         Animated.timing(overlayOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
@@ -102,6 +137,22 @@ export default function AlignmentDetailScreen() {
       setSubmitting(false);
     }
   }
+
+  const markDoneButtonStyle = markDoneSuccess
+    ? [styles.markDoneButton, styles.markDoneButtonDone]
+    : markDoneLoading
+    ? [styles.markDoneButton, styles.markDoneButtonLoading]
+    : styles.markDoneButton;
+
+  const markDoneLabel = markDoneLoading
+    ? "Marking…"
+    : markDoneSuccess
+    ? "✓ Done"
+    : "Mark as Done ✓";
+
+  const markDoneTextStyle = markDoneSuccess
+    ? [styles.markDoneText, styles.markDoneTextDone]
+    : styles.markDoneText;
 
   return (
     <KeyboardAvoidingView
@@ -150,6 +201,23 @@ export default function AlignmentDetailScreen() {
         </View>
 
         <View style={styles.divider} />
+
+        {/* Mark as Done */}
+        <View style={styles.markDoneSection}>
+          <AnimatedPressable
+            onPress={handleMarkDone}
+            disabled={markDoneSuccess || markDoneLoading}
+          >
+            <View style={markDoneButtonStyle}>
+              <Text style={markDoneTextStyle}>{markDoneLabel}</Text>
+            </View>
+          </AnimatedPressable>
+          {markDoneMsg ? (
+            <Text style={markDoneSuccess ? styles.markDoneMsgSuccess : styles.markDoneMsgError}>
+              {markDoneMsg}
+            </Text>
+          ) : null}
+        </View>
 
         {/* Reflect */}
         <View style={styles.section}>
@@ -271,6 +339,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: TEXT,
     lineHeight: 26,
+  },
+  markDoneSection: {
+    marginBottom: 28,
+    alignItems: "flex-start",
+  },
+  markDoneButton: {
+    borderWidth: 1.5,
+    borderColor: GOLD,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  markDoneButtonDone: {
+    backgroundColor: "rgba(201,168,76,0.10)",
+    borderColor: "rgba(201,168,76,0.4)",
+  },
+  markDoneButtonLoading: {
+    opacity: 0.6,
+  },
+  markDoneText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 14,
+    color: GOLD,
+    letterSpacing: 0.2,
+  },
+  markDoneTextDone: {
+    color: "rgba(201,168,76,0.7)",
+  },
+  markDoneMsgSuccess: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: SUCCESS_TEXT,
+    marginTop: 8,
+    lineHeight: 18,
+  },
+  markDoneMsgError: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: DANGER,
+    marginTop: 8,
+    lineHeight: 18,
   },
   reflectPrompt: {
     fontFamily: "Inter_400Regular",
