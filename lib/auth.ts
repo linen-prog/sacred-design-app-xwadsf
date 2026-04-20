@@ -76,4 +76,16 @@ export async function clearAuthTokens() {
   }
 }
 
+export async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
+  const token = await getSessionToken();
+  return fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers ?? {}),
+    },
+  });
+}
+
 export { API_URL };

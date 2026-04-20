@@ -109,10 +109,10 @@ export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!sacredDesignResult) return;
+    if (!sacredDesignResult || !phase4Scores) return;
     generateAlignment();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sacredDesignResult]);
+  }, [sacredDesignResult, phase4Scores]);
 
   async function generateAlignment() {
     if (!sacredDesignResult) return;

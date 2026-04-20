@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
-import { getSessionToken } from "@/lib/auth";
+import { getSessionToken, API_URL } from "@/lib/auth";
 
-export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || "";
+export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || API_URL;
 
 export const isBackendConfigured = (): boolean => {
   return !!BACKEND_URL && BACKEND_URL.length > 0;

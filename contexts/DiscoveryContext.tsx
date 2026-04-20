@@ -155,18 +155,36 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
 
   // Restore persisted result on mount
   useEffect(() => {
-    AsyncStorage.getItem('sacredDesignResult').then(stored => {
-      if (stored) {
+    Promise.all([
+      AsyncStorage.getItem('sacredDesignResult'),
+      AsyncStorage.getItem('phase4Scores'),
+    ]).then(([storedResult, storedPhase4]) => {
+      if (storedResult) {
         try {
-          const parsed = JSON.parse(stored);
+          const parsed = JSON.parse(storedResult);
           setSacredDesignResult(parsed);
           console.log('[DiscoveryContext] Restored sacredDesignResult from storage:', parsed);
         } catch (e) {
           console.log('[DiscoveryContext] Failed to parse stored sacredDesignResult:', e);
         }
       }
+      if (storedPhase4) {
+        try {
+          setPhase4Scores(JSON.parse(storedPhase4));
+          console.log('[DiscoveryContext] Restored phase4Scores from storage');
+        } catch (e) {
+          console.log('[DiscoveryContext] Failed to parse stored phase4Scores:', e);
+        }
+      }
     });
   }, []);
+
+  // Persist phase4Scores whenever it changes
+  useEffect(() => {
+    if (phase4Scores) {
+      AsyncStorage.setItem('phase4Scores', JSON.stringify(phase4Scores)).catch(() => {});
+    }
+  }, [phase4Scores]);
 
   const setAnswer = useCallback((id: string, value: number) => {
     console.log(`[DiscoveryContext] setAnswer: ${id} = ${value}`);
@@ -181,13 +199,13 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     setPhase3Scores(null);
     setPhase4Scores(null);
     setSacredDesignResult(null);
-    AsyncStorage.removeItem('sacredDesignResult').catch(() => {});
+    AsyncStorage.multiRemove(['sacredDesignResult', 'phase4Scores']).catch(() => {});
   }, []);
 
   const clearSacredDesign = useCallback(() => {
     console.log('[DiscoveryContext] clearSacredDesign — clearing result and quiz flags');
     setSacredDesignResult(null);
-    AsyncStorage.multiRemove(['sacredDesignResult', 'hasCompletedQuiz', 'hasSeenOnboarding']).catch(() => {});
+    AsyncStorage.multiRemove(['sacredDesignResult', 'phase4Scores', 'hasCompletedQuiz', 'hasSeenOnboarding']).catch(() => {});
   }, []);
 
   const computePhase1Scores = useCallback(() => {
