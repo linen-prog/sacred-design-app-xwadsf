@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -102,6 +102,7 @@ export default function RevealScreen() {
   const router = useRouter();
   const { sacredDesignResult } = useContext(DiscoveryContext);
   const screenOpacity = useRef(new Animated.Value(0)).current;
+  const [saving, setSaving] = useState(false);
 
   const primary = sacredDesignResult?.primary_archetype as ArchetypeName | undefined;
   const secondary = sacredDesignResult?.secondary_archetype as ArchetypeName | undefined;
@@ -145,15 +146,18 @@ export default function RevealScreen() {
   }
 
   const handleCTA = async () => {
-    console.log('[Reveal] "Bring Your Design to Life" pressed');
-    // Fire-and-forget backend save
-    saveToBackend();
+    console.log('[Reveal] "Continue to My Daily Alignment" pressed');
+    setSaving(true);
+    try {
+      await saveToBackend();
+    } catch (e) {
+      // don't block navigation on backend failure
+    }
     try {
       await AsyncStorage.setItem('hasCompletedQuiz', 'true');
       console.log('[Reveal] hasCompletedQuiz set to true, navigating to tabs');
-    } catch (e) {
-      console.log('[Reveal] AsyncStorage error:', e);
-    }
+    } catch (e) {}
+    setSaving(false);
     router.replace('/(tabs)');
   };
 
@@ -228,8 +232,12 @@ export default function RevealScreen() {
         </View>
 
         {/* Section 9 — CTA Button */}
-        <AnimatedPressable onPress={handleCTA} style={styles.ctaButton}>
-          <Text style={styles.ctaLabel}>Begin Your Journey</Text>
+        <AnimatedPressable
+          onPress={handleCTA}
+          style={[styles.ctaButton, saving && { opacity: 0.6 }]}
+          disabled={saving}
+        >
+          <Text style={styles.ctaLabel}>{saving ? 'Saving…' : 'Continue to My Daily Alignment'}</Text>
         </AnimatedPressable>
 
       </Animated.View>

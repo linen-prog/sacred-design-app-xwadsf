@@ -9,10 +9,20 @@ import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 export default function PreparingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { computeSacredDesign } = useContext(DiscoveryContext);
+  const { computeSacredDesign, sacredDesignResult } = useContext(DiscoveryContext);
   const pulseScale = useRef(new Animated.Value(1)).current;
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const screenTranslateY = useRef(new Animated.Value(20)).current;
+  const hasNavigated = useRef(false);
+
+  // Navigate as soon as result is ready
+  useEffect(() => {
+    if (sacredDesignResult && !hasNavigated.current) {
+      hasNavigated.current = true;
+      console.log('[Preparing] sacredDesignResult ready, navigating to reveal');
+      router.replace('/reveal');
+    }
+  }, [sacredDesignResult, router]);
 
   useEffect(() => {
     console.log('[Preparing] Computing Sacred Design');
@@ -33,10 +43,14 @@ export default function PreparingScreen() {
     );
     pulseAnimation.start();
 
+    // Fallback timeout in case state update is delayed
     const timer = setTimeout(() => {
-      console.log('[Preparing] Navigating to reveal screen');
-      router.replace('/reveal');
-    }, 3000);
+      if (!hasNavigated.current) {
+        hasNavigated.current = true;
+        console.log('[Preparing] Fallback timeout: navigating to reveal');
+        router.replace('/reveal');
+      }
+    }, 4000);
 
     return () => {
       clearTimeout(timer);

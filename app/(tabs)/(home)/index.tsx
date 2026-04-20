@@ -112,10 +112,10 @@ export default function HomeScreen() {
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // On mount: if quiz is marked complete but result is missing, try to restore from backend
+  // On mount: if result is missing and user is signed in, try to restore from backend
   useEffect(() => {
-    if (!sacredDesignResult && quizCompleted) {
-      console.log("[Home] sacredDesignResult missing but quizCompleted=true — attempting restore from backend");
+    if (!sacredDesignResult && isSignedIn) {
+      console.log("[Home] No local result but user is signed in — attempting restore from backend");
       apiFetch("/api/archetypes/me")
         .then(async (res) => {
           if (!res.ok) {
