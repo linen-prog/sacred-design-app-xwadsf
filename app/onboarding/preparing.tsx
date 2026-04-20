@@ -5,6 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { completeOnboarding } from '@/utils/onboardingStorage';
+import { markQuizComplete } from '@/utils/quizState';
 
 export default function PreparingScreen() {
   const router = useRouter();
@@ -19,8 +22,17 @@ export default function PreparingScreen() {
   useEffect(() => {
     if (sacredDesignResult && !hasNavigated.current) {
       hasNavigated.current = true;
-      console.log('[Preparing] sacredDesignResult ready, navigating to reveal');
-      router.replace('/reveal');
+      console.log('[Preparing] sacredDesignResult ready — writing completion state before navigating to reveal');
+      markQuizComplete(); // synchronous — blocks guard immediately
+      Promise.all([
+        completeOnboarding(),
+        AsyncStorage.setItem('hasCompletedQuiz', 'true'),
+      ])
+        .catch((e) => console.warn('[Preparing] Failed to write completion state:', e))
+        .finally(() => {
+          console.log('[Preparing] Completion state written, navigating to /reveal');
+          router.replace('/reveal');
+        });
     }
   }, [sacredDesignResult, router]);
 
@@ -47,8 +59,17 @@ export default function PreparingScreen() {
     const timer = setTimeout(() => {
       if (!hasNavigated.current) {
         hasNavigated.current = true;
-        console.log('[Preparing] Fallback timeout: navigating to reveal');
-        router.replace('/reveal');
+        console.log('[Preparing] Fallback timeout — writing completion state before navigating to reveal');
+        markQuizComplete(); // synchronous — blocks guard immediately
+        Promise.all([
+          completeOnboarding(),
+          AsyncStorage.setItem('hasCompletedQuiz', 'true'),
+        ])
+          .catch((e) => console.warn('[Preparing] Fallback: failed to write completion state:', e))
+          .finally(() => {
+            console.log('[Preparing] Fallback: completion state written, navigating to /reveal');
+            router.replace('/reveal');
+          });
       }
     }, 4000);
 

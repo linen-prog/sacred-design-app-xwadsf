@@ -30,6 +30,7 @@ import {
   Inter_600SemiBold,
 } from "@expo-google-fonts/inter";
 import { isOnboardingComplete } from "@/utils/onboardingStorage";
+import { isQuizJustCompleted } from "@/utils/quizState";
 
 const DevErrorBoundary = __DEV__
   ? ErrorBoundary
@@ -52,11 +53,13 @@ function RootNavigator() {
     isOnboardingComplete().then((complete) => {
       setOnboardingComplete(complete);
     });
-  }, [pathname]);
+  }, []); // run once on mount — pathname changes must not re-trigger this
 
   useEffect(() => {
     if (onboardingComplete === null) return;
     async function checkOnboarding() {
+      if (isQuizJustCompleted()) return; // synchronous flag wins over any async race
+      if (pathname === '/reveal' || pathname === '/completion') return;
       try {
         const [hasCompletedQuiz, hasSeenOnboarding] = await Promise.all([
           AsyncStorage.getItem("hasCompletedQuiz"),
@@ -82,7 +85,7 @@ function RootNavigator() {
       }
     }
     checkOnboarding();
-  }, [onboardingComplete, router]);
+  }, [onboardingComplete, pathname, router]);
 
   if (onboardingComplete === null) {
     return null;
@@ -121,7 +124,9 @@ function SubscriptionRedirect() {
   const pathname = usePathname();
 
   useEffect(() => {
+    if (isQuizJustCompleted()) return; // synchronous flag wins over any async race
     if (loading || authLoading) return;
+    if (pathname === '/reveal' || pathname === '/completion') return;
     const onAuthScreen = pathname === "/auth-screen";
     if (onAuthScreen) return;
     if (!user) {
