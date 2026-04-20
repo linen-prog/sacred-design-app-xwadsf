@@ -11,12 +11,18 @@ export default function Phase2ReflectionScreen() {
     router.push('/onboarding/phase-3');
   }
 
+  function handleBack() {
+    console.log('[Phase2Reflection] Back pressed');
+    router.back();
+  }
+
   return (
     <ReflectionScreen
       icon={Layers}
       text={"These patterns aren't flaws—they're ways you've learned to move through the world."}
       buttonLabel="Continue"
       onContinue={handleContinue}
+      onBack={handleBack}
     />
   );
 }

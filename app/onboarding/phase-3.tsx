@@ -1,7 +1,8 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase3Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
@@ -41,6 +42,17 @@ export default function Phase3Screen() {
 
   const currentQuestion = QUESTIONS[currentIndex];
   const selectedValue = answers[currentQuestion?.id ?? ''];
+
+  function handleBack() {
+    console.log('[Phase3] Back pressed');
+    if (!showIntro && currentIndex > 0) {
+      transitionToQuestion(currentIndex - 1);
+    } else if (!showIntro) {
+      setShowIntro(true);
+    } else {
+      router.back();
+    }
+  }
 
   function handleBegin() {
     console.log('[Phase3] Begin questions pressed');
@@ -96,7 +108,7 @@ export default function Phase3Screen() {
         style={{
           flex: 1,
           backgroundColor: COLORS.background,
-          paddingTop: insets.top + 24,
+          paddingTop: insets.top + 8,
           paddingBottom: insets.bottom + 32,
           paddingHorizontal: 32,
           alignItems: 'center',
@@ -105,6 +117,15 @@ export default function Phase3Screen() {
           transform: [{ translateY: screenTranslateY }],
         }}
       >
+        <Pressable
+          onPress={handleBack}
+          style={{ position: 'absolute', top: insets.top + 8, left: 16, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={26} color="#6F8A6A" />
+        </Pressable>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Text
             style={{
@@ -179,13 +200,22 @@ export default function Phase3Screen() {
       style={{
         flex: 1,
         backgroundColor: COLORS.background,
-        paddingTop: insets.top + 24,
+        paddingTop: insets.top + 8,
         paddingBottom: insets.bottom + 24,
         paddingHorizontal: 28,
         opacity: screenOpacity,
         transform: [{ translateY: screenTranslateY }],
       }}
     >
+      <Pressable
+        onPress={handleBack}
+        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <Ionicons name="chevron-back" size={26} color="#6F8A6A" />
+      </Pressable>
       <PhaseHeader
         phase={3}
         title="How You Show Up"

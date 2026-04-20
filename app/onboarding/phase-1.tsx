@@ -1,7 +1,8 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase1Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
@@ -71,6 +72,15 @@ export default function Phase1Screen() {
     }, 300);
   }
 
+  function handleBack() {
+    console.log('[Phase1] Back pressed');
+    if (currentIndex > 0) {
+      transitionToQuestion(currentIndex - 1);
+    } else {
+      router.back();
+    }
+  }
+
   function handlePrevious() {
     console.log('[Phase1] Previous question pressed');
     if (currentIndex > 0) {
@@ -87,13 +97,22 @@ export default function Phase1Screen() {
       style={{
         flex: 1,
         backgroundColor: COLORS.background,
-        paddingTop: insets.top + 24,
+        paddingTop: insets.top + 8,
         paddingBottom: insets.bottom + 24,
         paddingHorizontal: 28,
         opacity: screenOpacity,
         transform: [{ translateY: screenTranslateY }],
       }}
     >
+      <Pressable
+        onPress={handleBack}
+        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <Ionicons name="chevron-back" size={26} color="#6F8A6A" />
+      </Pressable>
       <PhaseHeader
         phase={1}
         title="How You Operate"
