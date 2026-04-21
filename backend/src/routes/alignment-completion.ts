@@ -12,6 +12,10 @@ interface CompleteAlignmentBody {
   reflection_text?: string;
 }
 
+interface ReflectionBody {
+  reflection_text: string;
+}
+
 function getTodayDate(): string {
   const now = new Date();
   return now.toISOString().split('T')[0];
@@ -475,6 +479,169 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
       };
     } catch (error) {
       app.logger.error({ err: error, userId, alignmentId: id }, 'Failed to complete alignment');
+      throw error;
+    }
+  });
+
+  // POST /api/alignments/:id/reflection
+  fastify.post('/api/alignments/:id/reflection', {
+    schema: {
+      description: 'Submit or update a reflection for an alignment',
+      tags: ['alignments'],
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+        },
+      },
+      body: {
+        type: 'object',
+        required: ['reflection_text'],
+        properties: {
+          reflection_text: { type: 'string', minLength: 1 },
+        },
+      },
+      response: {
+        200: {
+          description: 'Reflection submitted or updated',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            reflection: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                alignment_id: { type: 'string' },
+                reflection_text: { type: 'string' },
+                completed_at: { type: 'string', format: 'date-time' },
+              },
+            },
+          },
+        },
+        400: {
+          description: 'Bad request - missing or empty reflection_text',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+        401: {
+          description: 'Unauthorized',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+        404: {
+          description: 'Alignment not found',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+        500: {
+          description: 'Server error',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+      },
+    },
+  }, async (
+    request: FastifyRequest<{ Params: { id: string }; Body: ReflectionBody }>,
+    reply: FastifyReply
+  ): Promise<{ success: boolean; reflection: any } | void> => {
+    const session = await requireAuth(request, reply);
+    if (!session) return;
+
+    const userId = session.user.id;
+    const { id } = request.params;
+    const { reflection_text } = request.body;
+
+    app.logger.info({ userId, alignmentId: id }, 'Submitting reflection');
+
+    try {
+      // Validate reflection_text is not empty
+      if (!reflection_text || reflection_text.trim().length === 0) {
+        app.logger.warn({ userId, alignmentId: id }, 'Reflection text is empty');
+        return reply.status(400).send({ error: 'Reflection text is required and cannot be empty' });
+      }
+
+      // Fetch alignment and verify ownership
+      const alignments = await app.db
+        .select()
+        .from(schema.dailyAlignments)
+        .where(eq(schema.dailyAlignments.id, id))
+        .limit(1);
+
+      if (alignments.length === 0) {
+        app.logger.warn({ userId, alignmentId: id }, 'Alignment not found');
+        return reply.status(404).send({ error: 'Alignment not found' });
+      }
+
+      const alignment = alignments[0];
+
+      // Verify ownership
+      if (alignment.userId !== userId) {
+        app.logger.warn({ userId, alignmentId: id }, 'Alignment access denied');
+        return reply.status(403).send({ error: 'Access denied' });
+      }
+
+      // Check if reflection already exists
+      const existingReflections = await app.db
+        .select()
+        .from(schema.alignmentReflections)
+        .where(
+          and(
+            eq(schema.alignmentReflections.alignmentId, id),
+            eq(schema.alignmentReflections.userId, userId)
+          )
+        )
+        .limit(1);
+
+      let reflection;
+
+      if (existingReflections.length > 0) {
+        // Update existing reflection
+        const updated = await app.db
+          .update(schema.alignmentReflections)
+          .set({
+            reflectionText: reflection_text,
+            completedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(schema.alignmentReflections.alignmentId, id),
+              eq(schema.alignmentReflections.userId, userId)
+            )
+          )
+          .returning();
+
+        reflection = updated[0];
+        app.logger.info({ userId, alignmentId: id, reflectionId: reflection.id }, 'Reflection updated');
+      } else {
+        // Insert new reflection
+        const inserted = await app.db
+          .insert(schema.alignmentReflections)
+          .values({
+            userId,
+            alignmentId: id,
+            reflectionText: reflection_text,
+            completedAt: new Date(),
+          })
+          .returning();
+
+        reflection = inserted[0];
+        app.logger.info({ userId, alignmentId: id, reflectionId: reflection.id }, 'Reflection created');
+      }
+
+      app.logger.info({ userId, alignmentId: id }, 'Reflection submitted successfully');
+
+      return {
+        success: true,
+        reflection: {
+          id: reflection.id,
+          alignment_id: reflection.alignmentId,
+          reflection_text: reflection.reflectionText,
+          completed_at: reflection.completedAt.toISOString(),
+        },
+      };
+    } catch (error) {
+      app.logger.error({ err: error, userId, alignmentId: id }, 'Failed to submit reflection');
       throw error;
     }
   });

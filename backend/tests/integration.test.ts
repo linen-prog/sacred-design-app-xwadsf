@@ -256,6 +256,55 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 403);
     });
 
+    test("POST /api/alignments/{id}/reflection submits reflection when authenticated", async () => {
+      const res = await authenticatedApi(`/api/alignments/${alignmentId}/reflection`, authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reflection_text: "This was a thoughtful experience." }),
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.reflection).toBeDefined();
+      expect(data.reflection.reflection_text).toBeDefined();
+    });
+
+    test("POST /api/alignments/{id}/reflection returns 401 without authentication", async () => {
+      const res = await api(`/api/alignments/${alignmentId}/reflection`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reflection_text: "test" }),
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("POST /api/alignments/{id}/reflection returns 400 with missing reflection_text", async () => {
+      const res = await authenticatedApi(`/api/alignments/${alignmentId}/reflection`, authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/alignments/{id}/reflection returns 400 with empty reflection_text", async () => {
+      const res = await authenticatedApi(`/api/alignments/${alignmentId}/reflection`, authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reflection_text: "" }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/alignments/{id}/reflection returns 404 with nonexistent UUID", async () => {
+      const res = await authenticatedApi("/api/alignments/00000000-0000-0000-0000-000000000000/reflection", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reflection_text: "test" }),
+      });
+      await expectStatus(res, 404);
+    });
+
     test("GET /api/alignments/today returns alignment when authenticated", async () => {
       const res = await authenticatedApi("/api/alignments/today", authToken, {
         method: "GET",
