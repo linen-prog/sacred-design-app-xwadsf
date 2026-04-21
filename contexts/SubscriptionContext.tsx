@@ -19,6 +19,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useRef,
   ReactNode,
 } from "react";
 import { Platform } from "react-native";
@@ -100,6 +101,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [isConfigured, setIsConfigured] = useState(false);
+
+  // In-flight guard: prevents concurrent getCustomerInfo calls (RC 429 / code 16)
+  const isCheckingRef = useRef<boolean>(false);
+  // Throttle: skip re-check if last successful check was within 10 seconds
+  const lastCheckedRef = useRef<number>(0);
 
     // Fetch offerings via REST API for web platform
   const fetchOfferingsViaRest = async () => {
@@ -263,7 +269,22 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
   const checkSubscription = async () => {
     if (isWeb) return;
+
+    // Throttle: skip if checked within the last 10 seconds
+    if (Date.now() - lastCheckedRef.current < 10000) {
+      console.log("[RevenueCat] checkSubscription skipped — throttled (last check < 10s ago)");
+      return;
+    }
+
+    // In-flight guard: prevent concurrent getCustomerInfo calls (RC 429 / code 16)
+    if (isCheckingRef.current) {
+      console.log("[RevenueCat] checkSubscription skipped — another check already in progress");
+      return;
+    }
+
+    isCheckingRef.current = true;
     try {
+      console.log("[RevenueCat] checkSubscription: calling getCustomerInfo");
       const customerInfo = await Purchases.getCustomerInfo();
       const hasEntitlement =
         typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== "undefined";
@@ -277,11 +298,25 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       } else if (!__DEV__) {
         await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, "false").catch(() => {});
       }
-    } catch (error) {
-      console.error("[RevenueCat] Failed to check subscription:", error);
+      // Update throttle timestamp after a successful check
+      lastCheckedRef.current = Date.now();
+    } catch (error: any) {
+      // Gracefully handle RC 429 rate-limit (code 16 / backendErrorCode 7638)
+      const isRateLimit =
+        error?.code === 16 ||
+        String(error?.message ?? "").includes("7638") ||
+        String(error?.underlyingErrorMessage ?? "").includes("7638") ||
+        String(error?.message ?? "").toLowerCase().includes("another request in progress");
+      if (isRateLimit) {
+        console.warn("[RevenueCat] checkSubscription rate-limited (429 / code 16) — will retry on next call");
+      } else {
+        console.error("[RevenueCat] Failed to check subscription:", error);
+      }
       // Don't reset isSubscribed on error — the customerInfoUpdateListener
       // already set it from local cache after configure(). Overriding with false
       // would incorrectly show the paywall to subscribed users on network errors.
+    } finally {
+      isCheckingRef.current = false;
     }
   };
 
