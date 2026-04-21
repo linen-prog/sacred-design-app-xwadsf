@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Pressable,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { DiscoveryContext, SacredDesignResult } from "@/contexts/DiscoveryContext";
@@ -13,6 +14,7 @@ import { ARCHETYPE_CONTENT, ArchetypeName } from "@/app/reveal";
 import { getSessionToken, API_URL } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
+import { useRetakeQuiz } from "@/hooks/useRetakeQuiz";
 
 const BG = "#F6F1E8";
 const TEXT = "#2F3E2F";
@@ -319,6 +321,7 @@ export default function MyDesignScreen() {
   const { sacredDesignResult } = useContext(DiscoveryContext);
   const { user } = useAuth();
   const hasSyncedRef = useRef(false);
+  const { promptRetake } = useRetakeQuiz();
 
   // One-time sync: push existing local result to backend for users who completed
   // the quiz before the upsert call was added to computeSacredDesign.
@@ -404,6 +407,7 @@ export default function MyDesignScreen() {
 
       {/* Top section */}
       <Text style={styles.eyebrow}>YOUR SACRED DESIGN</Text>
+
       <Text style={styles.blendName}>{sacredDesignResult.blend_name}</Text>
       <Text style={styles.archetypeLine}>{archetypeLine}</Text>
 
@@ -485,6 +489,11 @@ export default function MyDesignScreen() {
           </>
         );
       })()}
+
+      {/* Retake — secondary action, bottom of screen */}
+      <TouchableOpacity onPress={promptRetake} style={styles.retakeButton}>
+        <Text style={styles.retakeButtonText}>Recalculate My Design</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -742,5 +751,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: ACCENT,
     opacity: 0.7,
+  },
+  retakeButton: {
+    alignSelf: "center",
+    marginTop: 32,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  retakeButtonText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: TEXT_MUTED,
+    textDecorationLine: "underline",
+    textAlign: "center",
   },
 });

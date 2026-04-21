@@ -33,11 +33,14 @@ export default function Phase4ReflectionScreen() {
   const { appState, isLoading, updateAppState } = useAppState();
   const { sacredDesignResult } = useContext(DiscoveryContext);
 
-  // Block re-entry if quiz is already completed
+  // Soft guard — allow entry if retakeQuiz() explicitly set this step, block accidental re-entry
   useEffect(() => {
     if (isLoading) return;
-    if (appState.quizCompleted) {
-      console.log('[Phase4Reflection] quizCompleted=true — blocking quiz re-entry, redirecting');
+    if (!appState.quizCompleted) return; // quiz not done yet — allow normal flow
+
+    // Quiz is completed. Only allow entry if retakeQuiz() explicitly set this step.
+    if (appState.currentOnboardingStep !== '/onboarding/intro') {
+      console.log('[Phase4Reflection] quizCompleted=true and not a retake — redirecting away');
       if (appState.revealViewed) {
         router.replace('/(tabs)');
       } else if (appState.revealUnlocked) {
@@ -45,8 +48,10 @@ export default function Phase4ReflectionScreen() {
       } else {
         router.replace('/partial-reveal');
       }
+    } else {
+      console.log('[Phase4Reflection] quizCompleted=true but retakeQuiz() was called — allowing entry');
     }
-  }, [isLoading, appState.quizCompleted, appState.revealViewed, appState.revealUnlocked, router]);
+  }, [isLoading, appState.quizCompleted, appState.currentOnboardingStep, appState.revealViewed, appState.revealUnlocked, router]);
 
   async function saveReflection() {
     if (reflectionText.trim()) {

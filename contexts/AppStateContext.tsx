@@ -6,12 +6,13 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
-import { AppState, DEFAULT_APP_STATE, loadAppState, updateAppState as updateAppStateUtil } from '@/utils/appState';
+import { AppState, DEFAULT_APP_STATE, loadAppState, updateAppState as updateAppStateUtil, retakeQuiz as retakeQuizUtil } from '@/utils/appState';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AppStateContextType {
   appState: AppState;
   updateAppState: (partial: Partial<AppState>) => Promise<AppState>;
+  retakeQuiz: () => Promise<AppState>;
   isLoading: boolean;
 }
 
@@ -52,8 +53,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return newState;
   }, []);
 
+  const handleRetakeQuiz = useCallback(async () => {
+    console.log('[AppStateContext] retakeQuiz triggered');
+    const newState = await retakeQuizUtil();
+    setAppState(newState);
+    console.log('[AppStateContext] retakeQuiz complete — React state synced');
+    return newState;
+  }, []);
+
   return (
-    <AppStateContext.Provider value={{ appState, updateAppState, isLoading }}>
+    <AppStateContext.Provider value={{ appState, updateAppState, retakeQuiz: handleRetakeQuiz, isLoading }}>
       {children}
     </AppStateContext.Provider>
   );

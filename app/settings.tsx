@@ -10,6 +10,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
+import { useRetakeQuiz } from "@/hooks/useRetakeQuiz";
 
 const BG = "#F6F1E8";
 const TEXT = "#2F3E2F";
@@ -61,6 +62,8 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { sacredDesignResult, clearSacredDesign } = useContext(DiscoveryContext);
+
+  const { promptRetake } = useRetakeQuiz();
 
   const isSignedIn = !!(user && (user as { isAnonymous?: boolean }).isAnonymous !== true);
   const userName = (user as { name?: string } | null)?.name ?? null;
@@ -150,6 +153,12 @@ export default function SettingsScreen() {
             <InfoRow label={blendName} />
           </>
         ) : null}
+        <RowDivider />
+        <TappableRow
+          label="Retake Quiz"
+          onPress={promptRetake}
+          danger
+        />
         <RowDivider />
         <TappableRow
           label="Retake Discovery"

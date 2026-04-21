@@ -91,6 +91,23 @@ export async function updateAppState(partial: Partial<AppState>): Promise<AppSta
   return next;
 }
 
+export async function retakeQuiz(): Promise<AppState> {
+  console.log('[AppState] retakeQuiz() — resetting quiz-related state');
+  const next = await updateAppState({
+    quizCompleted: false,
+    paywallReached: false,
+    revealUnlocked: false,
+    revealViewed: false,
+    dailyAlignmentReady: false,
+    primaryArchetype: null,
+    secondaryArchetype: null,
+    scoreBreakdown: null,
+    currentOnboardingStep: '/onboarding/intro',
+  });
+  console.log('[AppState] retakeQuiz() — state reset complete:', JSON.stringify(next));
+  return next;
+}
+
 export async function clearAppState(): Promise<void> {
   _memoryCache = null;
   try {

@@ -8,6 +8,7 @@ import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { OverallProgressBar } from '@/components/OverallProgressBar';
 import { saveCheckpoint } from '@/utils/quizCheckpoint';
+import { updateAppState } from '@/utils/appState';
 
 const PHASE_1_QUESTIONS = [
   { id: 'Q1', text: 'When conflict arises, I tend to step back and let others work it out.' },
@@ -37,6 +38,8 @@ export default function Phase1Screen() {
       Animated.timing(screenOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
       Animated.timing(screenTranslateY, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start();
+    console.log('[Phase1] mount — updating currentOnboardingStep to /onboarding/phase-1');
+    updateAppState({ currentOnboardingStep: '/onboarding/phase-1' }).catch(() => {});
   }, [screenOpacity, screenTranslateY]);
 
   const currentQuestion = PHASE_1_QUESTIONS[currentIndex];

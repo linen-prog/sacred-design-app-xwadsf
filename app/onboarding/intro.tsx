@@ -23,13 +23,16 @@ export default function IntroScreen() {
   const [checkpoint, setCheckpoint] = useState<QuizCheckpoint | null>(null);
   const [checkpointLoaded, setCheckpointLoaded] = useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const { appState, isLoading: appStateLoading } = useAppState();
+  const { appState, isLoading: appStateLoading, updateAppState } = useAppState();
 
-  // Block re-entry if quiz is already completed
+  // Soft guard — allow entry if retakeQuiz() explicitly set this step, block accidental re-entry
   useEffect(() => {
     if (appStateLoading) return;
-    if (appState.quizCompleted) {
-      console.log('[Intro] quizCompleted=true — blocking quiz re-entry, redirecting');
+    if (!appState.quizCompleted) return; // quiz not done yet — allow normal flow
+
+    // Quiz is completed. Only allow entry if retakeQuiz() explicitly set this step.
+    if (appState.currentOnboardingStep !== '/onboarding/intro') {
+      console.log('[Intro] quizCompleted=true and not a retake — redirecting away');
       if (appState.revealViewed) {
         router.replace('/(tabs)');
       } else if (appState.revealUnlocked) {
@@ -37,8 +40,10 @@ export default function IntroScreen() {
       } else {
         router.replace('/partial-reveal');
       }
+    } else {
+      console.log('[Intro] quizCompleted=true but retakeQuiz() was called — allowing entry');
     }
-  }, [appStateLoading, appState.quizCompleted, appState.revealViewed, appState.revealUnlocked, router]);
+  }, [appStateLoading, appState.quizCompleted, appState.currentOnboardingStep, appState.revealViewed, appState.revealUnlocked, router]);
 
   useEffect(() => {
     loadCheckpoint().then((cp) => {
@@ -54,8 +59,9 @@ export default function IntroScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkpointLoaded]);
 
-  function handleContinue() {
+  async function handleContinue() {
     console.log('[Intro] Continue pressed — starting fresh');
+    await updateAppState({ currentOnboardingStep: '/onboarding/phase-1' });
     router.push('/onboarding/phase-1');
   }
 
