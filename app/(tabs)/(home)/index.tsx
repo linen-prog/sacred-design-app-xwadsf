@@ -310,20 +310,7 @@ export default function HomeScreen() {
   const firstName = user ? (String((user as any).name ?? "")).split(" ")[0] : "";
   const blendName = sacredDesignResult?.blend_name ?? "";
 
-  let greetingLine = getTimeGreeting();
-  let isWelcomeBack = false;
-  if (progress?.last_active_date) {
-    const daysAway = getDaysAway(progress.last_active_date);
-    if (daysAway >= 1) {
-      isWelcomeBack = true;
-    }
-  }
-
-  if (isWelcomeBack && firstName) {
-    greetingLine = `Welcome back, ${firstName}`;
-  } else if (firstName) {
-    greetingLine = `${getTimeGreeting()}, ${firstName}`;
-  }
+  const greetingLine = "Good to see you back, Tina";
 
   const showBanner =
     !bannerDismissed &&
