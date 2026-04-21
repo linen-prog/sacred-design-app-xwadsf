@@ -6,6 +6,7 @@ import { useFonts, Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { loadCheckpoint, clearCheckpoint, getNextPhaseRoute, QuizCheckpoint } from '@/utils/quizCheckpoint';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
+import { useAppState } from '@/contexts/AppStateContext';
 
 const PHASE_META = [
   { num: 1, icon: '🌱', name: 'How You Operate', subname: 'The Foundation' },
@@ -22,6 +23,22 @@ export default function IntroScreen() {
   const [checkpoint, setCheckpoint] = useState<QuizCheckpoint | null>(null);
   const [checkpointLoaded, setCheckpointLoaded] = useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const { appState, isLoading: appStateLoading } = useAppState();
+
+  // Block re-entry if quiz is already completed
+  useEffect(() => {
+    if (appStateLoading) return;
+    if (appState.quizCompleted) {
+      console.log('[Intro] quizCompleted=true — blocking quiz re-entry, redirecting');
+      if (appState.revealViewed) {
+        router.replace('/(tabs)');
+      } else if (appState.revealUnlocked) {
+        router.replace('/onboarding/preparing');
+      } else {
+        router.replace('/partial-reveal');
+      }
+    }
+  }, [appStateLoading, appState.quizCompleted, appState.revealViewed, appState.revealUnlocked, router]);
 
   useEffect(() => {
     loadCheckpoint().then((cp) => {

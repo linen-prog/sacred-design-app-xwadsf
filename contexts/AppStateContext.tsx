@@ -6,12 +6,12 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
-import { AppState, DEFAULT_APP_STATE, loadAppState, updateAppState as updateAppStateFn } from '@/utils/appState';
+import { AppState, DEFAULT_APP_STATE, loadAppState, updateAppState as updateAppStateUtil } from '@/utils/appState';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AppStateContextType {
   appState: AppState;
-  updateAppState: (partial: Partial<AppState>) => Promise<void>;
+  updateAppState: (partial: Partial<AppState>) => Promise<AppState>;
   isLoading: boolean;
 }
 
@@ -37,17 +37,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const newStatus = user ? 'logged_in' : 'logged_out';
     if (appState.authStatus !== newStatus && !isLoading) {
       console.log('[AppStateContext] Auth status changed to:', newStatus);
-      updateAppStateFn({ authStatus: newStatus }).then((next) => {
+      updateAppStateUtil({ authStatus: newStatus }).then((next) => {
         setAppState(next);
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, isLoading]);
 
-  const updateAppState = useCallback(async (partial: Partial<AppState>) => {
+  const updateAppState = useCallback(async (partial: Partial<AppState>): Promise<AppState> => {
     console.log('[AppStateContext] updateAppState called with:', JSON.stringify(partial));
-    const next = await updateAppStateFn(partial);
-    setAppState(next);
+    const newState = await updateAppStateUtil(partial);
+    setAppState(newState);
+    console.log('[AppStateContext] updateAppState complete — React state synced');
+    return newState;
   }, []);
 
   return (

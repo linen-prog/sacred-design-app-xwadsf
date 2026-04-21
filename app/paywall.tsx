@@ -109,13 +109,16 @@ export default function PaywallScreen() {
 
   async function navigateAfterPurchase() {
     console.log("[Paywall] navigateAfterPurchase — updating appState and routing");
-    await updateAppState({
+    console.log("[Paywall] PRE-UPDATE appState:", JSON.stringify({ subscriptionActive: false, revealUnlocked: false }));
+    const newState = await updateAppState({
       subscriptionActive: true,
       revealUnlocked: true,
       currentOnboardingStep: 'preparing',
     });
-    console.log("[Paywall] Purchase successful — navigating to /onboarding/preparing");
+    console.log("[Paywall] POST-UPDATE state confirmed:", JSON.stringify(newState));
+    await new Promise(resolve => setTimeout(resolve, 75));
     router.replace("/onboarding/preparing");
+    console.log("[Paywall] Navigation triggered to /onboarding/preparing");
   }
 
   function handleClose() {

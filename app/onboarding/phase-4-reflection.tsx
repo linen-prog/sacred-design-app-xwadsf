@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -30,8 +30,23 @@ export default function Phase4ReflectionScreen() {
   const [reflectionText, setReflectionText] = useState('');
   const [saving, setSaving] = useState(false);
   const { isSubscribed } = useSubscription();
-  const { updateAppState } = useAppState();
+  const { appState, isLoading, updateAppState } = useAppState();
   const { sacredDesignResult } = useContext(DiscoveryContext);
+
+  // Block re-entry if quiz is already completed
+  useEffect(() => {
+    if (isLoading) return;
+    if (appState.quizCompleted) {
+      console.log('[Phase4Reflection] quizCompleted=true — blocking quiz re-entry, redirecting');
+      if (appState.revealViewed) {
+        router.replace('/(tabs)');
+      } else if (appState.revealUnlocked) {
+        router.replace('/onboarding/preparing');
+      } else {
+        router.replace('/partial-reveal');
+      }
+    }
+  }, [isLoading, appState.quizCompleted, appState.revealViewed, appState.revealUnlocked, router]);
 
   async function saveReflection() {
     if (reflectionText.trim()) {
@@ -53,9 +68,9 @@ export default function Phase4ReflectionScreen() {
     const secondaryArchetype = sacredDesignResult?.secondary_archetype ?? null;
     const scoreBreakdown = sacredDesignResult?.archetypeScores ?? null;
 
-    console.log('[Phase4Reflection] Saving quiz completion to appState — primary:', primaryArchetype, 'secondary:', secondaryArchetype);
+    console.log('[Phase4Reflection] PRE-UPDATE appState — saving quiz completion, primary:', primaryArchetype, 'secondary:', secondaryArchetype);
 
-    await updateAppState({
+    const newState = await updateAppState({
       quizCompleted: true,
       paywallReached: true,
       currentOnboardingStep: 'paywall',
@@ -63,6 +78,9 @@ export default function Phase4ReflectionScreen() {
       secondaryArchetype,
       scoreBreakdown,
     });
+
+    console.log('[Phase4Reflection] POST-UPDATE state confirmed:', JSON.stringify(newState));
+    await new Promise(resolve => setTimeout(resolve, 75));
 
     if (isSubscribed) {
       console.log('[Phase4Reflection] User is pro — navigating to /onboarding/preparing');

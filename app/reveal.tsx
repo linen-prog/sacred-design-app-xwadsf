@@ -233,21 +233,25 @@ export default function RevealScreen() {
       console.warn('[Reveal] completeOnboarding() failed:', e);
     }
     // Mark reveal as viewed in appState — this is the gate that lets users into tabs
+    let newState;
     try {
-      await updateAppState({
+      console.log('[Reveal] PRE-UPDATE appState — setting revealViewed=true, dailyAlignmentReady=true');
+      newState = await updateAppState({
         revealViewed: true,
         dailyAlignmentReady: true,
         currentOnboardingStep: null,
       });
-      console.log('[Reveal] appState updated: revealViewed=true, dailyAlignmentReady=true');
+      console.log('[Reveal] POST-UPDATE state confirmed:', JSON.stringify(newState));
     } catch (e) {
       console.warn('[Reveal] Failed to update appState:', e);
     }
     setSaving(false);
 
     if (user) {
-      console.log('[Reveal] User is signed in — navigating to tabs');
+      console.log('[Reveal] User is signed in — awaiting propagation delay then navigating to tabs');
+      await new Promise(resolve => setTimeout(resolve, 75));
       router.replace('/(tabs)');
+      console.log('[Reveal] Navigation triggered to /(tabs)');
     } else {
       console.log('[Reveal] User is not signed in — showing sign-in prompt');
       setShowSignInPrompt(true);

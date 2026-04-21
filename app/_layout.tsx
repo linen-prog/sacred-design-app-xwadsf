@@ -53,7 +53,12 @@ function RootNavigator() {
 
   useEffect(() => {
     // Wait for both auth and appState to resolve before routing.
-    if (authLoading || appStateLoading) return;
+    if (authLoading || appStateLoading) {
+      console.log('[RootNavigator] Waiting — authLoading:', authLoading, 'appStateLoading:', appStateLoading);
+      return;
+    }
+    console.log('[RootNavigator] Both loaded — proceeding with route decision');
+    console.log('[RootNavigator] Full appState:', JSON.stringify(appState));
 
     // If auth state changed, reset the guard so we re-evaluate.
     const prevUser = prevUserRef.current;
