@@ -8,7 +8,8 @@ import { calculateNewStreak } from './progress.js';
 import type { App } from '../index.js';
 
 interface CompleteAlignmentBody {
-  reflection_text: string;
+  completed: boolean;
+  reflection_text?: string;
 }
 
 function getTodayDate(): string {
@@ -361,7 +362,7 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
   // POST /api/alignments/:id/complete
   fastify.post('/api/alignments/:id/complete', {
     schema: {
-      description: 'Complete an alignment by submitting a reflection',
+      description: 'Mark an alignment as completed with optional reflection',
       tags: ['alignments'],
       params: {
         type: 'object',
@@ -372,8 +373,9 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
       },
       body: {
         type: 'object',
-        required: ['reflection_text'],
+        required: ['completed'],
         properties: {
+          completed: { type: 'boolean', enum: [true] },
           reflection_text: { type: 'string' },
         },
       },
@@ -383,7 +385,6 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            message: { type: 'string' },
           },
         },
         401: {
@@ -411,15 +412,15 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
   }, async (
     request: FastifyRequest<{ Params: { id: string }; Body: CompleteAlignmentBody }>,
     reply: FastifyReply
-  ): Promise<{ success: boolean; message: string } | void> => {
+  ): Promise<{ success: boolean } | void> => {
     const session = await requireAuth(request, reply);
     if (!session) return;
 
     const userId = session.user.id;
     const { id } = request.params;
-    const { reflection_text } = request.body;
+    const { completed, reflection_text } = request.body;
 
-    app.logger.info({ userId, alignmentId: id }, 'Completing alignment');
+    app.logger.info({ userId, alignmentId: id, completed }, 'Completing alignment');
 
     try {
       // Fetch alignment
@@ -455,23 +456,22 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
         .limit(1);
 
       if (existingReflections.length === 0) {
-        // Insert reflection only if it doesn't exist
+        // Insert reflection with optional text
         await app.db.insert(schema.alignmentReflections).values({
           userId,
           alignmentId: id,
-          reflectionText: reflection_text,
+          reflectionText: reflection_text || null,
           completedAt: new Date(),
         });
-        app.logger.info({ alignmentId: id, userId }, 'Reflection created');
+        app.logger.info({ alignmentId: id, userId, hasText: !!reflection_text }, 'Completion recorded');
       } else {
-        app.logger.info({ alignmentId: id, userId }, 'Reflection already exists, skipping insert');
+        app.logger.info({ alignmentId: id, userId }, 'Alignment already completed');
       }
 
       app.logger.info({ alignmentId: id, userId }, 'Alignment completed');
 
       return {
         success: true,
-        message: 'You\'re strengthening a new pattern.',
       };
     } catch (error) {
       app.logger.error({ err: error, userId, alignmentId: id }, 'Failed to complete alignment');
@@ -482,7 +482,7 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
   // GET /api/alignments/history
   fastify.get('/api/alignments/history', {
     schema: {
-      description: 'Get alignment history for the user (returns empty data if unauthenticated)',
+      description: 'Get alignment history for the user (returns empty array if unauthenticated)',
       tags: ['alignments'],
       response: {
         200: {
@@ -508,7 +508,7 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
                       {
                         type: 'object',
                         properties: {
-                          reflection_text: { type: 'string' },
+                          reflection_text: { type: ['string', 'null'] },
                           completed_at: { type: 'string', format: 'date-time' },
                         },
                       },
@@ -518,7 +518,6 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
                 },
               },
             },
-            total_days: { type: 'integer' },
           },
         },
         500: {
@@ -531,7 +530,7 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
   }, async (
     request: FastifyRequest,
     reply: FastifyReply
-  ): Promise<{ alignments: any[]; total_days: number }> => {
+  ): Promise<{ alignments: any[] }> => {
     try {
       // Convert Fastify headers to standard Headers
       const headers = new Headers();
@@ -545,12 +544,11 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
       const session = await app.auth.api.getSession({ headers });
       const userId = session?.user.id;
 
-      // If no authenticated user, return empty data
+      // If no authenticated user, return empty array
       if (!userId) {
         app.logger.info({}, 'Fetching alignment history for unauthenticated user');
         return {
           alignments: [],
-          total_days: 0,
         };
       }
 
@@ -594,7 +592,6 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
 
       return {
         alignments: alignmentsWithReflections,
-        total_days: alignmentsWithReflections.length,
       };
     } catch (error) {
       app.logger.error({ err: error }, 'Failed to fetch alignment history');

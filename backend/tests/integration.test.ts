@@ -200,7 +200,7 @@ describe("API Integration Tests", () => {
       const res = await authenticatedApi(`/api/alignments/${alignmentId}/complete`, authToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reflection_text: "This was a meaningful reflection." }),
+        body: JSON.stringify({ completed: true, reflection_text: "This was a meaningful reflection." }),
       });
       await expectStatus(res, 200);
       const data = await res.json();
@@ -211,12 +211,12 @@ describe("API Integration Tests", () => {
       const res = await api(`/api/alignments/${alignmentId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reflection_text: "test" }),
+        body: JSON.stringify({ completed: true }),
       });
       await expectStatus(res, 401);
     });
 
-    test("POST /api/alignments/{id}/complete returns 400 with missing reflection_text", async () => {
+    test("POST /api/alignments/{id}/complete returns 400 with missing required completed field", async () => {
       const res = await authenticatedApi(`/api/alignments/${alignmentId}/complete`, authToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -229,7 +229,7 @@ describe("API Integration Tests", () => {
       const res = await authenticatedApi("/api/alignments/00000000-0000-0000-0000-000000000000/complete", authToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reflection_text: "test" }),
+        body: JSON.stringify({ completed: true }),
       });
       await expectStatus(res, 404);
     });
@@ -250,7 +250,7 @@ describe("API Integration Tests", () => {
       const res = await authenticatedApi(`/api/alignments/${otherAlignmentId}/complete`, otherToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reflection_text: "test" }),
+        body: JSON.stringify({ completed: true }),
       });
 
       await expectStatus(res, 403);
@@ -280,7 +280,6 @@ describe("API Integration Tests", () => {
       const data = await res.json();
       expect(data.alignments).toBeDefined();
       expect(Array.isArray(data.alignments)).toBe(true);
-      expect(data.total_days).toBeDefined();
     });
 
     test("GET /api/alignments/history returns 200 with empty data when unauthenticated", async () => {
