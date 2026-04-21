@@ -68,26 +68,98 @@ describe("API Integration Tests", () => {
     });
   });
 
+  describe("Archetypes", () => {
+    const archetypePayload = {
+      primary_archetype: "Warrior",
+      secondary_archetype: "Sage",
+      blend_name: "Warrior Sage",
+      scores: {
+        avoidant_score: 3,
+        anxious_score: 2,
+        overactive_score: 4,
+        grounded_score: 7,
+      },
+    };
+
+    test("GET /api/archetypes/me returns quiz_completed: false before saving archetype", async () => {
+      const res = await authenticatedApi("/api/archetypes/me", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.quiz_completed).toBe(false);
+    });
+
+    test("POST /api/archetypes/save returns 400 with missing required fields", async () => {
+      const incompletePayload = { primary_archetype: "Warrior" };
+      const res = await authenticatedApi("/api/archetypes/save", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(incompletePayload),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/archetypes/save returns 401 without authentication", async () => {
+      const res = await api("/api/archetypes/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(archetypePayload),
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("POST /api/archetypes/save saves archetype when authenticated", async () => {
+      const res = await authenticatedApi("/api/archetypes/save", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(archetypePayload),
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.id).toBeDefined();
+      expect(data.user_id).toBeDefined();
+      expect(data.quiz_completed).toBe(true);
+    });
+
+    test("GET /api/archetypes/me returns quiz_completed: true after saving archetype", async () => {
+      const res = await authenticatedApi("/api/archetypes/me", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.quiz_completed).toBe(true);
+      expect(data.primary_archetype).toBeDefined();
+      expect(data.secondary_archetype).toBeDefined();
+      expect(data.blend_name).toBeDefined();
+      expect(data.scores).toBeDefined();
+    });
+
+    test("GET /api/archetypes/me returns 401 without authentication", async () => {
+      const res = await api("/api/archetypes/me", {
+        method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+  });
+
   describe("Alignments", () => {
     let alignmentId: string;
 
-    const generatePayload = {
-      primary_archetype: "Sage",
-      secondary_archetype: "Magician",
-      blend_name: "Sage Magician",
-      anxious_score: 4,
-      avoidant_score: 2,
-      overactive_score: 3,
-      grounded_score: 6,
-    };
+    test("POST /api/alignments/generate returns 404 when no archetype saved", async () => {
+      // Create a new user without a saved archetype
+      const { token: newUserToken } = await signUpTestUser();
+      const res = await authenticatedApi("/api/alignments/generate", newUserToken, {
+        method: "POST",
+      });
+      await expectStatus(res, 404);
+    });
 
     test("POST /api/alignments/generate creates alignment when authenticated", async () => {
       const res = await authenticatedApi("/api/alignments/generate", authToken, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(generatePayload),
       });
-      await expectStatus(res, 200);
+      await expectStatus(res, 201);
       const data = await res.json();
       expect(data.id).toBeDefined();
       alignmentId = data.id;
@@ -96,20 +168,8 @@ describe("API Integration Tests", () => {
     test("POST /api/alignments/generate returns 401 without authentication", async () => {
       const res = await api("/api/alignments/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(generatePayload),
       });
       await expectStatus(res, 401);
-    });
-
-    test("POST /api/alignments/generate returns 400 with missing required fields", async () => {
-      const incompletePayload = { primary_archetype: "Sage" };
-      const res = await authenticatedApi("/api/alignments/generate", authToken, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(incompletePayload),
-      });
-      await expectStatus(res, 400);
     });
 
     test("POST /api/alignments/{id}/complete completes alignment when authenticated", async () => {
@@ -154,10 +214,8 @@ describe("API Integration Tests", () => {
       // Create a new alignment with the first user
       const alignRes = await authenticatedApi("/api/alignments/generate", authToken, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(generatePayload),
       });
-      await expectStatus(alignRes, 200);
+      await expectStatus(alignRes, 201);
       const alignData = await alignRes.json();
       const otherAlignmentId = alignData.id;
 
@@ -233,81 +291,6 @@ describe("API Integration Tests", () => {
       const data = await res.json();
       expect(data.day_count).toBeDefined();
       expect(data.level).toBeDefined();
-    });
-  });
-
-  describe("Archetypes", () => {
-    const archetypePayload = {
-      primary_archetype: "Warrior",
-      secondary_archetype: "Sage",
-      blend_name: "Warrior Sage",
-      scores: {
-        avoidant_score: 3,
-        anxious_score: 2,
-        overactive_score: 4,
-        grounded_score: 7,
-      },
-    };
-
-    test("GET /api/archetypes/me returns quiz_completed: false before saving archetype", async () => {
-      const res = await authenticatedApi("/api/archetypes/me", authToken, {
-        method: "GET",
-      });
-      await expectStatus(res, 200);
-      const data = await res.json();
-      expect(data.quiz_completed).toBe(false);
-    });
-
-    test("POST /api/archetypes/save saves archetype when authenticated", async () => {
-      const res = await authenticatedApi("/api/archetypes/save", authToken, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(archetypePayload),
-      });
-      await expectStatus(res, 200);
-      const data = await res.json();
-      expect(data.id).toBeDefined();
-      expect(data.user_id).toBeDefined();
-      expect(data.quiz_completed).toBe(true);
-    });
-
-    test("POST /api/archetypes/save returns 401 without authentication", async () => {
-      const res = await api("/api/archetypes/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(archetypePayload),
-      });
-      await expectStatus(res, 401);
-    });
-
-    test("POST /api/archetypes/save returns 400 with missing required fields", async () => {
-      const incompletePayload = { primary_archetype: "Warrior" };
-      const res = await authenticatedApi("/api/archetypes/save", authToken, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(incompletePayload),
-      });
-      await expectStatus(res, 400);
-    });
-
-    test("GET /api/archetypes/me returns quiz_completed: true after saving archetype", async () => {
-      const res = await authenticatedApi("/api/archetypes/me", authToken, {
-        method: "GET",
-      });
-      await expectStatus(res, 200);
-      const data = await res.json();
-      expect(data.quiz_completed).toBe(true);
-      expect(data.primary_archetype).toBeDefined();
-      expect(data.secondary_archetype).toBeDefined();
-      expect(data.blend_name).toBeDefined();
-      expect(data.scores).toBeDefined();
-    });
-
-    test("GET /api/archetypes/me returns 401 without authentication", async () => {
-      const res = await api("/api/archetypes/me", {
-        method: "GET",
-      });
-      await expectStatus(res, 401);
     });
   });
 

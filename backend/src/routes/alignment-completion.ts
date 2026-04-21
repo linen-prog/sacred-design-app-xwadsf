@@ -1,21 +1,11 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, count } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
 import * as schema from '../db/schema/schema.js';
 import { calculateNewStreak } from './progress.js';
 import type { App } from '../index.js';
-
-interface GenerateAlignmentBody {
-  primary_archetype: string;
-  secondary_archetype: string;
-  blend_name: string;
-  anxious_score: number;
-  avoidant_score: number;
-  overactive_score: number;
-  grounded_score: number;
-}
 
 interface CompleteAlignmentBody {
   reflection_text: string;
@@ -46,24 +36,11 @@ export function register(app: App, fastify: any) {
   // POST /api/alignments/generate
   fastify.post('/api/alignments/generate', {
     schema: {
-      description: 'Generate a daily alignment for the authenticated user',
+      description: 'Generate a daily alignment using the user\'s saved archetype',
       tags: ['alignments'],
-      body: {
-        type: 'object',
-        required: ['primary_archetype', 'secondary_archetype', 'blend_name', 'anxious_score', 'avoidant_score', 'overactive_score', 'grounded_score'],
-        properties: {
-          primary_archetype: { type: 'string' },
-          secondary_archetype: { type: 'string' },
-          blend_name: { type: 'string' },
-          anxious_score: { type: 'number' },
-          avoidant_score: { type: 'number' },
-          overactive_score: { type: 'number' },
-          grounded_score: { type: 'number' },
-        },
-      },
       response: {
-        200: {
-          description: 'Daily alignment generated',
+        201: {
+          description: 'Daily alignment generated successfully',
           type: 'object',
           properties: {
             id: { type: 'string' },
@@ -78,11 +55,15 @@ export function register(app: App, fastify: any) {
             secondary_archetype: { type: 'string' },
             blend_name: { type: 'string' },
             generated_at: { type: 'string', format: 'date-time' },
-            already_completed: { type: 'boolean' },
           },
         },
         401: {
           description: 'Unauthorized',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+        404: {
+          description: 'Archetype not found',
           type: 'object',
           properties: { error: { type: 'string' } },
         },
@@ -94,7 +75,7 @@ export function register(app: App, fastify: any) {
       },
     },
   }, async (
-    request: FastifyRequest<{ Body: GenerateAlignmentBody }>,
+    request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any | void> => {
     const session = await requireAuth(request, reply);
@@ -103,32 +84,35 @@ export function register(app: App, fastify: any) {
     const userId = session.user.id;
     const today = getTodayDate();
 
-    app.logger.info({ userId }, 'Generating or retrieving alignment');
+    app.logger.info({ userId }, 'Generating alignment');
 
     try {
-      // Get or create user_progress
-      let userProgress = await app.db
+      // Query user's archetype
+      const archetypeRows = await app.db
         .select()
-        .from(schema.userProgress)
-        .where(eq(schema.userProgress.userId, userId))
+        .from(schema.userArchetypes)
+        .where(eq(schema.userArchetypes.userId, userId))
         .limit(1);
 
-      let dayCount = 1;
-      if (userProgress.length === 0) {
-        await app.db.insert(schema.userProgress).values({
-          userId,
-          dayCount: 0,
-          streak: 1,
-          lastActiveDate: '',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-        dayCount = 1;
-      } else {
-        dayCount = userProgress[0].dayCount + 1;
+      if (archetypeRows.length === 0) {
+        app.logger.info({ userId }, 'No archetype found');
+        return reply.status(404).send({ error: 'Archetype not found' });
       }
 
-      const level = determineLevelFromDayCount(dayCount - 1);
+      const archetype = archetypeRows[0];
+      const primary_archetype = archetype.primaryArchetype;
+      const secondary_archetype = archetype.secondaryArchetype;
+      const blend_name = archetype.blendName;
+      const scores = archetype.scores as Record<string, number>;
+
+      // Count existing alignments to determine day_number
+      const alignmentCountResult = await app.db
+        .select({ count: count() })
+        .from(schema.dailyAlignments)
+        .where(eq(schema.dailyAlignments.userId, userId));
+
+      const dayNumber = (alignmentCountResult[0]?.count ?? 0) + 1;
+      const level = determineLevelFromDayCount(dayNumber);
 
       // Check if alignment exists for today
       const existingAlignments = await app.db
@@ -143,20 +127,9 @@ export function register(app: App, fastify: any) {
         .limit(1);
 
       if (existingAlignments.length > 0) {
+        app.logger.info({ userId }, 'Alignment already exists for today');
         const alignment = existingAlignments[0];
-
-        // Check if reflection exists
-        const reflections = await app.db
-          .select()
-          .from(schema.alignmentReflections)
-          .where(eq(schema.alignmentReflections.alignmentId, alignment.id))
-          .limit(1);
-
-        const alreadyCompleted = reflections.length > 0;
-
-        app.logger.info({ alignmentId: alignment.id, userId }, 'Returning existing alignment for today');
-
-        return {
+        return reply.status(201).send({
           id: alignment.id,
           day_number: alignment.dayNumber,
           level: alignment.level,
@@ -169,65 +142,37 @@ export function register(app: App, fastify: any) {
           secondary_archetype: alignment.secondaryArchetype,
           blend_name: alignment.blendName,
           generated_at: alignment.generatedAt.toISOString(),
-          already_completed: alreadyCompleted,
-        };
+        });
       }
 
-      // Generate new alignment with AI
-      const {
-        primary_archetype,
-        secondary_archetype,
-        blend_name,
-        anxious_score,
-        avoidant_score,
-        overactive_score,
-        grounded_score,
-      } = request.body;
+      const anxious_score = scores.anxious_score ?? 0;
+      const avoidant_score = scores.avoidant_score ?? 0;
+      const overactive_score = scores.overactive_score ?? 0;
+      const grounded_score = scores.grounded_score ?? 0;
 
-      const systemPrompt = `You are a spiritual growth coach for the Sacred Design app. Generate a personalized Daily Alignment for this user.
+      const systemPrompt = `You are a sacred design guide. Generate a daily alignment practice for someone whose primary archetype is ${primary_archetype} and secondary archetype is ${secondary_archetype} (blend: ${blend_name}).
 
-User Profile:
-- Primary Archetype: ${primary_archetype} (70% influence)
-- Secondary Archetype: ${secondary_archetype} (30% influence)
-- Blend Name: ${blend_name}
-- Day Number: ${dayCount}
-- Level: ${level} (1=awareness/small action, 2=expression/discomfort, 3=identity/integration)
-- Regulation Profile: anxious=${anxious_score}, avoidant=${avoidant_score}, overactive=${overactive_score}, grounded=${grounded_score}
+Day Number: ${dayNumber}
+Level: ${level} (1=awareness/small action, 2=expression/discomfort, 3=identity/integration)
+Regulation Profile: anxious=${anxious_score}, avoidant=${avoidant_score}, overactive=${overactive_score}, grounded=${grounded_score}
 
-Archetype themes:
-- Peacemaker → voice, boundaries, honesty
-- Courageous Leader → releasing control, shared responsibility
-- Deep Feeler → grounding emotion, steady action
-- Faithful Steward → slowing down, resting, releasing productivity pressure
-- Light Bearer → visibility, courage, expression
-- Truth Seeker → action over overthinking, clarity in motion
-- Justice Carrier → calm conviction, truth with love
-
-Regulation adjustments:
-- If anxious_score > 6: soften tone, smaller actions, more grounding language
-- If avoidant_score > 6: gently encourage engagement, avoid harsh language
-- If overactive_score > 6: include slowing, breathing, pausing
-- If grounded_score > 6: balanced tone, normal challenge level
-
-Level guidance:
-- Level 1: Awareness + small action. Very easy, low resistance.
-- Level 2: Expression + discomfort. Slightly stretching.
-- Level 3: Identity + integration. Embodied real-life action.
-
-Action format rule: Action + Context + Constraint
-Good: "Share one honest sentence in a conversation today without over-explaining it."
-Bad: "Be more honest today."
+Generate a personalized daily alignment with:
+- A specific, doable action
+- Guidance on how to practice it
+- A somatic cue (body-based instruction)
+- A relevant Bible verse
+- A reflection question
 
 Return ONLY valid JSON with exactly these fields:
 {
-  "action": "one specific, doable action for today",
-  "guidance": "2-3 calm sentences explaining how to do the action in real life",
-  "somatic_cue": "one body-based instruction (e.g. Take one slow breath before speaking.)",
-  "scripture": "one short Bible verse aligned with the action (e.g. Speak the truth in love. — Ephesians 4:15)",
-  "reflection_prompt": "one journaling question tied directly to the action"
+  "action": "one specific action",
+  "guidance": "2-3 sentences on how to practice",
+  "somatic_cue": "one body instruction",
+  "scripture": "one Bible verse",
+  "reflection_prompt": "one journaling question"
 }`;
 
-      app.logger.info({ userId, level, dayCount }, 'Generating alignment with AI');
+      app.logger.info({ userId, dayNumber, level }, 'Generating alignment with AI');
 
       let aiOutput = FALLBACK_ALIGNMENT;
       try {
@@ -248,7 +193,7 @@ Return ONLY valid JSON with exactly these fields:
         .insert(schema.dailyAlignments)
         .values({
           userId,
-          dayNumber: dayCount,
+          dayNumber,
           level,
           action: aiOutput.action,
           guidance: aiOutput.guidance,
@@ -264,21 +209,39 @@ Return ONLY valid JSON with exactly these fields:
 
       const created = insertResult[0];
 
-      // Update user_progress
-      const newStreak = calculateNewStreak(userProgress[0]?.lastActiveDate || '', userProgress[0]?.streak || 0);
-      await app.db
-        .update(schema.userProgress)
-        .set({
-          dayCount,
+      // Update user_progress if it exists
+      const progressRows = await app.db
+        .select()
+        .from(schema.userProgress)
+        .where(eq(schema.userProgress.userId, userId))
+        .limit(1);
+
+      const newStreak = calculateNewStreak(progressRows[0]?.lastActiveDate || '', progressRows[0]?.streak || 0);
+
+      if (progressRows.length > 0) {
+        await app.db
+          .update(schema.userProgress)
+          .set({
+            dayCount: dayNumber,
+            streak: newStreak,
+            lastActiveDate: today,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.userProgress.userId, userId));
+      } else {
+        await app.db.insert(schema.userProgress).values({
+          userId,
+          dayCount: dayNumber,
           streak: newStreak,
           lastActiveDate: today,
+          createdAt: new Date(),
           updatedAt: new Date(),
-        })
-        .where(eq(schema.userProgress.userId, userId));
+        });
+      }
 
-      app.logger.info({ alignmentId: created.id, userId }, 'Alignment generated and created');
+      app.logger.info({ alignmentId: created.id, userId, dayNumber }, 'Alignment generated successfully');
 
-      return {
+      return reply.status(201).send({
         id: created.id,
         day_number: created.dayNumber,
         level: created.level,
@@ -291,8 +254,7 @@ Return ONLY valid JSON with exactly these fields:
         secondary_archetype: created.secondaryArchetype,
         blend_name: created.blendName,
         generated_at: created.generatedAt.toISOString(),
-        already_completed: false,
-      };
+      });
     } catch (error) {
       app.logger.error({ err: error, userId }, 'Failed to generate alignment');
       throw error;
