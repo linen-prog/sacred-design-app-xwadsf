@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OverallProgressBar } from '@/components/OverallProgressBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useAppState } from '@/contexts/AppStateContext';
+import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 
 const BG = '#0A0E1A';
 const TEXT = '#F5F0E8';
@@ -28,6 +30,8 @@ export default function Phase4ReflectionScreen() {
   const [reflectionText, setReflectionText] = useState('');
   const [saving, setSaving] = useState(false);
   const { isSubscribed } = useSubscription();
+  const { updateAppState } = useAppState();
+  const { sacredDesignResult } = useContext(DiscoveryContext);
 
   async function saveReflection() {
     if (reflectionText.trim()) {
@@ -43,9 +47,22 @@ export default function Phase4ReflectionScreen() {
     }
   }
 
-  async function handleContinue() {
-    console.log('[Phase4Reflection] Continue pressed — reflection length:', reflectionText.trim().length);
-    await saveReflection();
+  async function proceedAfterReflection() {
+    // Save archetype data and quiz completion to appState before navigating
+    const primaryArchetype = sacredDesignResult?.primary_archetype ?? null;
+    const secondaryArchetype = sacredDesignResult?.secondary_archetype ?? null;
+    const scoreBreakdown = sacredDesignResult?.archetypeScores ?? null;
+
+    console.log('[Phase4Reflection] Saving quiz completion to appState — primary:', primaryArchetype, 'secondary:', secondaryArchetype);
+
+    await updateAppState({
+      quizCompleted: true,
+      paywallReached: true,
+      currentOnboardingStep: 'paywall',
+      primaryArchetype,
+      secondaryArchetype,
+      scoreBreakdown,
+    });
 
     if (isSubscribed) {
       console.log('[Phase4Reflection] User is pro — navigating to /onboarding/preparing');
@@ -56,16 +73,15 @@ export default function Phase4ReflectionScreen() {
     }
   }
 
+  async function handleContinue() {
+    console.log('[Phase4Reflection] Continue pressed — reflection length:', reflectionText.trim().length);
+    await saveReflection();
+    await proceedAfterReflection();
+  }
+
   async function handleSkip() {
     console.log('[Phase4Reflection] Skip pressed — checking subscription status');
-
-    if (isSubscribed) {
-      console.log('[Phase4Reflection] User is pro — navigating to /onboarding/preparing');
-      router.push('/onboarding/preparing');
-    } else {
-      console.log('[Phase4Reflection] User is not pro — navigating to /paywall?source=quiz_complete');
-      router.push('/paywall?source=quiz_complete');
-    }
+    await proceedAfterReflection();
   }
 
   const buttonLabel = saving ? 'Saving…' : 'Continue →';

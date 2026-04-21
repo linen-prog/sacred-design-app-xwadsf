@@ -13,6 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppState } from "@/contexts/AppStateContext";
 import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
 
 const BG = "#0A0E1A";
@@ -31,6 +32,7 @@ export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { signInWithEmail, signUpWithEmail, signInWithApple, signInWithGoogle, fetchUser } = useAuth() as any;
+  const { appState, updateAppState } = useAppState();
 
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
@@ -47,15 +49,27 @@ export default function AuthScreen() {
     setError("");
   }
 
+  function navigateAfterAuth() {
+    const intended = appState.intendedRouteAfterAuth;
+    if (intended) {
+      console.log("[AuthScreen] Navigating to intended route after auth:", intended);
+      updateAppState({ intendedRouteAfterAuth: null });
+      router.replace(intended as any);
+    } else {
+      console.log("[AuthScreen] No intended route — navigating to /(tabs)");
+      router.replace("/(tabs)");
+    }
+  }
+
   async function handleAppleSignIn() {
     console.log("[AuthScreen] 'Continue with Apple' pressed");
     setError("");
     setAppleLoading(true);
     try {
       await signInWithApple();
-      console.log("[AuthScreen] Apple sign-in succeeded — fetching user and navigating to tabs");
+      console.log("[AuthScreen] Apple sign-in succeeded — fetching user and routing");
       await fetchUser?.();
-      router.replace("/(tabs)");
+      navigateAfterAuth();
     } catch (e: any) {
       console.warn("[AuthScreen] Apple sign-in error:", e);
       setError(e?.message || "Apple sign-in failed. Please try again.");
@@ -70,9 +84,9 @@ export default function AuthScreen() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      console.log("[AuthScreen] Google sign-in succeeded — fetching user and navigating to tabs");
+      console.log("[AuthScreen] Google sign-in succeeded — fetching user and routing");
       await fetchUser?.();
-      router.replace("/(tabs)");
+      navigateAfterAuth();
     } catch (e: any) {
       console.warn("[AuthScreen] Google sign-in error:", e);
       setError(e?.message || "Google sign-in failed. Please try again.");
@@ -102,9 +116,9 @@ export default function AuthScreen() {
         console.log("[AuthScreen] Calling signInWithEmail");
         await signInWithEmail(email.trim(), password);
       }
-      console.log("[AuthScreen] Auth succeeded — calling fetchUser then navigating to tabs");
+      console.log("[AuthScreen] Auth succeeded — calling fetchUser then routing");
       await fetchUser?.();
-      router.replace("/(tabs)");
+      navigateAfterAuth();
     } catch (e: any) {
       console.warn("[AuthScreen] Auth error:", e);
       const msg =

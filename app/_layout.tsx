@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { Stack, useRouter, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
@@ -16,6 +17,7 @@ import { WidgetProvider } from "@/contexts/WidgetContext";
 import { DiscoveryProvider } from "@/contexts/DiscoveryContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
+import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -45,18 +47,15 @@ export const unstable_settings = {
 function RootNavigator() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  // hasNavigated ensures router.replace is called AT MOST ONCE, ever.
-  // It is set to true before any router call so re-renders can never
-  // trigger a second redirect.
+  const { appState, isLoading: appStateLoading } = useAppState();
   const hasNavigated = useRef(false);
   const prevUserRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    // Wait until auth has resolved before making any routing decision.
-    if (authLoading) return;
+    // Wait for both auth and appState to resolve before routing.
+    if (authLoading || appStateLoading) return;
 
-    // If auth state changed (e.g. user just signed in or signed out),
-    // reset the guard so we re-evaluate the route.
+    // If auth state changed, reset the guard so we re-evaluate.
     const prevUser = prevUserRef.current;
     const currentUserId = user?.id ?? null;
     if (prevUser !== undefined && prevUser !== currentUserId) {
@@ -65,8 +64,6 @@ function RootNavigator() {
     }
     prevUserRef.current = currentUserId;
 
-    // This effect runs on mount and whenever auth state changes.
-    // It is the ONLY place that decides the initial route.
     async function determineInitialRoute() {
       // If the quiz was just completed in this JS session (preparing.tsx
       // already called markQuizComplete + router.replace('/reveal')), do
@@ -76,64 +73,101 @@ function RootNavigator() {
         return;
       }
 
-      // Guard: only navigate once.
       if (hasNavigated.current) return;
 
-      try {
-        // Read both flags in parallel.
-        const [hasCompletedQuiz, hasSeenOnboarding] = await Promise.all([
-          AsyncStorage.getItem('hasCompletedQuiz'),
-          AsyncStorage.getItem('hasSeenOnboarding'),
-        ]);
+      console.log('[RootNavigator] Determining initial route — appState:', JSON.stringify({
+        revealViewed: appState.revealViewed,
+        revealUnlocked: appState.revealUnlocked,
+        quizCompleted: appState.quizCompleted,
+        onboardingStarted: appState.onboardingStarted,
+        firstLaunch: appState.firstLaunch,
+        currentOnboardingStep: appState.currentOnboardingStep,
+      }), '| user:', user?.id ?? 'none');
 
-        console.log('[RootNavigator] hasCompletedQuiz:', hasCompletedQuiz, '| hasSeenOnboarding:', hasSeenOnboarding, '| user:', user?.id ?? 'none');
+      hasNavigated.current = true;
 
-        // Re-check the in-session flag after the async gap — preparing.tsx
-        // may have fired while we were awaiting AsyncStorage.
-        if (isQuizJustCompleted()) {
-          console.log('[RootNavigator] Quiz completed during AsyncStorage read — skipping redirect');
-          return;
-        }
+      // PRIORITY 1: Reveal viewed → go to tabs
+      if (appState.revealViewed) {
+        console.log('[RootNavigator] revealViewed=true — navigating to /(tabs)');
+        router.replace('/(tabs)');
+        return;
+      }
 
-        hasNavigated.current = true;
+      // PRIORITY 2: Quiz done + reveal unlocked but not yet viewed → reveal flow
+      if (appState.quizCompleted && appState.revealUnlocked && !appState.revealViewed) {
+        console.log('[RootNavigator] Quiz complete + reveal unlocked — navigating to /onboarding/preparing');
+        router.replace('/onboarding/preparing');
+        return;
+      }
 
-        if (hasCompletedQuiz === 'true' && (await isOnboardingComplete())) {
-          if (user) {
-            // Returning authenticated user who has finished everything → home.
-            console.log('[RootNavigator] Returning authenticated user — navigating to /(tabs)');
-            router.replace('/(tabs)');
-          } else {
-            // Quiz done but no session → must log in first.
-            console.log('[RootNavigator] Quiz complete but unauthenticated — navigating to /auth-screen');
-            router.replace('/auth-screen');
+      // PRIORITY 3: Quiz done but not unlocked → partial reveal (gated)
+      if (appState.quizCompleted && !appState.revealUnlocked) {
+        console.log('[RootNavigator] Quiz complete but reveal not unlocked — navigating to /partial-reveal');
+        router.replace('/partial-reveal');
+        return;
+      }
+
+      // PRIORITY 4: Onboarding started but quiz not done → resume
+      if (appState.onboardingStarted && !appState.quizCompleted) {
+        const resumeStep = appState.currentOnboardingStep || '/onboarding/intro';
+        console.log('[RootNavigator] Onboarding in progress — resuming at:', resumeStep);
+        router.replace(resumeStep as any);
+        return;
+      }
+
+      // PRIORITY 5: First launch or onboarding not started → welcome
+      if (appState.firstLaunch || !appState.onboardingStarted) {
+        // Fall back to legacy AsyncStorage flags for users who had the old version
+        try {
+          const [hasCompletedQuiz, hasSeenOnboarding] = await Promise.all([
+            AsyncStorage.getItem('hasCompletedQuiz'),
+            AsyncStorage.getItem('hasSeenOnboarding'),
+          ]);
+
+          if (isQuizJustCompleted()) {
+            console.log('[RootNavigator] Quiz completed during AsyncStorage read — skipping redirect');
+            return;
           }
-        } else if (hasSeenOnboarding === 'true') {
-          if (user) {
-            // Partially through onboarding and authenticated → resume at intro.
-            console.log('[RootNavigator] Partial onboarding, authenticated — resuming at /onboarding/intro');
+
+          if (hasCompletedQuiz === 'true' && (await isOnboardingComplete())) {
+            if (user) {
+              console.log('[RootNavigator] Legacy: quiz complete + auth — navigating to /(tabs)');
+              router.replace('/(tabs)');
+            } else {
+              console.log('[RootNavigator] Legacy: quiz complete, no auth — navigating to /auth-screen');
+              router.replace('/auth-screen');
+            }
+          } else if (hasSeenOnboarding === 'true') {
+            console.log('[RootNavigator] Legacy: partial onboarding — resuming at /onboarding/intro');
             router.replace('/onboarding/intro');
           } else {
-            // Has seen onboarding before but no session → must log in first.
-            console.log('[RootNavigator] Has seen onboarding but unauthenticated — navigating to /auth-screen');
-            router.replace('/auth-screen');
+            console.log('[RootNavigator] First launch — navigating to /onboarding/welcome');
+            router.replace('/onboarding/welcome');
           }
-        } else {
-          // Brand new user, never seen onboarding → welcome screen.
-          console.log('[RootNavigator] First launch — navigating to /onboarding/welcome');
+        } catch (e) {
+          console.warn('[RootNavigator] Storage error during initial route check:', e);
           router.replace('/onboarding/welcome');
         }
-      } catch (e) {
-        console.warn('[RootNavigator] Storage error during initial route check:', e);
-        if (!hasNavigated.current) {
-          hasNavigated.current = true;
-          router.replace('/onboarding/welcome');
-        }
+        return;
       }
+
+      // Fallback
+      console.log('[RootNavigator] Fallback — navigating to /onboarding/welcome');
+      router.replace('/onboarding/welcome');
     }
 
     determineInitialRoute();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user]);
+  }, [authLoading, appStateLoading, user, appState]);
+
+  // Show a loading screen while state is being read
+  if (appStateLoading) {
+    return (
+      <View style={loadingStyles.container}>
+        <ActivityIndicator size="large" color="#C9A84C" />
+      </View>
+    );
+  }
 
   return (
     <Stack>
@@ -142,6 +176,7 @@ function RootNavigator() {
       <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
       <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
       <Stack.Screen name="reveal" options={{ headerShown: false }} />
+      <Stack.Screen name="partial-reveal" options={{ headerShown: false }} />
       <Stack.Screen name="dev-skip" options={{ headerShown: false }} />
       <Stack.Screen name="alignment-detail" options={{ headerShown: false }} />
       <Stack.Screen name="auth-screen" options={{ headerShown: false }} />
@@ -159,6 +194,15 @@ function RootNavigator() {
     </Stack>
   );
 }
+
+const loadingStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0A0E1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 // Screens where SubscriptionRedirect must never interfere.
 const SUBSCRIPTION_REDIRECT_BLOCKLIST = [
@@ -267,17 +311,19 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}>
         <SafeAreaProvider>
           <AuthProvider>
-        <SubscriptionProvider>
-          <SubscriptionRedirect />
-            <DiscoveryProvider>
-              <WidgetProvider>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                  <RootNavigator />
-                  <SystemBars style="auto" />
-                </GestureHandlerRootView>
-              </WidgetProvider>
-            </DiscoveryProvider>
-          </SubscriptionProvider>
+          <AppStateProvider>
+            <SubscriptionProvider>
+              <SubscriptionRedirect />
+              <DiscoveryProvider>
+                <WidgetProvider>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    <RootNavigator />
+                    <SystemBars style="auto" />
+                  </GestureHandlerRootView>
+                </WidgetProvider>
+              </DiscoveryProvider>
+            </SubscriptionProvider>
+          </AppStateProvider>
         </AuthProvider>
         </SafeAreaProvider>
       </ThemeProvider>

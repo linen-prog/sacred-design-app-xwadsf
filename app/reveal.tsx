@@ -14,6 +14,7 @@ import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { apiFetch } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { completeOnboarding } from '@/utils/onboardingStorage';
+import { useAppState } from '@/contexts/AppStateContext';
 
 const REVEAL_COLORS = {
   background: '#F6F1E8',
@@ -171,6 +172,7 @@ export default function RevealScreen() {
   const router = useRouter();
   const { sacredDesignResult } = useContext(DiscoveryContext);
   const { user } = useAuth();
+  const { updateAppState } = useAppState();
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const [saving, setSaving] = useState(false);
   const [showSignInPrompt, setShowSignInPrompt] = useState(false);
@@ -229,6 +231,17 @@ export default function RevealScreen() {
       console.log('[Reveal] completeOnboarding() written to SecureStore');
     } catch (e) {
       console.warn('[Reveal] completeOnboarding() failed:', e);
+    }
+    // Mark reveal as viewed in appState — this is the gate that lets users into tabs
+    try {
+      await updateAppState({
+        revealViewed: true,
+        dailyAlignmentReady: true,
+        currentOnboardingStep: null,
+      });
+      console.log('[Reveal] appState updated: revealViewed=true, dailyAlignmentReady=true');
+    } catch (e) {
+      console.warn('[Reveal] Failed to update appState:', e);
     }
     setSaving(false);
 

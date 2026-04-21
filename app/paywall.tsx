@@ -25,6 +25,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { PurchasesPackage } from "react-native-purchases";
 
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useAppState } from "@/contexts/AppStateContext";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -70,6 +71,7 @@ const COLORS = {
 export default function PaywallScreen() {
   const router = useRouter();
   const { source } = useLocalSearchParams<{ source?: string }>();
+  const { updateAppState } = useAppState();
 
   const {
     packages,
@@ -105,23 +107,20 @@ export default function PaywallScreen() {
     : "Continue your daily practice with full access.";
   const trialBadgeText = isQuizComplete ? "7-DAY FREE TRIAL" : "FREE TRIAL INCLUDED";
 
-  function navigateAfterPurchase() {
-    if (isQuizComplete) {
-      console.log("[Paywall] Purchase successful — navigating to /reveal (quiz_complete source)");
-      router.replace("/reveal");
-    } else {
-      console.log("[Paywall] Purchase successful — navigating to /(tabs)/(design)");
-      router.replace("/(tabs)/(design)");
-    }
+  async function navigateAfterPurchase() {
+    console.log("[Paywall] navigateAfterPurchase — updating appState and routing");
+    await updateAppState({
+      subscriptionActive: true,
+      revealUnlocked: true,
+      currentOnboardingStep: 'preparing',
+    });
+    console.log("[Paywall] Purchase successful — navigating to /onboarding/preparing");
+    router.replace("/onboarding/preparing");
   }
 
   function handleClose() {
     console.log("[Paywall] Close pressed — source:", source, "canGoBack:", router.canGoBack());
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace("/(tabs)/(design)");
-    }
+    router.replace("/partial-reveal");
   }
 
   const handlePurchase = async () => {
@@ -364,8 +363,8 @@ export default function PaywallScreen() {
         <TouchableOpacity
           style={styles.skipButton}
           onPress={() => {
-            console.log("[Paywall] 'Skip for now' pressed — navigating to /(tabs)/(design)");
-            router.replace("/(tabs)/(design)");
+            console.log("[Paywall] 'Skip for now' pressed — navigating to /partial-reveal");
+            router.replace("/partial-reveal");
           }}
         >
           <Text style={styles.skipButtonText}>Skip for now →</Text>
