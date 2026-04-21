@@ -291,8 +291,8 @@ export default function AuthScreen() {
         <Pressable
           style={styles.backLink}
           onPress={() => {
-            console.log("[AuthScreen] Continue without signing in pressed — navigating to tabs");
-            router.replace("/(tabs)");
+            console.log("[AuthScreen] Continue without signing in pressed");
+            navigateAfterAuth();
           }}
         >
           <Text style={styles.backLinkText}>Continue without signing in</Text>
