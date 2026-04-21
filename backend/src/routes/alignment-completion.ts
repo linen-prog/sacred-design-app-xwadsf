@@ -339,6 +339,23 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
 
       const alignment = alignments[0];
 
+      // Check if user's current archetypes match the alignment's archetypes
+      const currentArchetypes = await app.db
+        .select()
+        .from(schema.userArchetypes)
+        .where(eq(schema.userArchetypes.userId, userId))
+        .limit(1);
+
+      // If archetypes exist and don't match, return null (stale alignment)
+      if (currentArchetypes.length > 0) {
+        const current = currentArchetypes[0];
+        if (current.primaryArchetype !== alignment.primaryArchetype ||
+            current.secondaryArchetype !== alignment.secondaryArchetype) {
+          app.logger.info({ userId, alignmentId: alignment.id }, 'Alignment archetype mismatch, returning null');
+          return { alignment: null };
+        }
+      }
+
       app.logger.info({ alignmentId: alignment.id, userId }, "Retrieved today's alignment");
 
       return {

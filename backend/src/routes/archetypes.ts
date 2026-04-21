@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
 
@@ -247,6 +247,34 @@ export function register(app: App, fastify: any) {
 
         archetype = inserted[0];
         app.logger.info({ userId, archetypeId: archetype.id }, 'Archetype created');
+      }
+
+      // After successful upsert, check for stale alignments from today
+      const today = new Date().toISOString().split('T')[0];
+      const todaysAlignments = await app.db
+        .select()
+        .from(schema.dailyAlignments)
+        .where(
+          and(
+            eq(schema.dailyAlignments.userId, userId),
+            sql`DATE(${schema.dailyAlignments.generatedAt}) = ${today}`
+          )
+        );
+
+      // Delete alignments that don't match the new archetypes
+      const staleAlignments = todaysAlignments.filter(
+        (alignment) =>
+          alignment.primaryArchetype !== archetype.primaryArchetype ||
+          alignment.secondaryArchetype !== archetype.secondaryArchetype
+      );
+
+      if (staleAlignments.length > 0) {
+        for (const staleAlignment of staleAlignments) {
+          await app.db
+            .delete(schema.dailyAlignments)
+            .where(eq(schema.dailyAlignments.id, staleAlignment.id));
+          app.logger.info({ userId, alignmentId: staleAlignment.id }, 'Deleted stale alignment after archetype update');
+        }
       }
 
       return {
