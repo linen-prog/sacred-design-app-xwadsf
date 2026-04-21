@@ -52,12 +52,26 @@ function RootNavigator() {
   const prevUserRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    // Wait for both auth and appState to resolve before routing.
-    if (authLoading || appStateLoading) {
-      console.log('[RootNavigator] Waiting — authLoading:', authLoading, 'appStateLoading:', appStateLoading);
+    // Always wait for appState — it's the primary routing signal.
+    if (appStateLoading) {
+      console.log('[RootNavigator] Waiting — appStateLoading:', appStateLoading);
       return;
     }
-    console.log('[RootNavigator] Both loaded — proceeding with route decision');
+
+    // If appState already tells us the user has completed onboarding, route
+    // immediately without waiting for the auth session to resolve. Auth loading
+    // in the background won't block the tab bar from appearing.
+    const appStateDecisive =
+      appState.revealViewed ||
+      (appState.quizCompleted && appState.postQuizSaveCompleted) ||
+      (appState.quizCompleted && appState.revealUnlocked);
+
+    if (!appStateDecisive && authLoading) {
+      console.log('[RootNavigator] Waiting — authLoading:', authLoading, '(appState not yet decisive)');
+      return;
+    }
+
+    console.log('[RootNavigator] Proceeding — authLoading:', authLoading, 'appStateDecisive:', appStateDecisive);
     console.log('[RootNavigator] Full appState:', JSON.stringify(appState));
 
     // If auth state changed, reset the guard so we re-evaluate.

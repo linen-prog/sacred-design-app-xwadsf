@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
 import { authClient, setBearerToken, clearAuthTokens, getSessionToken } from "@/lib/auth";
@@ -69,12 +69,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Guard against concurrent or rapid-fire fetchUser calls
+  const isFetchingRef = useRef(false);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     fetchUser();
 
     const subscription = Linking.addEventListener("url", (event) => {
-      console.log("Deep link received, refreshing user session");
-      fetchUser();
+      console.log("[AuthContext] Deep link received:", event.url);
+      // Debounce: only trigger one fetchUser per burst of URL events
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        console.log("[AuthContext] Deep link debounce fired — refreshing session");
+        fetchUser();
+      }, 400);
     });
 
     const intervalId = setInterval(() => {
@@ -84,7 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.remove();
       clearInterval(intervalId);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUser = async () => {
