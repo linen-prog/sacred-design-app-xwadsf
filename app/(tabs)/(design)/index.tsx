@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   Pressable,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
@@ -144,24 +145,26 @@ function TodayFocusCard() {
     });
   }
 
-  // Fix 2: call POST /api/alignments/generate then reload; fall back to reload on 404
   async function handleGenerateAlignment() {
     console.log("[MyDesign] 'Generate Today's Alignment' pressed — calling POST /api/alignments/generate");
     setGenerating(true);
     try {
-      const res = await apiFetch("/api/alignments/generate", { method: "POST" });
+      const res = await apiFetch("/api/alignments/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
       if (res.ok) {
         console.log("[MyDesign] POST /api/alignments/generate succeeded — reloading alignment");
-      } else if (res.status === 404) {
-        console.warn("[MyDesign] POST /api/alignments/generate returned 404 — falling back to reload");
+        await loadTodayFocus();
       } else {
         const errText = await res.text();
         console.warn("[MyDesign] POST /api/alignments/generate failed:", res.status, errText);
+        Alert.alert("Couldn't generate alignment", "Something went wrong. Please try again.");
       }
-      await loadTodayFocus();
     } catch (e) {
       console.warn("[MyDesign] POST /api/alignments/generate error:", e);
-      await loadTodayFocus();
+      Alert.alert("Couldn't generate alignment", "Check your connection and try again.");
     } finally {
       setGenerating(false);
     }
