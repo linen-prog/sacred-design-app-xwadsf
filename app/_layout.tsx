@@ -44,13 +44,28 @@ export const unstable_settings = {
 
 function RootNavigator() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   // hasNavigated ensures router.replace is called AT MOST ONCE, ever.
   // It is set to true before any router call so re-renders can never
   // trigger a second redirect.
   const hasNavigated = useRef(false);
+  const prevUserRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    // This effect runs exactly once on mount (empty deps).
+    // Wait until auth has resolved before making any routing decision.
+    if (authLoading) return;
+
+    // If auth state changed (e.g. user just signed in or signed out),
+    // reset the guard so we re-evaluate the route.
+    const prevUser = prevUserRef.current;
+    const currentUserId = user?.id ?? null;
+    if (prevUser !== undefined && prevUser !== currentUserId) {
+      console.log('[RootNavigator] Auth state changed — resetting navigation guard');
+      hasNavigated.current = false;
+    }
+    prevUserRef.current = currentUserId;
+
+    // This effect runs on mount and whenever auth state changes.
     // It is the ONLY place that decides the initial route.
     async function determineInitialRoute() {
       // If the quiz was just completed in this JS session (preparing.tsx
@@ -71,7 +86,7 @@ function RootNavigator() {
           AsyncStorage.getItem('hasSeenOnboarding'),
         ]);
 
-        console.log('[RootNavigator] hasCompletedQuiz:', hasCompletedQuiz, '| hasSeenOnboarding:', hasSeenOnboarding);
+        console.log('[RootNavigator] hasCompletedQuiz:', hasCompletedQuiz, '| hasSeenOnboarding:', hasSeenOnboarding, '| user:', user?.id ?? 'none');
 
         // Re-check the in-session flag after the async gap — preparing.tsx
         // may have fired while we were awaiting AsyncStorage.
@@ -83,15 +98,27 @@ function RootNavigator() {
         hasNavigated.current = true;
 
         if (hasCompletedQuiz === 'true' && (await isOnboardingComplete())) {
-          // Returning user who has finished everything → home.
-          console.log('[RootNavigator] Returning user — navigating to /(tabs)');
-          router.replace('/(tabs)');
+          if (user) {
+            // Returning authenticated user who has finished everything → home.
+            console.log('[RootNavigator] Returning authenticated user — navigating to /(tabs)');
+            router.replace('/(tabs)');
+          } else {
+            // Quiz done but no session → must log in first.
+            console.log('[RootNavigator] Quiz complete but unauthenticated — navigating to /auth-screen');
+            router.replace('/auth-screen');
+          }
         } else if (hasSeenOnboarding === 'true') {
-          // Partially through onboarding → resume at intro.
-          console.log('[RootNavigator] Partial onboarding — resuming at /onboarding/intro');
-          router.replace('/onboarding/intro');
+          if (user) {
+            // Partially through onboarding and authenticated → resume at intro.
+            console.log('[RootNavigator] Partial onboarding, authenticated — resuming at /onboarding/intro');
+            router.replace('/onboarding/intro');
+          } else {
+            // Has seen onboarding before but no session → must log in first.
+            console.log('[RootNavigator] Has seen onboarding but unauthenticated — navigating to /auth-screen');
+            router.replace('/auth-screen');
+          }
         } else {
-          // Brand new user → welcome screen.
+          // Brand new user, never seen onboarding → welcome screen.
           console.log('[RootNavigator] First launch — navigating to /onboarding/welcome');
           router.replace('/onboarding/welcome');
         }
@@ -106,7 +133,7 @@ function RootNavigator() {
 
     determineInitialRoute();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, user]);
 
   return (
     <Stack>

@@ -38,11 +38,11 @@ export const ARCHETYPE_CONTENT: Record<ArchetypeName, {
   narrative: string;
   strengths: string[];
   stuckPatterns: string[];
-  stuckToStrength: Array<{
+  stuckToStrength: {
     stuck: string;
     pathForward: string;
     appHelp: string;
-  }>;
+  }[];
   growthPath: string;
 }> = {
   'Peacemaker': {
