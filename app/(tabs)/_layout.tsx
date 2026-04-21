@@ -22,6 +22,7 @@ export default function TabLayout() {
         />
       )}
       screenOptions={{ headerShown: false }}
+      sceneContainerStyle={{ backgroundColor: "transparent" }}
     >
       <Tabs.Screen name="(home)" />
       <Tabs.Screen name="(design)" />

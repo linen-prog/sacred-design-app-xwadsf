@@ -1,5 +1,39 @@
 import React, { createContext, useState, useCallback, useMemo, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSessionToken, API_URL } from '@/lib/auth';
+
+// Raw fetch that always reads the token fresh — avoids timing issues where
+// apiFetch is called before setBearerToken has been written to SecureStore.
+async function rawUpsertFetch(body: object): Promise<void> {
+  const token = await getSessionToken();
+  console.log('[DiscoveryContext] rawUpsertFetch — token present:', !!token);
+
+  const doFetch = async (t: string | null) => fetch(`${API_URL}/api/archetypes/upsert`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(t ? { Authorization: `Bearer ${t}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+
+  let res = await doFetch(token);
+
+  // If 401, wait and retry once with a fresh token
+  if (res.status === 401) {
+    console.log('[DiscoveryContext] rawUpsertFetch got 401 — retrying after 2s');
+    await new Promise(r => setTimeout(r, 2000));
+    const freshToken = await getSessionToken();
+    res = await doFetch(freshToken);
+  }
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.warn('[DiscoveryContext] /api/archetypes/upsert failed:', res.status, errText);
+  } else {
+    console.log('[DiscoveryContext] /api/archetypes/upsert succeeded');
+  }
+}
 
 export type ArchetypeName =
   | 'Peacemaker'
@@ -367,6 +401,19 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem('sacredDesignResult', JSON.stringify(result)).catch(() => {});
     AsyncStorage.setItem('phase4Computed', JSON.stringify(computed)).catch(() => {});
     AsyncStorage.setItem('quizCompleted', 'true').catch(() => {});
+
+    // Sync to backend — delayed to give auth token time to be written to SecureStore
+    console.log('[DiscoveryContext] POST /api/archetypes/upsert — scheduling sync (with delay for token)');
+    setTimeout(() => {
+      rawUpsertFetch({
+        primary_archetype: result.primary_archetype,
+        secondary_archetype: result.secondary_archetype,
+        blend_name: result.blend_name,
+        scores: result.archetypeScores,
+      }).catch((e) => {
+        console.warn('[DiscoveryContext] /api/archetypes/upsert error (ignored):', e);
+      });
+    }, 2000); // 2s delay gives auth token time to be written to SecureStore
   }, [phase1Scores, phase2Scores, phase3Scores, phase4Scores]);
 
   const restoreFromBackend = useCallback((data: {

@@ -147,6 +147,11 @@ function SubscriptionRedirect() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const mountTimeRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    mountTimeRef.current = Date.now();
+  }, []);
 
   useEffect(() => {
     // Check in-session quiz flag first — we may be mid-flow (preparing → reveal).
@@ -155,11 +160,9 @@ function SubscriptionRedirect() {
       return;
     }
 
-    // Still loading — wait.
+    // Still loading — wait for both auth and subscription to resolve.
     if (loading || authLoading) return;
 
-    // Use pathname directly from the closure (it's in the dep array so it's
-    // always the current value when the effect fires).
     const currentPath = pathname;
 
     // Never redirect away from these screens.
@@ -180,16 +183,20 @@ function SubscriptionRedirect() {
       return;
     }
 
-    // Signed in but not subscribed → send to paywall.
-    // We intentionally do NOT call isOnboardingComplete() here — that is
-    // RootNavigator's sole responsibility. Calling it here created a race
-    // condition where the SecureStore write from preparing.tsx hadn't landed
-    // yet, causing this effect to see done=false and redirect to /onboarding,
-    // which then bounced the user to tabs.
-    if (!isSubscribed) {
+    // Already subscribed — nothing to do.
+    if (isSubscribed) return;
+
+    // Signed in but not subscribed → send to paywall, but only after a 500ms
+    // grace period so RevenueCat has time to resolve status before we redirect.
+    const elapsed = Date.now() - mountTimeRef.current;
+    const delay = Math.max(0, 500 - elapsed);
+
+    const timer = setTimeout(() => {
       console.log('[SubscriptionRedirect] User not subscribed — redirecting to paywall');
       router.replace('/paywall');
-    }
+    }, delay);
+
+    return () => clearTimeout(timer);
   }, [isSubscribed, loading, authLoading, user, router, pathname]);
 
   return null;

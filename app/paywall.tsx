@@ -111,11 +111,7 @@ export default function PaywallScreen() {
       router.replace("/reveal");
     } else {
       console.log("[Paywall] Purchase successful — navigating to /(tabs)/(design)");
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace("/(tabs)/(design)");
-      }
+      router.replace("/(tabs)/(design)");
     }
   }
 
@@ -363,6 +359,17 @@ export default function PaywallScreen() {
             </View>
           )}
         </ScrollView>
+
+        {/* Skip escape hatch */}
+        <TouchableOpacity
+          style={styles.skipButton}
+          onPress={() => {
+            console.log("[Paywall] 'Skip for now' pressed — navigating to /(tabs)/(design)");
+            router.replace("/(tabs)/(design)");
+          }}
+        >
+          <Text style={styles.skipButtonText}>Skip for now →</Text>
+        </TouchableOpacity>
 
         {/* Bottom Actions */}
         <View style={styles.bottomActions}>
@@ -897,5 +904,16 @@ const styles = StyleSheet.create({
     color: "rgba(245,240,232,0.3)",
     fontFamily: "Inter_400Regular",
     letterSpacing: 0.3,
+  },
+  skipButton: {
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+  },
+  skipButtonText: {
+    fontSize: 13,
+    color: "rgba(245,240,232,0.4)",
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.2,
   },
 });

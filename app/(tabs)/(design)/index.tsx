@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,9 @@ import {
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { DiscoveryContext } from "@/contexts/DiscoveryContext";
+import { DiscoveryContext, SacredDesignResult } from "@/contexts/DiscoveryContext";
 import { ARCHETYPE_CONTENT, ArchetypeName } from "@/app/reveal";
-import { apiFetch } from "@/lib/auth";
+import { getSessionToken, API_URL } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 
 const BG = "#F6F1E8";
@@ -90,38 +90,83 @@ function renderListOrString(value: string[] | string | undefined, fallback?: str
   return <Text style={styles.bodyText}>{value}</Text>;
 }
 
-function TodayFocusCard() {
+// Raw authenticated fetch — bypasses any caching layer, always reads token fresh
+async function rawFetch(path: string, options?: RequestInit): Promise<Response> {
+  const token = await getSessionToken();
+  console.log(`[rawFetch] ${options?.method ?? 'GET'} ${path} — token present: ${!!token}`);
+  return fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers ?? {}),
+    },
+  });
+}
+
+interface TodayFocusCardProps {
+  hasDesignResult: boolean;
+  sacredDesignResult: SacredDesignResult | null;
+}
+
+function TodayFocusCard({ hasDesignResult, sacredDesignResult }: TodayFocusCardProps) {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
   const [todayAlignment, setTodayAlignment] = useState<TodayAlignment | null>(null);
   const [loadingFocus, setLoadingFocus] = useState(true);
   const [generating, setGenerating] = useState(false);
 
-  // Fix 1: wait for auth to resolve before fetching
+  const hasFetchedRef = useRef(false);
+  const prevHasDesignResult = useRef(hasDesignResult);
+
+  // Mount effect — fire exactly once
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      setLoadingFocus(false);
-      return;
-    }
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+    console.log("[TodayFocusCard] mount — calling loadTodayFocus once");
     loadTodayFocus();
-  }, [user, authLoading]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Re-fetch only when hasDesignResult transitions from false → true (not on initial render)
+  useEffect(() => {
+    if (hasDesignResult && !prevHasDesignResult.current) {
+      prevHasDesignResult.current = true;
+      console.log("[TodayFocusCard] hasDesignResult transitioned false→true — re-fetching alignment");
+      loadTodayFocus();
+    } else {
+      prevHasDesignResult.current = hasDesignResult;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasDesignResult]);
 
   async function loadTodayFocus() {
-    console.log("[MyDesign] GET /api/alignments/today");
+    console.log("[TodayFocusCard] GET /api/alignments/today — starting");
     setLoadingFocus(true);
     try {
-      const res = await apiFetch("/api/alignments/today");
+      let token = await getSessionToken();
+      if (!token) {
+        // Token may not be written yet — wait briefly and retry once
+        await new Promise(r => setTimeout(r, 1500));
+        token = await getSessionToken();
+      }
+      if (!token) {
+        console.warn('[TodayFocusCard] No token after retry — skipping fetch');
+        setLoadingFocus(false);
+        return;
+      }
+      const res = await fetch(`${API_URL}/api/alignments/today`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) {
-        const errText = await res.text();
-        console.warn("[MyDesign] GET /api/alignments/today failed:", res.status, errText);
+        console.warn('[TodayFocusCard] GET /api/alignments/today failed:', res.status);
+        setLoadingFocus(false);
         return;
       }
       const data: { alignment: TodayAlignment | null } = await res.json();
-      console.log("[MyDesign] Today alignment:", data.alignment ? data.alignment.id : "null");
-      setTodayAlignment(data.alignment);
+      console.log("[TodayFocusCard] Today alignment:", data.alignment ? data.alignment.id : "null");
+      setTodayAlignment(data.alignment ?? null);
     } catch (e) {
-      console.warn("[MyDesign] loadTodayFocus error:", e);
+      console.warn("[TodayFocusCard] loadTodayFocus error:", e);
     } finally {
       setLoadingFocus(false);
     }
@@ -129,7 +174,7 @@ function TodayFocusCard() {
 
   function handleViewAlignment() {
     if (!todayAlignment) return;
-    console.log("[MyDesign] 'View Full Alignment' pressed — id:", todayAlignment.id);
+    console.log("[TodayFocusCard] 'View Full Alignment' pressed — id:", todayAlignment.id);
     router.push({
       pathname: "/alignment-detail",
       params: {
@@ -146,31 +191,59 @@ function TodayFocusCard() {
   }
 
   async function handleGenerateAlignment() {
-    console.log("[MyDesign] 'Generate Today's Alignment' pressed — calling POST /api/alignments/generate");
+    console.log("[TodayFocusCard] 'Generate Today's Alignment' pressed");
     setGenerating(true);
     try {
-      const res = await apiFetch("/api/alignments/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      let token = await getSessionToken();
+      if (!token) {
+        await new Promise(r => setTimeout(r, 1500));
+        token = await getSessionToken();
+      }
+      if (!token) {
+        Alert.alert('Not signed in', 'Please sign in to generate your alignment.');
+        return;
+      }
+
+      // Step 1: ensure archetype is in the backend
+      if (sacredDesignResult) {
+        console.log("[TodayFocusCard] Step 1 — POST /api/archetypes/upsert");
+        await fetch(`${API_URL}/api/archetypes/upsert`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            primary_archetype: sacredDesignResult.primary_archetype,
+            secondary_archetype: sacredDesignResult.secondary_archetype,
+            blend_name: sacredDesignResult.blend_name,
+            scores: sacredDesignResult.archetypeScores ?? {},
+          }),
+        });
+      }
+
+      // Step 2: generate alignment
+      console.log("[TodayFocusCard] Step 2 — POST /api/alignments/generate");
+      const res = await fetch(`${API_URL}/api/alignments/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({}),
       });
-      if (res.ok) {
-        console.log("[MyDesign] POST /api/alignments/generate succeeded — reloading alignment");
-        await loadTodayFocus();
-      } else {
+      if (!res.ok) {
         const errText = await res.text();
-        console.warn("[MyDesign] POST /api/alignments/generate failed:", res.status, errText);
-        Alert.alert("Couldn't generate alignment", "Something went wrong. Please try again.");
+        console.warn('[TodayFocusCard] generate failed:', res.status, errText);
+        Alert.alert('Could not generate alignment', 'Please try again.');
+        return;
       }
+      const data = await res.json();
+      console.log("[TodayFocusCard] POST /api/alignments/generate succeeded");
+      setTodayAlignment(data.alignment);
     } catch (e) {
-      console.warn("[MyDesign] POST /api/alignments/generate error:", e);
-      Alert.alert("Couldn't generate alignment", "Check your connection and try again.");
+      console.warn('[TodayFocusCard] handleGenerateAlignment error:', e);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setGenerating(false);
     }
   }
 
-  if (authLoading || loadingFocus) {
+  if (loadingFocus) {
     return (
       <View style={styles.focusCard}>
         <Text style={styles.focusLabel}>TODAY'S FOCUS</Text>
@@ -216,6 +289,36 @@ function TodayFocusCard() {
 
 export default function MyDesignScreen() {
   const { sacredDesignResult } = useContext(DiscoveryContext);
+  const { user } = useAuth();
+  const hasSyncedRef = useRef(false);
+
+  // One-time sync: push existing local result to backend for users who completed
+  // the quiz before the upsert call was added to computeSacredDesign.
+  useEffect(() => {
+    if (!sacredDesignResult || !user || hasSyncedRef.current) return;
+    hasSyncedRef.current = true;
+    console.log('[MyDesign] One-time sync — POST /api/archetypes/upsert for existing result');
+    rawFetch('/api/archetypes/upsert', {
+      method: 'POST',
+      body: JSON.stringify({
+        primary_archetype: sacredDesignResult.primary_archetype,
+        secondary_archetype: sacredDesignResult.secondary_archetype,
+        blend_name: sacredDesignResult.blend_name,
+        scores: sacredDesignResult.archetypeScores ?? {},
+      }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn('[MyDesign] One-time sync /api/archetypes/upsert failed:', res.status, errText);
+      } else {
+        console.log('[MyDesign] One-time sync /api/archetypes/upsert succeeded');
+      }
+    }).catch((e) => {
+      console.warn('[MyDesign] One-time sync /api/archetypes/upsert error (ignored):', e);
+    });
+  }, [sacredDesignResult, user]);
+
+  const hasDesignResult = !!sacredDesignResult;
 
   if (!sacredDesignResult) {
     console.log("[MyDesign] No sacredDesignResult — showing placeholder");
@@ -264,7 +367,7 @@ export default function MyDesignScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Today's Focus card — top of Design tab */}
-      <TodayFocusCard />
+      <TodayFocusCard hasDesignResult={hasDesignResult} sacredDesignResult={sacredDesignResult} />
 
       {/* Top section */}
       <Text style={styles.eyebrow}>YOUR SACRED DESIGN</Text>

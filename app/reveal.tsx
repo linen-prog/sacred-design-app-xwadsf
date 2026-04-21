@@ -129,7 +129,7 @@ export default function RevealScreen() {
 
   async function saveToBackend() {
     if (!sacredDesignResult) return;
-    console.log('[Reveal] Saving archetype to backend via POST /api/archetypes/save');
+    console.log('[Reveal] Upserting archetype to backend via POST /api/archetypes/upsert');
     try {
       const body = {
         primary_archetype: sacredDesignResult.primary_archetype,
@@ -137,18 +137,18 @@ export default function RevealScreen() {
         blend_name: sacredDesignResult.blend_name,
         scores: sacredDesignResult.archetypeScores,
       };
-      const res = await apiFetch('/api/archetypes/save', {
+      const res = await apiFetch('/api/archetypes/upsert', {
         method: 'POST',
         body: JSON.stringify(body),
       });
       if (!res.ok) {
         const errText = await res.text();
-        console.warn('[Reveal] /api/archetypes/save failed:', res.status, errText);
+        console.warn('[Reveal] /api/archetypes/upsert failed:', res.status, errText);
       } else {
-        console.log('[Reveal] Archetype saved to backend successfully');
+        console.log('[Reveal] Archetype upserted to backend successfully');
       }
     } catch (e) {
-      console.warn('[Reveal] /api/archetypes/save error (ignored):', e);
+      console.warn('[Reveal] /api/archetypes/upsert error (ignored):', e);
     }
   }
 
