@@ -310,7 +310,7 @@ export default function HomeScreen() {
   const firstName = user ? (String((user as any).name ?? "")).split(" ")[0] : "";
   const blendName = sacredDesignResult?.blend_name ?? "";
 
-  const greetingLine = "Good to see you back, Tina";
+  const greetingLine = firstName ? `Good to see you back, ${firstName}` : "Good to see you back";
 
   const showBanner =
     !bannerDismissed &&
