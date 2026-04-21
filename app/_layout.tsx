@@ -120,6 +120,7 @@ function RootNavigator() {
       <Stack.Screen name="auth-screen" options={{ headerShown: false }} />
       <Stack.Screen name="debug-auth" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
+      <Stack.Screen name="shadow-path" options={{ headerShown: false }} />
       <Stack.Screen
         name="completion"
         options={{
