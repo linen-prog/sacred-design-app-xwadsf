@@ -110,18 +110,21 @@ export default function PaywallScreen() {
       console.log("[Paywall] Purchase successful — navigating to /reveal (quiz_complete source)");
       router.replace("/reveal");
     } else {
-      console.log("[Paywall] Purchase successful — navigating back (day2_upsell source)");
-      router.back();
+      console.log("[Paywall] Purchase successful — navigating to /(tabs)/(design)");
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/(tabs)/(design)");
+      }
     }
   }
 
   function handleClose() {
-    console.log("[Paywall] Close pressed — source:", source);
-    if (isQuizComplete) {
-      // Go back to phase-4-reflection, not forward
+    console.log("[Paywall] Close pressed — source:", source, "canGoBack:", router.canGoBack());
+    if (router.canGoBack()) {
       router.back();
     } else {
-      router.back();
+      router.replace("/(tabs)/(design)");
     }
   }
 
