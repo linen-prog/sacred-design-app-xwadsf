@@ -143,6 +143,131 @@ export function register(app: App, fastify: any) {
     }
   });
 
+  // POST /api/archetypes/upsert
+  fastify.post('/api/archetypes/upsert', {
+    schema: {
+      description: 'Upsert user archetype data',
+      tags: ['archetypes'],
+      body: {
+        type: 'object',
+        required: ['primary_archetype', 'secondary_archetype', 'blend_name', 'scores'],
+        properties: {
+          primary_archetype: { type: 'string', description: 'Primary archetype name' },
+          secondary_archetype: { type: 'string', description: 'Secondary archetype name' },
+          blend_name: { type: 'string', description: 'Blend name combining both archetypes' },
+          scores: { type: 'object', description: 'Scores object' },
+        },
+      },
+      response: {
+        200: {
+          description: 'Archetype upserted successfully',
+          type: 'object',
+          properties: {
+            archetype: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                user_id: { type: 'string' },
+                primary_archetype: { type: 'string' },
+                secondary_archetype: { type: 'string' },
+                blend_name: { type: 'string' },
+                scores: { type: 'object' },
+                quiz_completed: { type: 'boolean' },
+                completed_at: { type: 'string', format: 'date-time' },
+                updated_at: { type: 'string', format: 'date-time' },
+              },
+            },
+          },
+        },
+        401: {
+          description: 'Unauthorized',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+        500: {
+          description: 'Server error',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+      },
+    },
+  }, async (
+    request: FastifyRequest<{ Body: SaveArchetypeBody }>,
+    reply: FastifyReply
+  ): Promise<any | void> => {
+    const session = await requireAuth(request, reply);
+    if (!session) return;
+
+    const userId = session.user.id;
+    const { primary_archetype, secondary_archetype, blend_name, scores } = request.body;
+
+    app.logger.info({ userId }, 'Upserting archetype');
+
+    try {
+      // Check if archetype record already exists
+      const existing = await app.db
+        .select()
+        .from(schema.userArchetypes)
+        .where(eq(schema.userArchetypes.userId, userId))
+        .limit(1);
+
+      let archetype;
+
+      if (existing.length > 0) {
+        // Update existing record
+        const updated = await app.db
+          .update(schema.userArchetypes)
+          .set({
+            primaryArchetype: primary_archetype,
+            secondaryArchetype: secondary_archetype,
+            blendName: blend_name,
+            scores,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.userArchetypes.userId, userId))
+          .returning();
+
+        archetype = updated[0];
+        app.logger.info({ userId, archetypeId: archetype.id }, 'Archetype updated');
+      } else {
+        // Insert new record
+        const inserted = await app.db
+          .insert(schema.userArchetypes)
+          .values({
+            userId,
+            primaryArchetype: primary_archetype,
+            secondaryArchetype: secondary_archetype,
+            blendName: blend_name,
+            scores,
+            quizCompleted: true,
+            completedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .returning();
+
+        archetype = inserted[0];
+        app.logger.info({ userId, archetypeId: archetype.id }, 'Archetype created');
+      }
+
+      return {
+        archetype: {
+          id: archetype.id,
+          user_id: archetype.userId,
+          primary_archetype: archetype.primaryArchetype,
+          secondary_archetype: archetype.secondaryArchetype,
+          blend_name: archetype.blendName,
+          scores: archetype.scores,
+          quiz_completed: archetype.quizCompleted,
+          completed_at: archetype.completedAt.toISOString(),
+          updated_at: archetype.updatedAt.toISOString(),
+        },
+      };
+    } catch (error) {
+      app.logger.error({ err: error, userId }, 'Failed to upsert archetype');
+      throw error;
+    }
+  });
+
   // GET /api/archetypes/me
   fastify.get('/api/archetypes/me', {
     schema: {

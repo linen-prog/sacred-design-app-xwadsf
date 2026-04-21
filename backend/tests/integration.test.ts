@@ -141,6 +141,29 @@ describe("API Integration Tests", () => {
       });
       await expectStatus(res, 401);
     });
+
+    test("POST /api/archetypes/upsert upserts archetype when authenticated", async () => {
+      const res = await authenticatedApi("/api/archetypes/upsert", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(archetypePayload),
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.archetype).toBeDefined();
+      expect(data.archetype.id).toBeDefined();
+      expect(data.archetype.user_id).toBeDefined();
+      expect(data.archetype.quiz_completed).toBe(true);
+    });
+
+    test("POST /api/archetypes/upsert returns 401 without authentication", async () => {
+      const res = await api("/api/archetypes/upsert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(archetypePayload),
+      });
+      await expectStatus(res, 401);
+    });
   });
 
   describe("Alignments", () => {
