@@ -123,7 +123,7 @@ function RootNavigator() {
 
       // PRIORITY 4: Onboarding started but quiz not done → resume
       if (appState.onboardingStarted && !appState.quizCompleted) {
-        const resumeStep = appState.currentOnboardingStep || '/onboarding/intro';
+        const resumeStep = appState.currentOnboardingStep || '/onboarding/welcome';
         console.log('[RootNavigator] Onboarding in progress — resuming at:', resumeStep);
         router.replace(resumeStep as any);
         return;
@@ -152,8 +152,8 @@ function RootNavigator() {
               router.replace('/auth-screen');
             }
           } else if (hasSeenOnboarding === 'true') {
-            console.log('[RootNavigator] Legacy: partial onboarding — resuming at /onboarding/intro');
-            router.replace('/onboarding/intro');
+            console.log('[RootNavigator] Legacy: partial onboarding — resuming at /onboarding/welcome');
+            router.replace('/onboarding/welcome');
           } else {
             console.log('[RootNavigator] First launch — navigating to /onboarding/welcome');
             router.replace('/onboarding/welcome');
