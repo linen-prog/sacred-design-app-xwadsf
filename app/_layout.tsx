@@ -183,20 +183,8 @@ function SubscriptionRedirect() {
       return;
     }
 
-    // Already subscribed — nothing to do.
-    if (isSubscribed) return;
-
-    // Signed in but not subscribed → send to paywall, but only after a 500ms
-    // grace period so RevenueCat has time to resolve status before we redirect.
-    const elapsed = Date.now() - mountTimeRef.current;
-    const delay = Math.max(0, 500 - elapsed);
-
-    const timer = setTimeout(() => {
-      console.log('[SubscriptionRedirect] User not subscribed — redirecting to paywall');
-      router.replace('/paywall');
-    }, delay);
-
-    return () => clearTimeout(timer);
+    // Subscription status is available but we do NOT auto-redirect to paywall.
+    // The paywall is only shown when the user explicitly accesses a premium feature.
   }, [isSubscribed, loading, authLoading, user, router, pathname]);
 
   return null;

@@ -81,6 +81,7 @@ export default function AlignmentDetailScreen() {
     try {
       const res = await apiFetch(`/api/alignments/${alignmentId}/complete`, {
         method: "POST",
+        body: JSON.stringify({ completed: true }),
       });
       if (!res.ok) {
         const errText = await res.text();
@@ -92,6 +93,11 @@ export default function AlignmentDetailScreen() {
       console.log("[AlignmentDetail] Alignment marked as done:", alignmentId);
       setMarkDoneSuccess(true);
       setMarkDoneMsg("Done! Great work today.");
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/(tabs)");
+      }
     } catch (e) {
       console.warn("[AlignmentDetail] handleMarkDone error:", e);
       setMarkDoneMsg("Couldn't mark as done. Try again.");
