@@ -3,6 +3,7 @@ import { View, Text, Animated } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { updateAppState } from '@/utils/appState';
 
 const PHASE_DATA = {
   1: {
@@ -46,6 +47,19 @@ export default function PhaseCompleteScreen() {
   const scaleAnim = useRef(new Animated.Value(0.88)).current;
   const emojiScale = useRef(new Animated.Value(0.5)).current;
   const emojiOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const stepMap: Record<number, string> = {
+      1: '/onboarding/phase-complete?phase=1',
+      2: '/onboarding/phase-complete?phase=2',
+      3: '/onboarding/phase-complete?phase=3',
+      4: '/onboarding/phase-complete?phase=4',
+    };
+    const step = stepMap[phaseNum] ?? '/onboarding/phase-complete?phase=1';
+    console.log('[PhaseComplete] mount — updating currentOnboardingStep to', step);
+    updateAppState({ currentOnboardingStep: step }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     // Stagger: background fades in, then emoji pops, then text

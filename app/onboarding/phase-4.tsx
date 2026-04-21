@@ -8,6 +8,7 @@ import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { OverallProgressBar } from '@/components/OverallProgressBar';
 import { saveCheckpoint } from '@/utils/quizCheckpoint';
+import { updateAppState } from '@/utils/appState';
 
 const QUESTIONS = [
   { id: 'P4_Q1', text: 'I need peace and low conflict in my environment to feel safe.' },
@@ -37,6 +38,8 @@ export default function Phase4Screen() {
       Animated.timing(screenOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
       Animated.timing(screenTranslateY, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start();
+    console.log('[Phase4] mount — updating currentOnboardingStep to /onboarding/phase-4');
+    updateAppState({ currentOnboardingStep: '/onboarding/phase-4' }).catch(() => {});
   }, [screenOpacity, screenTranslateY]);
 
   const currentQuestion = QUESTIONS[currentIndex];

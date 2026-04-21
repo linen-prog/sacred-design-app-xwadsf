@@ -98,10 +98,12 @@ function RootNavigator() {
         return;
       }
 
-      // PRIORITY 2: Quiz done + reveal unlocked but not yet viewed → reveal flow
+      // PRIORITY 2: Quiz done + reveal unlocked but not yet viewed → reveal screen
+      // (preparing.tsx requires live DiscoveryContext answers which are not persisted across
+      // cold relaunches — go directly to /reveal which shows the stored archetype data)
       if (appState.quizCompleted && appState.revealUnlocked && !appState.revealViewed) {
-        console.log('[RootNavigator] Quiz complete + reveal unlocked — navigating to /onboarding/preparing');
-        router.replace('/onboarding/preparing');
+        console.log('[RootNavigator] Quiz complete + reveal unlocked — navigating to /reveal');
+        router.replace('/reveal');
         return;
       }
 

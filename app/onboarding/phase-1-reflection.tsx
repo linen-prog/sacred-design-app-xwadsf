@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OverallProgressBar } from '@/components/OverallProgressBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { updateAppState } from '@/utils/appState';
 
 const BG = '#0A0E1A';
 const TEXT = '#F5F0E8';
@@ -26,6 +27,11 @@ export default function Phase1ReflectionScreen() {
   const insets = useSafeAreaInsets();
   const [reflectionText, setReflectionText] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    console.log('[Phase1Reflection] mount — updating currentOnboardingStep to /onboarding/phase-1-reflection');
+    updateAppState({ currentOnboardingStep: '/onboarding/phase-1-reflection' }).catch(() => {});
+  }, []);
 
   async function handleContinue() {
     console.log('[Phase1Reflection] Continue pressed — reflection length:', reflectionText.trim().length);

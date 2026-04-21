@@ -78,7 +78,7 @@ export default function Phase4ReflectionScreen() {
     const newState = await updateAppState({
       quizCompleted: true,
       paywallReached: true,
-      currentOnboardingStep: 'paywall',
+      currentOnboardingStep: '/paywall',
       primaryArchetype,
       secondaryArchetype,
       scoreBreakdown,

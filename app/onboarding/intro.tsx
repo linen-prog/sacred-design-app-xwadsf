@@ -62,6 +62,7 @@ export default function IntroScreen() {
   async function handleContinue() {
     console.log('[Intro] Continue pressed — starting fresh');
     await updateAppState({ currentOnboardingStep: '/onboarding/phase-1' });
+    await new Promise(resolve => setTimeout(resolve, 75));
     router.push('/onboarding/phase-1');
   }
 

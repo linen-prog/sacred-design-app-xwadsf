@@ -8,6 +8,7 @@ import { ScaleButton } from '@/components/ScaleButton';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { OverallProgressBar } from '@/components/OverallProgressBar';
 import { saveCheckpoint } from '@/utils/quizCheckpoint';
+import { updateAppState } from '@/utils/appState';
 
 const QUESTIONS = [
   { id: 'P3_Q1', text: 'I work hard to keep the atmosphere around me calm and positive.' },
@@ -40,6 +41,8 @@ export default function Phase3Screen() {
       Animated.timing(screenOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
       Animated.timing(screenTranslateY, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start();
+    console.log('[Phase3] mount — updating currentOnboardingStep to /onboarding/phase-3');
+    updateAppState({ currentOnboardingStep: '/onboarding/phase-3' }).catch(() => {});
   }, [screenOpacity, screenTranslateY]);
 
   const currentQuestion = QUESTIONS[currentIndex];

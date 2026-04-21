@@ -113,7 +113,7 @@ export default function PaywallScreen() {
     const newState = await updateAppState({
       subscriptionActive: true,
       revealUnlocked: true,
-      currentOnboardingStep: 'preparing',
+      currentOnboardingStep: '/onboarding/preparing',
     });
     console.log("[Paywall] POST-UPDATE state confirmed:", JSON.stringify(newState));
     await new Promise(resolve => setTimeout(resolve, 75));
