@@ -315,6 +315,7 @@ function TodayFocusCard({ hasDesignResult, sacredDesignResult }: TodayFocusCardP
 }
 
 export default function MyDesignScreen() {
+  const router = useRouter();
   const { sacredDesignResult } = useContext(DiscoveryContext);
   const { user } = useAuth();
   const hasSyncedRef = useRef(false);
