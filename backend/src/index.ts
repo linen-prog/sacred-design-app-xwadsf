@@ -16,7 +16,8 @@ export const app = await createApplication(schema);
 // Export App type for use in route files
 export type App = typeof app;
 
-// Enable authentication with email/password, OAuth, and anonymous sign-in
+// Enable authentication with email/password, Google OAuth, Apple OAuth, and anonymous sign-in
+// OAuth providers (Google, Apple) are handled automatically via proxy - no credentials needed
 app.withAuth({
   plugins: [
     anonymous(),
@@ -32,6 +33,9 @@ app.withAuth({
       });
     },
   },
+  // OAuth providers configured automatically:
+  // - Google OAuth (/api/auth/sign-in/social with provider=google)
+  // - Apple OAuth (/api/auth/sign-in/social with provider=apple)
 });
 
 // Register routes - add your route modules here

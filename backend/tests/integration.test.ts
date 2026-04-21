@@ -234,6 +234,15 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 404);
     });
 
+    test("POST /api/alignments/{id}/complete returns 400 with invalid UUID format", async () => {
+      const res = await authenticatedApi("/api/alignments/invalid-uuid/complete", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: true }),
+      });
+      await expectStatus(res, 400);
+    });
+
     test("POST /api/alignments/{id}/complete returns 403 when user doesn't own alignment", async () => {
       // Create a new alignment with the first user
       const alignRes = await authenticatedApi("/api/alignments/generate", authToken, {
@@ -303,6 +312,15 @@ describe("API Integration Tests", () => {
         body: JSON.stringify({ reflection_text: "test" }),
       });
       await expectStatus(res, 404);
+    });
+
+    test("POST /api/alignments/{id}/reflection returns 400 with invalid UUID format", async () => {
+      const res = await authenticatedApi("/api/alignments/invalid-uuid/reflection", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reflection_text: "test" }),
+      });
+      await expectStatus(res, 400);
     });
 
     test("GET /api/alignments/today returns alignment when authenticated", async () => {
