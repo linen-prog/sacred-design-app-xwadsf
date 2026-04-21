@@ -208,7 +208,10 @@ export default function PaywallScreen() {
                 </View>
               ))}
             </View>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleClose}>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => {
+              console.log('[Paywall] isSubscribed Continue pressed — calling navigateAfterPurchase');
+              navigateAfterPurchase();
+            }}>
               <Text style={styles.primaryButtonText}>Continue</Text>
             </TouchableOpacity>
           </View>

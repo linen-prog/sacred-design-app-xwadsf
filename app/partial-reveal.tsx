@@ -65,6 +65,11 @@ export default function PartialRevealScreen() {
   }, [screenOpacity, glowScale, primaryArchetype, secondaryArchetype]);
 
   function handleUnlock() {
+    if (appState.revealUnlocked || appState.subscriptionActive) {
+      console.log('[PartialReveal] Already subscribed/unlocked — skipping paywall, navigating to /onboarding/preparing');
+      router.replace('/onboarding/preparing');
+      return;
+    }
     console.log('[PartialReveal] "Unlock Your Full Design" pressed — navigating to /paywall');
     router.replace('/paywall?source=quiz_complete');
   }
