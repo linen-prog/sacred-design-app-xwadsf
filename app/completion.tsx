@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
@@ -16,9 +16,28 @@ export default function CompletionScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { sacredDesignResult } = useContext(DiscoveryContext);
+  const { source } = useLocalSearchParams<{ source?: string }>();
+
+  const isReflectionSaved = source === 'reflection_saved';
 
   const dayIndex = new Date().getDay() % 3;
-  const rotatingMessage = DAY_MESSAGES[dayIndex];
+  const markDoneRotatingMessage = DAY_MESSAGES[dayIndex];
+  const rotatingMessage = isReflectionSaved
+    ? 'Your words matter. Your journey is unfolding.'
+    : markDoneRotatingMessage;
+
+  const primaryMessage = isReflectionSaved
+    ? 'Your reflection has been saved.'
+    : "You're strengthening a new pattern.";
+
+  const supportingLine = isReflectionSaved
+    ? 'Every reflection you write becomes part of your sacred journey — a record of your growth over time.'
+    : 'This is how your design becomes part of your life.';
+
+  const somaticCue = isReflectionSaved
+    ? 'Take a breath and honour the insight you just captured.'
+    : 'Take one slow breath and let this moment land.';
+
   const blendName = sacredDesignResult?.blend_name ?? null;
   const identityLine = blendName ? `This is ${blendName} in motion.` : null;
 
@@ -78,7 +97,7 @@ export default function CompletionScreen() {
   }, [glowScale, fadeAnim0, fadeAnim1, fadeAnim2, fadeAnim3, fadeAnim4, fadeAnimButtons]);
 
   const handleContinue = () => {
-    console.log('[CompletionScreen] "Continue" pressed');
+    console.log('[CompletionScreen] "Continue" pressed — source:', source ?? 'mark_done');
     Animated.timing(continueOpacity, {
       toValue: 0.6,
       duration: 100,
@@ -111,11 +130,11 @@ export default function CompletionScreen() {
       {/* Content */}
       <View style={styles.content}>
         <Animated.Text style={[styles.primaryMessage, { opacity: fadeAnim0 }]}>
-          {"You're strengthening a new pattern."}
+          {primaryMessage}
         </Animated.Text>
 
         <Animated.Text style={[styles.supportingLine, { opacity: fadeAnim1 }]}>
-          {'This is how your design becomes part of your life.'}
+          {supportingLine}
         </Animated.Text>
 
         <Animated.Text style={[styles.rotatingMessage, { opacity: fadeAnim2 }]}>
@@ -129,7 +148,7 @@ export default function CompletionScreen() {
         )}
 
         <Animated.Text style={[styles.somaticCue, { opacity: fadeAnim4 }]}>
-          {'Take one slow breath and let this moment land.'}
+          {somaticCue}
         </Animated.Text>
       </View>
 
@@ -141,9 +160,11 @@ export default function CompletionScreen() {
           </AnimatedPressable>
         </Animated.View>
 
-        <AnimatedPressable onPress={handleReflect} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Reflect on this moment</Text>
-        </AnimatedPressable>
+        {!isReflectionSaved && (
+          <AnimatedPressable onPress={handleReflect} style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>Reflect on this moment</Text>
+          </AnimatedPressable>
+        )}
       </Animated.View>
     </View>
   );

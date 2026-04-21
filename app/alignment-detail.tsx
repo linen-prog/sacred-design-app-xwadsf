@@ -94,7 +94,7 @@ export default function AlignmentDetailScreen() {
       setMarkDoneSuccess(true);
       setMarkDoneMsg("Done! Great work today.");
       console.log("[AlignmentDetail] Navigating to completion screen after mark as done");
-      router.replace("/completion");
+      router.replace("/completion?source=mark_done");
     } catch (e) {
       console.warn("[AlignmentDetail] handleMarkDone error:", e);
       setMarkDoneMsg("Couldn't mark as done. Try again.");
@@ -132,7 +132,7 @@ export default function AlignmentDetailScreen() {
         Animated.spring(checkScale, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 8 }),
       ]).start(() => {
         console.log("[AlignmentDetail] Navigating to completion screen after reflection saved");
-        router.replace("/completion");
+        router.replace("/completion?source=reflection_saved");
       });
     } catch (e) {
       console.warn("[AlignmentDetail] handleSubmitReflection error:", e);
