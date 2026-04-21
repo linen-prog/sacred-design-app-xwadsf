@@ -12,6 +12,7 @@ import { DiscoveryContext, SacredDesignResult } from "@/contexts/DiscoveryContex
 import { ARCHETYPE_CONTENT, ArchetypeName } from "@/app/reveal";
 import { getSessionToken, API_URL } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
+import { AnimatedPressable } from "@/components/AnimatedPressable";
 
 const BG = "#F6F1E8";
 const TEXT = "#2F3E2F";
@@ -70,6 +71,32 @@ function DotRow({ text }: { text: string }) {
       <View style={styles.dot} />
       <Text style={styles.dotText}>{text}</Text>
     </View>
+  );
+}
+
+interface StuckCardProps {
+  item: { stuck: string; pathForward: string; appHelp: string };
+  index: number;
+  archetypeName: string;
+  onPress: (archetypeName: string, index: number) => void;
+}
+
+function StuckCard({ item, index, archetypeName, onPress }: StuckCardProps) {
+  const handlePress = () => {
+    console.log(`[MyDesign] Stuck card tapped — archetype: "${archetypeName}", index: ${index}, stuck: "${item.stuck}"`);
+    onPress(archetypeName, index);
+  };
+
+  return (
+    <AnimatedPressable onPress={handlePress} style={styles.stuckCard}>
+      <View style={styles.stuckCardInner}>
+        <View style={styles.stuckCardLeft}>
+          <Text style={styles.stuckCardStuck}>{item.stuck}</Text>
+          <Text style={styles.stuckCardPath}>{item.pathForward}</Text>
+        </View>
+        <Text style={styles.stuckCardArrow}>→</Text>
+      </View>
+    </AnimatedPressable>
   );
 }
 
@@ -320,6 +347,11 @@ export default function MyDesignScreen() {
 
   const hasDesignResult = !!sacredDesignResult;
 
+  const handleStuckCardPress = (archetypeName: string, index: number) => {
+    console.log(`[MyDesign] Navigating to shadow-path — archetype: "${archetypeName}", stuck: ${index}`);
+    router.push(`/shadow-path?archetype=${encodeURIComponent(archetypeName)}&stuck=${index}`);
+  };
+
   if (!sacredDesignResult) {
     console.log("[MyDesign] No sacredDesignResult — showing placeholder");
     return (
@@ -392,7 +424,16 @@ export default function MyDesignScreen() {
       {hasStuckPatterns && (
         <>
           <SectionLabel text="WHERE YOU GET STUCK" />
-          {renderListOrString(content?.stuckPatterns)}
+          <Text style={styles.stuckHint}>Tap a pattern to explore your path forward</Text>
+          {content.stuckToStrength.map((item, index) => (
+            <StuckCard
+              key={item.stuck}
+              item={item}
+              index={index}
+              archetypeName={primary}
+              onPress={handleStuckCardPress}
+            />
+          ))}
           <Divider />
         </>
       )}
@@ -407,6 +448,7 @@ export default function MyDesignScreen() {
       {secondary && ARCHETYPE_CONTENT[secondary] && (() => {
         const secondaryContent = ARCHETYPE_CONTENT[secondary];
         const secondaryInfluence = SECONDARY_INFLUENCE[secondary] ?? "";
+        const hasSecondaryStuck = secondaryContent.stuckToStrength && secondaryContent.stuckToStrength.length > 0;
         return (
           <>
             <View style={styles.sectionDivider} />
@@ -418,6 +460,22 @@ export default function MyDesignScreen() {
             <Divider />
             <SectionLabel text="SECONDARY STRENGTHS" />
             {renderListOrString(secondaryContent.strengths)}
+            {hasSecondaryStuck && (
+              <>
+                <Divider />
+                <SectionLabel text="WHERE YOU GET STUCK" />
+                <Text style={styles.stuckHint}>Tap a pattern to explore your path forward</Text>
+                {secondaryContent.stuckToStrength.map((item, index) => (
+                  <StuckCard
+                    key={item.stuck}
+                    item={item}
+                    index={index}
+                    archetypeName={secondary}
+                    onPress={handleStuckCardPress}
+                  />
+                ))}
+              </>
+            )}
             <Divider />
             <SectionLabel text="GROWTH PATH" />
             <View style={styles.growthPathCard}>
@@ -634,5 +692,54 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
     lineHeight: 22,
     marginBottom: 4,
+  },
+
+  // Stuck pattern cards
+  stuckHint: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: TEXT_MUTED,
+    marginBottom: 12,
+    marginTop: -4,
+  },
+  stuckCard: {
+    marginBottom: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(111,138,106,0.15)",
+    shadowColor: "#2F3E2F",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  stuckCardInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  stuckCardLeft: {
+    flex: 1,
+    gap: 4,
+  },
+  stuckCardStuck: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: TEXT,
+    lineHeight: 20,
+  },
+  stuckCardPath: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: ACCENT,
+    lineHeight: 18,
+  },
+  stuckCardArrow: {
+    fontSize: 18,
+    color: ACCENT,
+    opacity: 0.7,
   },
 });
