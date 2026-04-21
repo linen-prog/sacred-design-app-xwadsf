@@ -10,6 +10,7 @@ import { useRouter } from "expo-router";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 import { ARCHETYPE_CONTENT, ArchetypeName } from "@/app/reveal";
 import { apiFetch } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 const BG = "#F6F1E8";
 const TEXT = "#2F3E2F";
@@ -90,21 +91,29 @@ function renderListOrString(value: string[] | string | undefined, fallback?: str
 
 function TodayFocusCard() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [todayAlignment, setTodayAlignment] = useState<TodayAlignment | null>(null);
   const [loadingFocus, setLoadingFocus] = useState(true);
+  const [generating, setGenerating] = useState(false);
 
+  // Fix 1: wait for auth to resolve before fetching
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setLoadingFocus(false);
+      return;
+    }
     loadTodayFocus();
-  }, []);
+  }, [user, authLoading]);
 
   async function loadTodayFocus() {
     console.log("[MyDesign] GET /api/alignments/today");
+    setLoadingFocus(true);
     try {
       const res = await apiFetch("/api/alignments/today");
       if (!res.ok) {
         const errText = await res.text();
         console.warn("[MyDesign] GET /api/alignments/today failed:", res.status, errText);
-        setLoadingFocus(false);
         return;
       }
       const data: { alignment: TodayAlignment | null } = await res.json();
@@ -135,12 +144,30 @@ function TodayFocusCard() {
     });
   }
 
-  function handleGenerateAlignment() {
-    console.log("[MyDesign] 'Generate Today's Alignment' pressed — navigating to home tab");
-    router.push("/(tabs)");
+  // Fix 2: call POST /api/alignments/generate then reload; fall back to reload on 404
+  async function handleGenerateAlignment() {
+    console.log("[MyDesign] 'Generate Today's Alignment' pressed — calling POST /api/alignments/generate");
+    setGenerating(true);
+    try {
+      const res = await apiFetch("/api/alignments/generate", { method: "POST" });
+      if (res.ok) {
+        console.log("[MyDesign] POST /api/alignments/generate succeeded — reloading alignment");
+      } else if (res.status === 404) {
+        console.warn("[MyDesign] POST /api/alignments/generate returned 404 — falling back to reload");
+      } else {
+        const errText = await res.text();
+        console.warn("[MyDesign] POST /api/alignments/generate failed:", res.status, errText);
+      }
+      await loadTodayFocus();
+    } catch (e) {
+      console.warn("[MyDesign] POST /api/alignments/generate error:", e);
+      await loadTodayFocus();
+    } finally {
+      setGenerating(false);
+    }
   }
 
-  if (loadingFocus) {
+  if (authLoading || loadingFocus) {
     return (
       <View style={styles.focusCard}>
         <Text style={styles.focusLabel}>TODAY'S FOCUS</Text>
@@ -150,15 +177,17 @@ function TodayFocusCard() {
   }
 
   if (!todayAlignment) {
+    const generateButtonText = generating ? "Generating…" : "Generate Today's Alignment →";
     return (
       <View style={styles.focusCard}>
         <Text style={styles.focusLabel}>TODAY'S FOCUS</Text>
         <Text style={styles.focusEmptyText}>No alignment yet for today.</Text>
         <Pressable
           onPress={handleGenerateAlignment}
+          disabled={generating}
           style={styles.focusButton}
         >
-          <Text style={styles.focusButtonText}>Generate Today's Alignment →</Text>
+          <Text style={styles.focusButtonText}>{generateButtonText}</Text>
         </Pressable>
       </View>
     );

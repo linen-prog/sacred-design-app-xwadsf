@@ -90,17 +90,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUser = async () => {
     try {
       setLoading(true);
-      const session = await authClient.getSession();
-      console.log("[AuthContext] fetchUser session.data:", JSON.stringify(session?.data));
-      if (session?.data?.user) {
-        setUser(session.data.user as User);
-        // Read token from cookie store and persist it for API calls
-        const token = await getSessionToken();
-        if (token) {
-          await setBearerToken(token);
-          console.log("[AuthContext] Stored token from cookie store");
+      const { data: session } = await authClient.getSession();
+      console.log("[AuthContext] fetchUser session:", JSON.stringify(session));
+      if (session?.user) {
+        setUser(session.user as User);
+        // Prefer the token directly from the session object (avoids chicken-and-egg
+        // where SecureStore hasn't been written yet on first login).
+        if (session?.session?.token) {
+          await setBearerToken(session.session.token);
+          console.log("[AuthContext] Stored token from session object");
         } else {
-          console.warn("[AuthContext] Session exists but no token found in cookie store");
+          // Fallback: try reading from the cookie/SecureStore cache
+          const cached = await getSessionToken();
+          if (cached) {
+            await setBearerToken(cached);
+            console.log("[AuthContext] Stored token from cookie store (fallback)");
+          } else {
+            console.warn("[AuthContext] Session exists but no token found anywhere");
+          }
         }
       } else {
         setUser(null);
