@@ -22,6 +22,7 @@ app.withAuth({
     anonymous(),
   ],
   emailAndPassword: {
+    requireEmailVerification: false,
     sendResetPassword: async ({ user, url }) => {
       resend.emails.send({
         from: 'Sacred Design <noreply@example.com>',
