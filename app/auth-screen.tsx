@@ -52,7 +52,11 @@ export default function AuthScreen() {
     setError("");
   }
 
-  async function navigateAfterAuth() {
+  async function navigateAfterAuth(signedIn = false) {
+    if (signedIn) {
+      console.log("[AuthScreen] User signed in — resetting guestMode");
+      await updateAppState({ guestMode: false });
+    }
     if (isFromPostQuizSave) {
       console.log("[AuthScreen] from=post-quiz-save — setting postQuizSaveCompleted and routing to /paywall");
       await updateAppState({ postQuizSaveCompleted: true });
@@ -79,7 +83,7 @@ export default function AuthScreen() {
       await signInWithApple();
       console.log("[AuthScreen] Apple sign-in succeeded — fetching user and routing");
       await fetchUser?.();
-      navigateAfterAuth();
+      navigateAfterAuth(true);
     } catch (e: any) {
       console.warn("[AuthScreen] Apple sign-in error:", e);
       setError(e?.message || "Apple sign-in failed. Please try again.");
@@ -96,7 +100,7 @@ export default function AuthScreen() {
       await signInWithGoogle();
       console.log("[AuthScreen] Google sign-in succeeded — fetching user and routing");
       await fetchUser?.();
-      navigateAfterAuth();
+      navigateAfterAuth(true);
     } catch (e: any) {
       console.warn("[AuthScreen] Google sign-in error:", e);
       setError(e?.message || "Google sign-in failed. Please try again.");
@@ -128,7 +132,7 @@ export default function AuthScreen() {
       }
       console.log("[AuthScreen] Auth succeeded — calling fetchUser then routing");
       await fetchUser?.();
-      navigateAfterAuth();
+      navigateAfterAuth(true);
     } catch (e: any) {
       console.warn("[AuthScreen] Auth error:", e);
       const msg =
@@ -290,8 +294,9 @@ export default function AuthScreen() {
         {/* Continue without signing in */}
         <Pressable
           style={styles.backLink}
-          onPress={() => {
+          onPress={async () => {
             console.log("[AuthScreen] Continue without signing in pressed");
+            await updateAppState({ guestMode: true });
             navigateAfterAuth();
           }}
         >

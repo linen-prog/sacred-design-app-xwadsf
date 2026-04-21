@@ -23,6 +23,7 @@ export interface AppState {
   dailyAlignmentReady: boolean;
   intendedRouteAfterAuth: string | null;
   postQuizSaveCompleted: boolean;
+  guestMode: boolean;
 }
 
 export const DEFAULT_APP_STATE: AppState = {
@@ -41,6 +42,7 @@ export const DEFAULT_APP_STATE: AppState = {
   dailyAlignmentReady: false,
   intendedRouteAfterAuth: null,
   postQuizSaveCompleted: false,
+  guestMode: false,
 };
 
 // Module-level in-memory cache — prevents race conditions on concurrent updateAppState calls

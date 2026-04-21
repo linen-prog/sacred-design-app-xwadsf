@@ -232,6 +232,7 @@ const SUBSCRIPTION_REDIRECT_BLOCKLIST = [
 function SubscriptionRedirect() {
   const { isSubscribed, loading } = useSubscription();
   const { user, loading: authLoading } = useAuth();
+  const { appState } = useAppState();
   const router = useRouter();
   const pathname = usePathname();
   const mountTimeRef = useRef<number>(Date.now());
@@ -263,16 +264,16 @@ function SubscriptionRedirect() {
       return;
     }
 
-    // Not signed in → send to auth.
-    if (!user) {
-      console.log('[SubscriptionRedirect] No user — redirecting to auth-screen');
+    // Not signed in → send to auth, unless user deliberately chose guest mode.
+    if (!user && !appState.guestMode) {
+      console.log('[SubscriptionRedirect] No user and not guest mode — redirecting to auth-screen');
       router.replace('/auth-screen');
       return;
     }
 
     // Subscription status is available but we do NOT auto-redirect to paywall.
     // The paywall is only shown when the user explicitly accesses a premium feature.
-  }, [isSubscribed, loading, authLoading, user, router, pathname]);
+  }, [isSubscribed, loading, authLoading, user, appState, router, pathname]);
 
   return null;
 }
