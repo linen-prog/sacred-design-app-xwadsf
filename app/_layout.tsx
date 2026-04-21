@@ -98,7 +98,14 @@ function RootNavigator() {
         return;
       }
 
-      // PRIORITY 2: Quiz done + reveal unlocked but not yet viewed → reveal screen
+      // PRIORITY 2: Quiz done but post-quiz save not yet completed → save screen
+      if (appState.quizCompleted && !appState.postQuizSaveCompleted) {
+        console.log('[RootNavigator] quizCompleted=true, postQuizSaveCompleted=false — navigating to /post-quiz-save');
+        router.replace('/post-quiz-save');
+        return;
+      }
+
+      // PRIORITY 3: Quiz done + reveal unlocked but not yet viewed → reveal screen
       // (preparing.tsx requires live DiscoveryContext answers which are not persisted across
       // cold relaunches — go directly to /reveal which shows the stored archetype data)
       if (appState.quizCompleted && appState.revealUnlocked && !appState.revealViewed) {
@@ -107,7 +114,7 @@ function RootNavigator() {
         return;
       }
 
-      // PRIORITY 3: Quiz done but not unlocked → partial reveal (gated)
+      // PRIORITY 4: Quiz done but not unlocked → partial reveal (gated)
       if (appState.quizCompleted && !appState.revealUnlocked) {
         console.log('[RootNavigator] Quiz complete but reveal not unlocked — navigating to /partial-reveal');
         router.replace('/partial-reveal');
@@ -187,6 +194,7 @@ function RootNavigator() {
       <Stack.Screen name="dev-skip" options={{ headerShown: false }} />
       <Stack.Screen name="alignment-detail" options={{ headerShown: false }} />
       <Stack.Screen name="auth-screen" options={{ headerShown: false }} />
+      <Stack.Screen name="post-quiz-save" options={{ headerShown: false }} />
       <Stack.Screen name="debug-auth" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="shadow-path" options={{ headerShown: false }} />

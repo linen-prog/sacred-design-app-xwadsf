@@ -78,7 +78,7 @@ export default function Phase4ReflectionScreen() {
     const newState = await updateAppState({
       quizCompleted: true,
       paywallReached: true,
-      currentOnboardingStep: '/paywall',
+      currentOnboardingStep: '/post-quiz-save',
       primaryArchetype,
       secondaryArchetype,
       scoreBreakdown,
@@ -87,13 +87,8 @@ export default function Phase4ReflectionScreen() {
     console.log('[Phase4Reflection] POST-UPDATE state confirmed:', JSON.stringify(newState));
     await new Promise(resolve => setTimeout(resolve, 75));
 
-    if (isSubscribed) {
-      console.log('[Phase4Reflection] User is pro — navigating to /onboarding/preparing');
-      router.push('/onboarding/preparing');
-    } else {
-      console.log('[Phase4Reflection] User is not pro — navigating to /paywall?source=quiz_complete');
-      router.push('/paywall?source=quiz_complete');
-    }
+    console.log('[Phase4Reflection] Navigating to /post-quiz-save');
+    router.push('/post-quiz-save');
   }
 
   async function handleContinue() {

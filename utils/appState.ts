@@ -22,6 +22,7 @@ export interface AppState {
 
   dailyAlignmentReady: boolean;
   intendedRouteAfterAuth: string | null;
+  postQuizSaveCompleted: boolean;
 }
 
 export const DEFAULT_APP_STATE: AppState = {
@@ -39,6 +40,7 @@ export const DEFAULT_APP_STATE: AppState = {
   scoreBreakdown: null,
   dailyAlignmentReady: false,
   intendedRouteAfterAuth: null,
+  postQuizSaveCompleted: false,
 };
 
 // Module-level in-memory cache — prevents race conditions on concurrent updateAppState calls
@@ -103,6 +105,7 @@ export async function retakeQuiz(): Promise<AppState> {
     secondaryArchetype: null,
     scoreBreakdown: null,
     currentOnboardingStep: '/onboarding/intro',
+    postQuizSaveCompleted: false,
   });
   console.log('[AppState] retakeQuiz() — state reset complete:', JSON.stringify(next));
   return next;
@@ -117,3 +120,5 @@ export async function clearAppState(): Promise<void> {
     console.warn('[AppState] Failed to clear state:', e);
   }
 }
+
+

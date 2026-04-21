@@ -10,7 +10,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppState } from "@/contexts/AppStateContext";
@@ -34,6 +34,9 @@ export default function AuthScreen() {
   const { signInWithEmail, signUpWithEmail, signInWithApple, signInWithGoogle, fetchUser } = useAuth() as any;
   const { appState, updateAppState } = useAppState();
 
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const isFromPostQuizSave = from === 'post-quiz-save';
+
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -49,7 +52,14 @@ export default function AuthScreen() {
     setError("");
   }
 
-  function navigateAfterAuth() {
+  async function navigateAfterAuth() {
+    if (isFromPostQuizSave) {
+      console.log("[AuthScreen] from=post-quiz-save — setting postQuizSaveCompleted and routing to /paywall");
+      await updateAppState({ postQuizSaveCompleted: true });
+      await new Promise(resolve => setTimeout(resolve, 75));
+      router.replace('/paywall');
+      return;
+    }
     const intended = appState.intendedRouteAfterAuth;
     if (intended) {
       console.log("[AuthScreen] Navigating to intended route after auth:", intended);
