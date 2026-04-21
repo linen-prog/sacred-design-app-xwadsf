@@ -146,7 +146,8 @@ export default function JourneyScreen() {
         console.warn("[Journey] /api/reflections failed:", res.status, errText);
         return;
       }
-      const data: ReflectionItem[] = await res.json();
+      const reflJson = await res.json();
+      const data: ReflectionItem[] = Array.isArray(reflJson) ? reflJson : (reflJson.reflections ?? reflJson.data ?? []);
       console.log("[Journey] Reflections loaded:", data.length, "entries");
       setReflections(data);
     } catch (e) {
@@ -168,7 +169,8 @@ export default function JourneyScreen() {
         setError("Couldn't load your journey. Tap to retry.");
         return;
       }
-      const data: AlignmentHistoryItem[] = await res.json();
+      const histJson = await res.json();
+      const data: AlignmentHistoryItem[] = Array.isArray(histJson) ? histJson : (histJson.alignments ?? histJson.data ?? []);
       console.log("[Journey] History loaded:", data.length, "entries");
       const sorted = [...data].sort((a, b) => b.day_number - a.day_number);
       setHistory(sorted);
