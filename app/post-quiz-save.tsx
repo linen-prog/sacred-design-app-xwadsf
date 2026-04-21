@@ -42,8 +42,8 @@ export default function PostQuizSaveScreen() {
     try {
       await updateAppState({ postQuizSaveCompleted: true });
       await new Promise(resolve => setTimeout(resolve, 75));
-      console.log('[PostQuizSave] postQuizSaveCompleted=true — navigating to /paywall');
-      router.replace('/paywall');
+      console.log('[PostQuizSave] postQuizSaveCompleted=true — navigating to /partial-reveal');
+      router.replace('/partial-reveal');
     } catch (e) {
       console.warn('[PostQuizSave] Error skipping:', e);
       setSkipping(false);

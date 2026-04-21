@@ -58,10 +58,10 @@ export default function AuthScreen() {
       await updateAppState({ guestMode: false });
     }
     if (isFromPostQuizSave) {
-      console.log("[AuthScreen] from=post-quiz-save — setting postQuizSaveCompleted and routing to /paywall");
+      console.log("[AuthScreen] from=post-quiz-save — setting postQuizSaveCompleted and routing to /partial-reveal");
       await updateAppState({ postQuizSaveCompleted: true });
       await new Promise(resolve => setTimeout(resolve, 75));
-      router.replace('/paywall');
+      router.replace('/partial-reveal');
       return;
     }
     const intended = appState.intendedRouteAfterAuth;
