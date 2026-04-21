@@ -93,11 +93,8 @@ export default function AlignmentDetailScreen() {
       console.log("[AlignmentDetail] Alignment marked as done:", alignmentId);
       setMarkDoneSuccess(true);
       setMarkDoneMsg("Done! Great work today.");
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace("/(tabs)");
-      }
+      console.log("[AlignmentDetail] Navigating to completion screen after mark as done");
+      router.replace("/completion");
     } catch (e) {
       console.warn("[AlignmentDetail] handleMarkDone error:", e);
       setMarkDoneMsg("Couldn't mark as done. Try again.");
