@@ -146,23 +146,24 @@ describe("API Integration Tests", () => {
   describe("Alignments", () => {
     let alignmentId: string;
 
-    test("POST /api/alignments/generate returns 404 when no archetype saved", async () => {
+    test("POST /api/alignments/generate returns 400 when no archetype saved", async () => {
       // Create a new user without a saved archetype
       const { token: newUserToken } = await signUpTestUser();
       const res = await authenticatedApi("/api/alignments/generate", newUserToken, {
         method: "POST",
       });
-      await expectStatus(res, 404);
+      await expectStatus(res, 400);
     });
 
     test("POST /api/alignments/generate creates alignment when authenticated", async () => {
       const res = await authenticatedApi("/api/alignments/generate", authToken, {
         method: "POST",
       });
-      await expectStatus(res, 201);
+      await expectStatus(res, 200);
       const data = await res.json();
-      expect(data.id).toBeDefined();
-      alignmentId = data.id;
+      expect(data.alignment).toBeDefined();
+      expect(data.alignment.id).toBeDefined();
+      alignmentId = data.alignment.id;
     });
 
     test("POST /api/alignments/generate returns 401 without authentication", async () => {
@@ -215,9 +216,9 @@ describe("API Integration Tests", () => {
       const alignRes = await authenticatedApi("/api/alignments/generate", authToken, {
         method: "POST",
       });
-      await expectStatus(alignRes, 201);
+      await expectStatus(alignRes, 200);
       const alignData = await alignRes.json();
-      const otherAlignmentId = alignData.id;
+      const otherAlignmentId = alignData.alignment.id;
 
       // Sign up a second user
       const { token: otherToken } = await signUpTestUser();
@@ -232,16 +233,13 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 403);
     });
 
-    test("GET /api/alignments/today returns alignment with reflection status when authenticated", async () => {
+    test("GET /api/alignments/today returns alignment when authenticated", async () => {
       const res = await authenticatedApi("/api/alignments/today", authToken, {
         method: "GET",
       });
       await expectStatus(res, 200);
       const data = await res.json();
-      // Response contains alignment data with hasReflection field
-      if (data && typeof data === "object") {
-        expect(data.hasReflection).toBeDefined();
-      }
+      expect(data.alignment).toBeDefined();
     });
 
     test("GET /api/alignments/today returns 401 without authentication", async () => {

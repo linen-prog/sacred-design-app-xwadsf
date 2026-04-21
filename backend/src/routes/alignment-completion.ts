@@ -39,31 +39,36 @@ export function register(app: App, fastify: any) {
       description: 'Generate a daily alignment using the user\'s saved archetype',
       tags: ['alignments'],
       response: {
-        201: {
-          description: 'Daily alignment generated successfully',
+        200: {
+          description: 'Daily alignment generated or retrieved',
           type: 'object',
           properties: {
-            id: { type: 'string' },
-            day_number: { type: 'integer' },
-            level: { type: 'integer' },
-            action: { type: 'string' },
-            guidance: { type: 'string' },
-            somatic_cue: { type: 'string' },
-            scripture: { type: 'string' },
-            reflection_prompt: { type: 'string' },
-            primary_archetype: { type: 'string' },
-            secondary_archetype: { type: 'string' },
-            blend_name: { type: 'string' },
-            generated_at: { type: 'string', format: 'date-time' },
+            alignment: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                day_number: { type: 'integer' },
+                level: { type: 'integer' },
+                action: { type: 'string' },
+                guidance: { type: 'string' },
+                somatic_cue: { type: 'string' },
+                scripture: { type: 'string' },
+                reflection_prompt: { type: 'string' },
+                primary_archetype: { type: 'string' },
+                secondary_archetype: { type: 'string' },
+                blend_name: { type: 'string' },
+                generated_at: { type: 'string', format: 'date-time' },
+              },
+            },
           },
         },
-        401: {
-          description: 'Unauthorized',
+        400: {
+          description: 'Archetype not found',
           type: 'object',
           properties: { error: { type: 'string' } },
         },
-        404: {
-          description: 'Archetype not found',
+        401: {
+          description: 'Unauthorized',
           type: 'object',
           properties: { error: { type: 'string' } },
         },
@@ -96,23 +101,27 @@ export function register(app: App, fastify: any) {
 
       if (archetypeRows.length === 0) {
         app.logger.info({ userId }, 'No archetype found');
-        return reply.status(404).send({ error: 'Archetype not found' });
+        return reply.status(400).send({ error: 'Archetype not found' });
       }
 
       const archetype = archetypeRows[0];
       const primary_archetype = archetype.primaryArchetype;
       const secondary_archetype = archetype.secondaryArchetype;
       const blend_name = archetype.blendName;
-      const scores = archetype.scores as Record<string, number>;
 
-      // Count existing alignments to determine day_number
-      const alignmentCountResult = await app.db
-        .select({ count: count() })
-        .from(schema.dailyAlignments)
-        .where(eq(schema.dailyAlignments.userId, userId));
+      // Get day_count from user_progress or default to 1
+      const progressRows = await app.db
+        .select()
+        .from(schema.userProgress)
+        .where(eq(schema.userProgress.userId, userId))
+        .limit(1);
 
-      const dayNumber = (alignmentCountResult[0]?.count ?? 0) + 1;
-      const level = determineLevelFromDayCount(dayNumber);
+      let dayCount = 1;
+      if (progressRows.length > 0) {
+        dayCount = progressRows[0].dayCount;
+      }
+
+      const level = determineLevelFromDayCount(dayCount);
 
       // Check if alignment exists for today
       const existingAlignments = await app.db
@@ -127,52 +136,42 @@ export function register(app: App, fastify: any) {
         .limit(1);
 
       if (existingAlignments.length > 0) {
-        app.logger.info({ userId }, 'Alignment already exists for today');
+        app.logger.info({ userId }, 'Alignment already exists for today, returning existing');
         const alignment = existingAlignments[0];
-        return reply.status(201).send({
-          id: alignment.id,
-          day_number: alignment.dayNumber,
-          level: alignment.level,
-          action: alignment.action,
-          guidance: alignment.guidance,
-          somatic_cue: alignment.somaticCue,
-          scripture: alignment.scripture,
-          reflection_prompt: alignment.reflectionPrompt,
-          primary_archetype: alignment.primaryArchetype,
-          secondary_archetype: alignment.secondaryArchetype,
-          blend_name: alignment.blendName,
-          generated_at: alignment.generatedAt.toISOString(),
-        });
+        return {
+          alignment: {
+            id: alignment.id,
+            day_number: alignment.dayNumber,
+            level: alignment.level,
+            action: alignment.action,
+            guidance: alignment.guidance,
+            somatic_cue: alignment.somaticCue,
+            scripture: alignment.scripture,
+            reflection_prompt: alignment.reflectionPrompt,
+            primary_archetype: alignment.primaryArchetype,
+            secondary_archetype: alignment.secondaryArchetype,
+            blend_name: alignment.blendName,
+            generated_at: alignment.generatedAt.toISOString(),
+          },
+        };
       }
 
-      const anxious_score = scores.anxious_score ?? 0;
-      const avoidant_score = scores.avoidant_score ?? 0;
-      const overactive_score = scores.overactive_score ?? 0;
-      const grounded_score = scores.grounded_score ?? 0;
+      const systemPrompt = `You are a sacred design guide. Generate a daily alignment practice for a user with the following archetype profile:
+- Primary archetype: ${primary_archetype}
+- Secondary archetype: ${secondary_archetype}
+- Blend name: ${blend_name}
+- Day number: ${dayCount}
 
-      const systemPrompt = `You are a sacred design guide. Generate a daily alignment practice for someone whose primary archetype is ${primary_archetype} and secondary archetype is ${secondary_archetype} (blend: ${blend_name}).
-
-Day Number: ${dayNumber}
-Level: ${level} (1=awareness/small action, 2=expression/discomfort, 3=identity/integration)
-Regulation Profile: anxious=${anxious_score}, avoidant=${avoidant_score}, overactive=${overactive_score}, grounded=${grounded_score}
-
-Generate a personalized daily alignment with:
-- A specific, doable action
-- Guidance on how to practice it
-- A somatic cue (body-based instruction)
-- A relevant Bible verse
-- A reflection question
-
-Return ONLY valid JSON with exactly these fields:
+Return ONLY a valid JSON object with exactly these fields, no markdown, no code fences:
 {
-  "action": "one specific action",
-  "guidance": "2-3 sentences on how to practice",
-  "somatic_cue": "one body instruction",
-  "scripture": "one Bible verse",
-  "reflection_prompt": "one journaling question"
+  "action": "A short, specific action to take today (1-2 sentences)",
+  "guidance": "Deeper spiritual guidance for the day (2-3 sentences)",
+  "scripture": "A relevant scripture or sacred text quote with reference",
+  "somatic_cue": "A body-based awareness cue or practice (1-2 sentences)",
+  "reflection_prompt": "A journaling or reflection question for the evening (1 sentence)"
 }`;
 
-      app.logger.info({ userId, dayNumber, level }, 'Generating alignment with AI');
+      app.logger.info({ userId, dayCount, level }, 'Generating alignment with AI');
 
       let aiOutput = FALLBACK_ALIGNMENT;
       try {
@@ -193,7 +192,7 @@ Return ONLY valid JSON with exactly these fields:
         .insert(schema.dailyAlignments)
         .values({
           userId,
-          dayNumber,
+          dayNumber: dayCount,
           level,
           action: aiOutput.action,
           guidance: aiOutput.guidance,
@@ -209,20 +208,14 @@ Return ONLY valid JSON with exactly these fields:
 
       const created = insertResult[0];
 
-      // Update user_progress if it exists
-      const progressRows = await app.db
-        .select()
-        .from(schema.userProgress)
-        .where(eq(schema.userProgress.userId, userId))
-        .limit(1);
-
+      // Update or create user_progress
       const newStreak = calculateNewStreak(progressRows[0]?.lastActiveDate || '', progressRows[0]?.streak || 0);
 
       if (progressRows.length > 0) {
         await app.db
           .update(schema.userProgress)
           .set({
-            dayCount: dayNumber,
+            dayCount,
             streak: newStreak,
             lastActiveDate: today,
             updatedAt: new Date(),
@@ -231,7 +224,7 @@ Return ONLY valid JSON with exactly these fields:
       } else {
         await app.db.insert(schema.userProgress).values({
           userId,
-          dayCount: dayNumber,
+          dayCount,
           streak: newStreak,
           lastActiveDate: today,
           createdAt: new Date(),
@@ -239,22 +232,24 @@ Return ONLY valid JSON with exactly these fields:
         });
       }
 
-      app.logger.info({ alignmentId: created.id, userId, dayNumber }, 'Alignment generated successfully');
+      app.logger.info({ alignmentId: created.id, userId, dayCount }, 'Alignment generated successfully');
 
-      return reply.status(201).send({
-        id: created.id,
-        day_number: created.dayNumber,
-        level: created.level,
-        action: created.action,
-        guidance: created.guidance,
-        somatic_cue: created.somaticCue,
-        scripture: created.scripture,
-        reflection_prompt: created.reflectionPrompt,
-        primary_archetype: created.primaryArchetype,
-        secondary_archetype: created.secondaryArchetype,
-        blend_name: created.blendName,
-        generated_at: created.generatedAt.toISOString(),
-      });
+      return {
+        alignment: {
+          id: created.id,
+          day_number: created.dayNumber,
+          level: created.level,
+          action: created.action,
+          guidance: created.guidance,
+          somatic_cue: created.somaticCue,
+          scripture: created.scripture,
+          reflection_prompt: created.reflectionPrompt,
+          primary_archetype: created.primaryArchetype,
+          secondary_archetype: created.secondaryArchetype,
+          blend_name: created.blendName,
+          generated_at: created.generatedAt.toISOString(),
+        },
+      };
     } catch (error) {
       app.logger.error({ err: error, userId }, 'Failed to generate alignment');
       throw error;
@@ -264,26 +259,35 @@ Return ONLY valid JSON with exactly these fields:
   // GET /api/alignments/today
   fastify.get('/api/alignments/today', {
     schema: {
-      description: "Get today's alignment with reflection status",
+      description: "Get today's alignment or null if not found",
       tags: ['alignments'],
       response: {
         200: {
           description: "Today's alignment or null",
           type: 'object',
           properties: {
-            id: { type: 'string' },
-            day_number: { type: 'integer' },
-            level: { type: 'integer' },
-            action: { type: 'string' },
-            guidance: { type: 'string' },
-            somatic_cue: { type: 'string' },
-            scripture: { type: 'string' },
-            reflection_prompt: { type: ['string', 'null'] },
-            primary_archetype: { type: 'string' },
-            secondary_archetype: { type: 'string' },
-            blend_name: { type: 'string' },
-            generated_at: { type: 'string', format: 'date-time' },
-            hasReflection: { type: 'boolean' },
+            alignment: {
+              oneOf: [
+                {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    day_number: { type: 'integer' },
+                    level: { type: 'integer' },
+                    action: { type: 'string' },
+                    guidance: { type: 'string' },
+                    somatic_cue: { type: 'string' },
+                    scripture: { type: 'string' },
+                    reflection_prompt: { type: ['string', 'null'] },
+                    primary_archetype: { type: 'string' },
+                    secondary_archetype: { type: 'string' },
+                    blend_name: { type: 'string' },
+                    generated_at: { type: 'string', format: 'date-time' },
+                  },
+                },
+                { type: 'null' },
+              ],
+            },
           },
         },
         401: {
@@ -325,41 +329,28 @@ Return ONLY valid JSON with exactly these fields:
 
       if (alignments.length === 0) {
         app.logger.info({ userId }, 'No alignment found for today');
-        return null;
+        return { alignment: null };
       }
 
       const alignment = alignments[0];
 
-      // Check if reflection exists
-      const reflections = await app.db
-        .select()
-        .from(schema.alignmentReflections)
-        .where(
-          and(
-            eq(schema.alignmentReflections.alignmentId, alignment.id),
-            eq(schema.alignmentReflections.userId, userId)
-          )
-        )
-        .limit(1);
-
-      const hasReflection = reflections.length > 0;
-
-      app.logger.info({ alignmentId: alignment.id, userId, hasReflection }, "Retrieved today's alignment");
+      app.logger.info({ alignmentId: alignment.id, userId }, "Retrieved today's alignment");
 
       return {
-        id: alignment.id,
-        day_number: alignment.dayNumber,
-        level: alignment.level,
-        action: alignment.action,
-        guidance: alignment.guidance,
-        somatic_cue: alignment.somaticCue,
-        scripture: alignment.scripture,
-        reflection_prompt: alignment.reflectionPrompt,
-        primary_archetype: alignment.primaryArchetype,
-        secondary_archetype: alignment.secondaryArchetype,
-        blend_name: alignment.blendName,
-        generated_at: alignment.generatedAt.toISOString(),
-        hasReflection,
+        alignment: {
+          id: alignment.id,
+          day_number: alignment.dayNumber,
+          level: alignment.level,
+          action: alignment.action,
+          guidance: alignment.guidance,
+          somatic_cue: alignment.somaticCue,
+          scripture: alignment.scripture,
+          reflection_prompt: alignment.reflectionPrompt,
+          primary_archetype: alignment.primaryArchetype,
+          secondary_archetype: alignment.secondaryArchetype,
+          blend_name: alignment.blendName,
+          generated_at: alignment.generatedAt.toISOString(),
+        },
       };
     } catch (error) {
       app.logger.error({ err: error, userId }, "Failed to fetch today's alignment");
