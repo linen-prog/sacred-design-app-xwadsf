@@ -5,24 +5,24 @@
     "slug": "sacred-design",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/c5285e11-d314-42f2-b5cc-3466932600b8.jpeg",
+    "icon": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/c5285e11-d314-42f2-b5cc-3466932600b8.jpeg",
-      "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "image": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
+      "resizeMode": "cover",
+      "backgroundColor": "#0a0800"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.placeholder.app",
-      "icon": "./assets/images/c5285e11-d314-42f2-b5cc-3466932600b8.jpeg",
+      "icon": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/c5285e11-d314-42f2-b5cc-3466932600b8.jpeg",
+        "foregroundImage": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
         "backgroundColor": "#F6F1E8"
       },
       "package": "com.placeholder.app"
