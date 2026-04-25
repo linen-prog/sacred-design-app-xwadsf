@@ -39,13 +39,40 @@ function LockedRow({ label }: { label: string }) {
 export default function PartialRevealScreen() {
   const router = useRouter();
   const { appState } = useAppState();
-  const { sacredDesignResult } = useContext(DiscoveryContext);
+  const { sacredDesignResult, restoreFromBackend } = useContext(DiscoveryContext);
 
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const glowScale = useRef(new Animated.Value(1)).current;
 
   const primaryArchetype = sacredDesignResult?.primary_archetype ?? appState.primaryArchetype ?? 'Your Archetype';
   const secondaryArchetype = sacredDesignResult?.secondary_archetype ?? appState.secondaryArchetype ?? 'Secondary Archetype';
+
+  useEffect(() => {
+    if (sacredDesignResult) return; // already have data
+    // Wait for AsyncStorage restore, then try backend
+    const timer = setTimeout(async () => {
+      if (sacredDesignResult) return; // restored in the meantime
+      console.log('[PartialReveal] sacredDesignResult still null after wait — attempting backend restore');
+      try {
+        const { apiFetch } = await import('@/lib/auth');
+        const res = await apiFetch('/api/archetypes/me');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.primary_archetype) {
+          console.log('[PartialReveal] Restored from backend:', data.primary_archetype, data.secondary_archetype);
+          restoreFromBackend({
+            primary_archetype: data.primary_archetype,
+            secondary_archetype: data.secondary_archetype,
+            blend_name: data.blend_name,
+            scores: data.scores,
+          });
+        }
+      } catch (e) {
+        console.warn('[PartialReveal] Backend restore failed:', e);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [sacredDesignResult, restoreFromBackend]);
 
   useEffect(() => {
     console.log('[PartialReveal] Screen mounted — primaryArchetype:', primaryArchetype, 'secondaryArchetype:', secondaryArchetype);

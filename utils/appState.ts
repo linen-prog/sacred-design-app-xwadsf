@@ -106,7 +106,7 @@ export async function retakeQuiz(): Promise<AppState> {
     primaryArchetype: null,
     secondaryArchetype: null,
     scoreBreakdown: null,
-    currentOnboardingStep: '/onboarding/intro',
+    currentOnboardingStep: '/onboarding/welcome',
     postQuizSaveCompleted: false,
   });
   console.log('[AppState] retakeQuiz() — state reset complete:', JSON.stringify(next));

@@ -33,6 +33,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { isOnboardingComplete } from "@/utils/onboardingStorage";
 import { isQuizJustCompleted } from "@/utils/quizState";
+import { updateAppState } from "@/utils/appState";
 
 const DevErrorBoundary = __DEV__
   ? ErrorBoundary
@@ -159,7 +160,10 @@ function RootNavigator() {
 
           if (hasCompletedQuiz === 'true' && (await isOnboardingComplete())) {
             if (user) {
-              console.log('[RootNavigator] Legacy: quiz complete + auth — navigating to /(tabs)');
+              console.log('[RootNavigator] Legacy: quiz complete + auth — setting revealViewed and navigating to /(tabs)');
+              // Legacy users completed the full flow — mark revealViewed so TabLayout doesn't redirect them
+              // We don't await this to avoid blocking navigation
+              updateAppState({ revealViewed: true, dailyAlignmentReady: true }).catch(() => {});
               router.replace('/(tabs)');
             } else {
               console.log('[RootNavigator] Legacy: quiz complete, no auth — navigating to /auth-screen');
@@ -236,6 +240,8 @@ const loadingStyles = StyleSheet.create({
 // Screens where SubscriptionRedirect must never interfere.
 const SUBSCRIPTION_REDIRECT_BLOCKLIST = [
   '/reveal',
+  '/partial-reveal',
+  '/post-quiz-save',
   '/completion',
   '/auth-screen',
   '/auth-popup',
@@ -272,7 +278,9 @@ function SubscriptionRedirect() {
       SUBSCRIPTION_REDIRECT_BLOCKLIST.some((p) => currentPath === p) ||
       currentPath.startsWith('/onboarding') ||
       currentPath.startsWith('/reveal') ||
-      currentPath.startsWith('/completion');
+      currentPath.startsWith('/completion') ||
+      currentPath.startsWith('/partial-reveal') ||
+      currentPath.startsWith('/post-quiz-save');
     if (isBlocked) {
       console.log('[SubscriptionRedirect] Blocked path — skipping:', currentPath);
       return;
