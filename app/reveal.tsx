@@ -6,6 +6,7 @@ import {
   Animated,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -170,7 +171,7 @@ function StuckCard({ item, index, archetypeName, onPress }: StuckCardProps) {
 
 export default function RevealScreen() {
   const router = useRouter();
-  const { sacredDesignResult } = useContext(DiscoveryContext);
+  const { sacredDesignResult, restoreFromBackend } = useContext(DiscoveryContext);
   const { user } = useAuth();
   const { updateAppState } = useAppState();
   const screenOpacity = useRef(new Animated.Value(0)).current;
@@ -178,6 +179,35 @@ export default function RevealScreen() {
   const [showSignInPrompt, setShowSignInPrompt] = useState(false);
   const promptTranslateY = useRef(new Animated.Value(80)).current;
   const promptOpacity = useRef(new Animated.Value(0)).current;
+  const [isWaiting, setIsWaiting] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsWaiting(false), 2500);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (isWaiting || sacredDesignResult) return;
+    console.log('[Reveal] No sacredDesignResult after wait — attempting backend restore via GET /api/archetypes/me');
+    apiFetch('/api/archetypes/me')
+      .then(async (res) => {
+        if (!res.ok) {
+          console.warn('[Reveal] GET /api/archetypes/me failed:', res.status);
+          return;
+        }
+        const data = await res.json();
+        console.log('[Reveal] GET /api/archetypes/me response:', data);
+        if (data && data.primary_archetype) {
+          restoreFromBackend({
+            primary_archetype: data.primary_archetype,
+            secondary_archetype: data.secondary_archetype,
+            blend_name: data.blend_name,
+            scores: data.scores,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [isWaiting, sacredDesignResult, restoreFromBackend]);
 
   const primary = sacredDesignResult?.primary_archetype as ArchetypeName | undefined;
   const secondary = sacredDesignResult?.secondary_archetype as ArchetypeName | undefined;
@@ -267,11 +297,22 @@ export default function RevealScreen() {
   };
 
   if (!sacredDesignResult || !content) {
+    if (isWaiting) {
+      return (
+        <View style={styles.fallbackContainer}>
+          <ActivityIndicator size="large" color={REVEAL_COLORS.accent} />
+          <Text style={[styles.fallbackText, { marginTop: 20 }]}>Preparing your Sacred Design…</Text>
+        </View>
+      );
+    }
     return (
       <View style={styles.fallbackContainer}>
         <Text style={styles.fallbackText}>Your Sacred Design is being prepared…</Text>
-        <AnimatedPressable onPress={() => router.back()} style={styles.fallbackButton}>
-          <Text style={styles.fallbackButtonText}>Go Back</Text>
+        <AnimatedPressable onPress={() => router.replace('/onboarding/preparing')} style={styles.fallbackButton}>
+          <Text style={styles.fallbackButtonText}>Retry</Text>
+        </AnimatedPressable>
+        <AnimatedPressable onPress={() => router.replace('/(tabs)')} style={[styles.fallbackButton, { marginTop: 8, backgroundColor: 'transparent', borderWidth: 1, borderColor: REVEAL_COLORS.accent }]}>
+          <Text style={[styles.fallbackButtonText, { color: REVEAL_COLORS.accent }]}>Go to Home</Text>
         </AnimatedPressable>
       </View>
     );

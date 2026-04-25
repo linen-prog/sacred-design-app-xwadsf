@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppState } from '@/contexts/AppStateContext';
+import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 
 const COLORS = {
   gradientTop: '#0A0E1A',
@@ -38,12 +39,13 @@ function LockedRow({ label }: { label: string }) {
 export default function PartialRevealScreen() {
   const router = useRouter();
   const { appState } = useAppState();
+  const { sacredDesignResult } = useContext(DiscoveryContext);
 
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const glowScale = useRef(new Animated.Value(1)).current;
 
-  const primaryArchetype = appState.primaryArchetype ?? 'Your Archetype';
-  const secondaryArchetype = appState.secondaryArchetype ?? 'Secondary Archetype';
+  const primaryArchetype = sacredDesignResult?.primary_archetype ?? appState.primaryArchetype ?? 'Your Archetype';
+  const secondaryArchetype = sacredDesignResult?.secondary_archetype ?? appState.secondaryArchetype ?? 'Secondary Archetype';
 
   useEffect(() => {
     console.log('[PartialReveal] Screen mounted — primaryArchetype:', primaryArchetype, 'secondaryArchetype:', secondaryArchetype);
