@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -131,10 +132,12 @@ export default function JourneyScreen() {
   const [reflectionsLoading, setReflectionsLoading] = useState(true);
   const [expandedReflections, setExpandedReflections] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    loadHistory();
-    loadReflections();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      loadHistory();
+      loadReflections();
+    }, [])
+  );
 
   async function loadReflections() {
     setReflectionsLoading(true);
@@ -260,7 +263,7 @@ export default function JourneyScreen() {
             <Text style={styles.emptyIcon}>◌</Text>
             <Text style={styles.emptyText}>No entries yet</Text>
             <Text style={styles.emptyHint}>
-              Complete your Sacred Discovery to begin your journey.
+              Your first alignment will appear here after you complete today's practice on the Home tab.
             </Text>
           </View>
         </View>
