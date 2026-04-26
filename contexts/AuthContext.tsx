@@ -103,6 +103,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchUser = async () => {
+    // DEV ONLY — if we already have a mock user set, don't overwrite it with a null session
+    if (__DEV__ && user?.id === 'dev-user-001') {
+      console.log('[Auth] Dev fetchUser — keeping mock user, skipping backend');
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const { data: session } = await authClient.getSession();
@@ -139,6 +145,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = async (email: string, password: string) => {
     console.log('[AuthContext] signInWithEmail attempt:', email);
+
+    // DEV ONLY — remove before production
+    if (__DEV__) {
+      console.log('[Auth] Dev login bypass used');
+      const mockUser: User = { id: 'dev-user-001', email: email.trim(), name: 'Dev User' };
+      setUser(mockUser);
+      setLoading(false);
+      return;
+    }
+
+    console.log('[Auth] Real auth used');
     const { data, error } = await authClient.signIn.email({ email, password });
     console.log('[AuthContext] signInWithEmail response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
     if (error) {
@@ -155,6 +172,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
     console.log('[AuthContext] signUpWithEmail attempt:', email);
+
+    // DEV ONLY — remove before production
+    if (__DEV__) {
+      console.log('[Auth] Dev signup bypass used');
+      const mockUser: User = { id: 'dev-user-001', email: email.trim(), name: name?.trim() || 'Dev User' };
+      setUser(mockUser);
+      setLoading(false);
+      return;
+    }
+
+    console.log('[Auth] Real auth used');
     const { data, error } = await authClient.signUp.email({ email, password, name: name ?? '' });
     console.log('[AuthContext] signUpWithEmail response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
     if (error) {

@@ -258,9 +258,20 @@ export default function AuthScreen() {
         <Pressable
           style={styles.skipLink}
           onPress={async () => {
-            console.log("[AuthScreen] Skip for now pressed");
+            console.log("[AuthScreen] Skip for now pressed — guest mode, routing to preparing");
             await updateAppState({ guestMode: true });
-            navigateAfterAuth();
+            // Guest users skip auth but still need to compute their Sacred Design
+            // Route to preparing if quiz answers exist, otherwise to tabs
+            if (appState.quizCompleted || appState.primaryArchetype) {
+              console.log("[AuthScreen] Guest: quiz already complete — routing to /partial-reveal");
+              router.replace('/partial-reveal');
+            } else if (appState.onboardingStarted && appState.currentOnboardingStep) {
+              console.log("[AuthScreen] Guest: quiz in progress — routing to preparing");
+              router.replace('/onboarding/preparing' as any);
+            } else {
+              console.log("[AuthScreen] Guest: no quiz data — routing to tabs");
+              navigateAfterAuth();
+            }
           }}
         >
           <Text style={styles.skipLinkText}>Skip for now</Text>
