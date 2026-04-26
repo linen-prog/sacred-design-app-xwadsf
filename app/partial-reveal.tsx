@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -177,8 +178,8 @@ export default function PartialRevealScreen() {
   function handleUnlock() {
     console.log('[PartialReveal] "Unlock Your Full Design" pressed');
     if (appState.revealUnlocked || appState.subscriptionActive) {
-      console.log('[PartialReveal] Already subscribed/unlocked — skipping paywall, navigating to /onboarding/preparing');
-      router.replace('/onboarding/preparing');
+      console.log('[PartialReveal] Already subscribed/unlocked — navigating to /reveal');
+      router.replace('/reveal');
       return;
     }
     console.log('[PartialReveal] Navigating to /paywall');
@@ -244,58 +245,60 @@ export default function PartialRevealScreen() {
       <Animated.View style={[styles.orb1, { transform: [{ scale: glowScale }] }]} />
       <View style={styles.orb2} />
 
-      <Animated.View style={[styles.content, { opacity: screenOpacity }]}>
+      <Animated.View style={{ flex: 1, opacity: screenOpacity }}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={true}>
 
-        {/* 1. Eyebrow */}
-        <Text style={styles.eyebrow}>YOUR SACRED DESIGN</Text>
+          {/* 1. Eyebrow */}
+          <Text style={styles.eyebrow}>YOUR SACRED DESIGN</Text>
 
-        {/* 2. Primary + Secondary archetype names */}
-        <Text style={styles.primaryName}>{primaryArchetype}</Text>
-        <Text style={styles.secondaryName}>{secondaryDisplay}</Text>
+          {/* 2. Primary + Secondary archetype names */}
+          <Text style={styles.primaryName}>{primaryArchetype}</Text>
+          <Text style={styles.secondaryName}>{secondaryDisplay}</Text>
 
-        {/* 3. Narrative hook card */}
-        <View style={styles.narrativeCard}>
-          <Text style={styles.narrativeText}>{narrativeHook}</Text>
-          <LinearGradient
-            colors={['transparent', 'rgba(10,14,26,0.92)']}
-            style={styles.narrativeFade}
-            pointerEvents="none"
-          />
-        </View>
-
-        {/* 4. Strengths — 2 visible only */}
-        <Text style={styles.sectionLabel}>YOUR STRENGTHS</Text>
-        {visibleStrengths.map((s) => (
-          <PreviewBulletRow key={s} text={s} />
-        ))}
-
-        {/* 5. Lock wall */}
-        <View style={styles.lockCard}>
-          <View style={styles.lockIconCircle}>
-            <Ionicons name="lock-closed" size={20} color="rgba(201,168,76,0.8)" />
+          {/* 3. Narrative hook card */}
+          <View style={styles.narrativeCard}>
+            <Text style={styles.narrativeText}>{narrativeHook}</Text>
+            <LinearGradient
+              colors={['transparent', 'rgba(10,14,26,0.92)']}
+              style={styles.narrativeFade}
+              pointerEvents="none"
+            />
           </View>
-          <Text style={styles.lockTitle}>This is only part of the picture</Text>
-          <Text style={[styles.lockBody, { marginBottom: 12 }]}>
-            This explains more than you think it does.
-          </Text>
-          <View style={{ width: '100%', marginBottom: 20, gap: 6 }}>
-            {['See your patterns', 'Understand what drives them', 'Learn how to shift them'].map((line) => (
-              <View key={line} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(201,168,76,0.5)' }} />
-                <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: 'rgba(245,240,232,0.55)', lineHeight: 20 }}>{line}</Text>
-              </View>
-            ))}
-          </View>
-          <TouchableOpacity
-            style={styles.ctaButton}
-            onPress={handleUnlock}
-            activeOpacity={0.88}
-          >
-            <Text style={styles.ctaLabel}>Unlock Your Full Design</Text>
-          </TouchableOpacity>
-          <Text style={styles.trialNote}>Start your 7-day free trial</Text>
-        </View>
 
+          {/* 4. Strengths — 2 visible only */}
+          <Text style={styles.sectionLabel}>YOUR STRENGTHS</Text>
+          {visibleStrengths.map((s) => (
+            <PreviewBulletRow key={s} text={s} />
+          ))}
+
+          {/* 5. Lock wall */}
+          <View style={styles.lockCard}>
+            <View style={styles.lockIconCircle}>
+              <Ionicons name="lock-closed" size={20} color="rgba(201,168,76,0.8)" />
+            </View>
+            <Text style={styles.lockTitle}>This is only part of the picture</Text>
+            <Text style={[styles.lockBody, { marginBottom: 12 }]}>
+              This explains more than you think it does.
+            </Text>
+            <View style={{ width: '100%', marginBottom: 20, gap: 6 }}>
+              {['See your patterns', 'Understand what drives them', 'Learn how to shift them'].map((line) => (
+                <View key={line} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(201,168,76,0.5)' }} />
+                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: 'rgba(245,240,232,0.55)', lineHeight: 20 }}>{line}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={styles.ctaButton}
+              onPress={handleUnlock}
+              activeOpacity={0.88}
+            >
+              <Text style={styles.ctaLabel}>Unlock Your Full Design</Text>
+            </TouchableOpacity>
+            <Text style={styles.trialNote}>Start your 7-day free trial</Text>
+          </View>
+
+        </ScrollView>
       </Animated.View>
     </SafeAreaView>
   );
@@ -336,10 +339,10 @@ const styles = StyleSheet.create({
     left: -60,
   },
   content: {
-    flex: 1,
     paddingHorizontal: 28,
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingTop: 0,
+    paddingBottom: 48,
   },
   eyebrow: {
     fontFamily: 'Inter_500Medium',
