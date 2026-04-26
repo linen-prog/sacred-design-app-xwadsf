@@ -38,6 +38,18 @@ export default function WelcomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F6F1E8' }}>
+      {/* Change 2 — background radial glow */}
+      <View
+        style={{
+          position: 'absolute',
+          top: '10%',
+          alignSelf: 'center',
+          width: 320,
+          height: 320,
+          borderRadius: 160,
+          backgroundColor: 'rgba(201,168,76,0.07)',
+        }}
+      />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
@@ -59,10 +71,12 @@ export default function WelcomeScreen() {
         >
           {/* Logo */}
           <View style={styles.logoContainer}>
+            {/* Change 1 — gold glow bg */}
+            <View style={styles.glowBg} />
             <View style={styles.outerOrb} />
             <View style={styles.middleOrb} />
             <View style={styles.innerOrb} />
-            <Compass size={32} color="#6F8A6A" strokeWidth={1.5} />
+            <Compass size={34} color="#B8922A" strokeWidth={1.5} />
           </View>
 
           {/* Headline */}
@@ -87,10 +101,35 @@ export default function WelcomeScreen() {
               textAlign: 'center',
               lineHeight: 26,
               paddingHorizontal: 8,
-              marginBottom: 52,
+              marginBottom: 28,
             }}
           >
             {subtextContent}
+          </Text>
+
+          {/* Change 3 — CTA support text */}
+          <Text
+            style={{
+              fontFamily: 'Lora_600SemiBold',
+              fontSize: 15,
+              color: '#3D3530',
+              textAlign: 'center',
+              marginBottom: 6,
+              letterSpacing: 0.1,
+            }}
+          >
+            Start with a few questions
+          </Text>
+          <Text
+            style={{
+              fontSize: 13,
+              color: 'rgba(61,53,48,0.50)',
+              textAlign: 'center',
+              marginBottom: 20,
+              lineHeight: 19,
+            }}
+          >
+            It only takes a few minutes to begin.
           </Text>
 
           {/* Button */}
@@ -142,8 +181,39 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  logoContainer: { width: 120, height: 120, alignItems: 'center', justifyContent: 'center', marginBottom: 80 },
-  outerOrb: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(111, 138, 106, 0.08)' },
-  middleOrb: { position: 'absolute', width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(111, 138, 106, 0.12)' },
-  innerOrb: { position: 'absolute', width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(111, 138, 106, 0.18)' },
+  logoContainer: {
+    width: 140,
+    height: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 72,
+  },
+  glowBg: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(201,168,76,0.10)',
+  },
+  outerOrb: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: 'rgba(201,168,76,0.08)',
+  },
+  middleOrb: {
+    position: 'absolute',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(201,168,76,0.13)',
+  },
+  innerOrb: {
+    position: 'absolute',
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: 'rgba(201,168,76,0.20)',
+  },
 });
