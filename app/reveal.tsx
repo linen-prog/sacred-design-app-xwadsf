@@ -130,16 +130,6 @@ export default function RevealScreen() {
     }).start();
   }, [screenOpacity, sacredDesignResult]);
 
-  useEffect(() => {
-    if (sacredDesignResult && content) {
-      console.log('[Reveal] Content available — marking revealViewed=true');
-      updateAppState({
-        revealViewed: true,
-        dailyAlignmentReady: true,
-      }).catch((e) => console.warn('[Reveal] Failed to mark revealViewed:', e));
-    }
-  }, [sacredDesignResult, content, updateAppState]);
-
   async function saveToBackend() {
     if (!sacredDesignResult) return;
     console.log('[Reveal] Upserting archetype to backend via POST /api/archetypes/upsert');
