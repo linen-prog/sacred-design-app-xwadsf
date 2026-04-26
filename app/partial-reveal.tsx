@@ -63,6 +63,7 @@ export default function PartialRevealScreen() {
   const [primaryArchetype, setPrimaryArchetype] = useState<string | null>(null);
   const [secondaryArchetype, setSecondaryArchetype] = useState<string | null>(null);
   const [previewContent, setPreviewContent] = useState<ArchetypePreviewContent | null>(null);
+  const [loadingTooLong, setLoadingTooLong] = useState<boolean>(false);
 
   // Resolve archetype from priority sources
   useEffect(() => {
@@ -110,36 +111,67 @@ export default function PartialRevealScreen() {
 
       // Priority 4: attempt backend restore after 1.5s
       console.log('[PartialReveal] Preview missing — regenerating');
-      const timer = setTimeout(async () => {
+      let backendResolved = false;
+      const backendTimer = setTimeout(async () => {
         try {
           const { apiFetch } = await import('@/lib/auth');
           const res = await apiFetch('/api/archetypes/me');
-          if (!res.ok) return;
-          const data = await res.json();
-          if (data?.primary_archetype) {
-            console.log('[PartialReveal] Restored from backend:', data.primary_archetype);
-            restoreFromBackend({
-              primary_archetype: data.primary_archetype,
-              secondary_archetype: data.secondary_archetype,
-              blend_name: data.blend_name,
-              scores: data.scores,
-            });
-            const primary = data.primary_archetype;
-            const secondary = data.secondary_archetype ?? null;
-            setPrimaryArchetype(primary);
-            setSecondaryArchetype(secondary);
-            const content = getPreviewContent(primary);
-            setPreviewContent(content);
-            console.log('[PartialReveal] Preview loaded — archetype:', primary);
+          if (!res.ok) {
+            console.warn('[PartialReveal] Backend restore failed with status:', res.status);
+          } else {
+            const data = await res.json();
+            if (data?.primary_archetype) {
+              backendResolved = true;
+              console.log('[PartialReveal] Restored from backend:', data.primary_archetype);
+              restoreFromBackend({
+                primary_archetype: data.primary_archetype,
+                secondary_archetype: data.secondary_archetype,
+                blend_name: data.blend_name,
+                scores: data.scores,
+              });
+              const primary = data.primary_archetype;
+              const secondary = data.secondary_archetype ?? null;
+              setPrimaryArchetype(primary);
+              setSecondaryArchetype(secondary);
+              const content = getPreviewContent(primary);
+              setPreviewContent(content);
+              console.log('[PartialReveal] Preview loaded — archetype:', primary);
+            }
           }
         } catch (e) {
           console.warn('[PartialReveal] Backend restore failed:', e);
         }
       }, 1500);
-      return () => clearTimeout(timer);
+
+      // Final fallback: if still no data after 4s total, reset and send back to quiz
+      const fallbackTimer = setTimeout(async () => {
+        if (backendResolved) return;
+        console.log('[PartialReveal] All restore paths failed — resetting stale state and routing to onboarding');
+        try {
+          const { updateAppState } = await import('@/utils/appState');
+          await updateAppState({
+            quizCompleted: false,
+            revealUnlocked: false,
+            revealViewed: false,
+            postQuizSaveCompleted: false,
+            currentOnboardingStep: '/onboarding/welcome',
+          });
+        } catch (e) {}
+        router.replace('/onboarding/welcome');
+      }, 4000);
+
+      return () => {
+        clearTimeout(backendTimer);
+        clearTimeout(fallbackTimer);
+      };
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sacredDesignResult, appState.primaryArchetype]);
+
+  useEffect(() => {
+    const tooLongTimer = setTimeout(() => setLoadingTooLong(true), 3000);
+    return () => clearTimeout(tooLongTimer);
+  }, []);
 
   useEffect(() => {
     Animated.timing(screenOpacity, {
@@ -181,6 +213,11 @@ export default function PartialRevealScreen() {
         />
         <ActivityIndicator size="large" color={COLORS.gold} />
         <Text style={styles.loadingText}>Loading your Sacred Design…</Text>
+        {loadingTooLong && (
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: 'rgba(245,240,232,0.4)', textAlign: 'center', marginTop: 8 }}>
+            This is taking longer than expected…
+          </Text>
+        )}
       </View>
     );
   }
