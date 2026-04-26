@@ -123,7 +123,7 @@ export default function WelcomeScreen() {
           <Text
             style={{
               fontSize: 13,
-              color: 'rgba(61,53,48,0.50)',
+              color: 'rgba(61,53,48,0.68)',
               textAlign: 'center',
               marginBottom: 20,
               lineHeight: 19,
@@ -136,13 +136,13 @@ export default function WelcomeScreen() {
           <Pressable
             onPress={handleBegin}
             style={({ pressed }) => ({
-              backgroundColor: pressed ? '#5A7355' : '#6F8A6A',
+              backgroundColor: pressed ? '#4A6647' : '#5C7A57',
               borderRadius: 18,
               paddingVertical: 18,
               paddingHorizontal: 32,
               width: '100%',
               alignItems: 'center',
-              boxShadow: '0 4px 14px rgba(111, 138, 106, 0.30)',
+              boxShadow: '0 5px 18px rgba(80, 110, 75, 0.42)',
             })}
             accessibilityRole="button"
             accessibilityLabel="Begin Your Discovery"
@@ -165,11 +165,11 @@ export default function WelcomeScreen() {
                 console.log('[Welcome] Dev skip pressed');
                 router.push('/dev-skip');
               }}
-              style={{ marginTop: 24, padding: 8 }}
+              style={{ marginTop: 36, padding: 8 }}
               accessibilityRole="button"
               accessibilityLabel="Skip quiz (dev only)"
             >
-              <Text style={{ fontSize: 12, color: 'rgba(47,62,47,0.35)', textAlign: 'center' }}>
+              <Text style={{ fontSize: 12, color: 'rgba(47,62,47,0.20)', textAlign: 'center' }}>
                 ⚡ Skip quiz (dev only)
               </Text>
             </Pressable>
@@ -190,30 +190,30 @@ const styles = StyleSheet.create({
   },
   glowBg: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     backgroundColor: 'rgba(201,168,76,0.10)',
   },
   outerOrb: {
     position: 'absolute',
-    width: 130,
-    height: 130,
-    borderRadius: 65,
+    width: 108,
+    height: 108,
+    borderRadius: 54,
     backgroundColor: 'rgba(201,168,76,0.08)',
   },
   middleOrb: {
     position: 'absolute',
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: 'rgba(201,168,76,0.13)',
   },
   innerOrb: {
     position: 'absolute',
-    width: 66,
-    height: 66,
-    borderRadius: 33,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: 'rgba(201,168,76,0.20)',
   },
 });
