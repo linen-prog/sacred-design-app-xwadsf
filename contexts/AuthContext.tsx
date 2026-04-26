@@ -106,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const { data: session } = await authClient.getSession();
+      console.log('[AuthContext] fetchUser raw session data:', JSON.stringify(session));
       console.log("[AuthContext] fetchUser session:", JSON.stringify(session));
       if (session?.user) {
         setUser(session.user as User);
@@ -137,23 +138,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    try {
-      await authClient.signIn.email({ email, password });
-      await fetchUser();
-    } catch (error) {
-      console.error("Email sign in failed:", error);
-      throw error;
+    console.log('[AuthContext] signInWithEmail attempt:', email);
+    const { data, error } = await authClient.signIn.email({ email, password });
+    console.log('[AuthContext] signInWithEmail response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
+    if (error) {
+      console.error('[AuthContext] signInWithEmail error:', error);
+      throw new Error(error.message || 'Sign in failed');
     }
+    if ((data as any)?.session?.token) {
+      await setBearerToken((data as any).session.token);
+      console.log('[AuthContext] signInWithEmail: stored token from response');
+    }
+    await fetchUser();
+    console.log('[AuthContext] signInWithEmail success');
   };
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
-    try {
-      await authClient.signUp.email({ email, password, name });
-      await fetchUser();
-    } catch (error) {
-      console.error("Email sign up failed:", error);
-      throw error;
+    console.log('[AuthContext] signUpWithEmail attempt:', email);
+    const { data, error } = await authClient.signUp.email({ email, password, name: name ?? '' });
+    console.log('[AuthContext] signUpWithEmail response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
+    if (error) {
+      console.error('[AuthContext] signUpWithEmail error:', error);
+      throw new Error(error.message || 'Sign up failed');
     }
+    if ((data as any)?.session?.token) {
+      await setBearerToken((data as any).session.token);
+      console.log('[AuthContext] signUpWithEmail: stored token from response');
+    }
+    await fetchUser();
+    console.log('[AuthContext] signUpWithEmail success');
   };
 
 

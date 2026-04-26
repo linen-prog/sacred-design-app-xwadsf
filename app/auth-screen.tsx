@@ -41,10 +41,16 @@ export default function AuthScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const isSignUp = mode === "signup";
+  const anyLoading = loading || appleLoading || googleLoading;
+  const submitDisabled = anyLoading || !email.trim() || !password.trim();
+  const submitLabel = isSignUp ? "Create Account" : "Sign In";
 
   function handleModeSwitch(next: Mode) {
     console.log("[AuthScreen] Switching mode to:", next);
@@ -115,41 +121,45 @@ export default function AuthScreen() {
       setError("Please fill in all fields.");
       return;
     }
-    if (mode === "signup" && !name.trim()) {
+    if (isSignUp && !name.trim()) {
       setError("Please enter your name.");
       return;
     }
 
-    console.log("[AuthScreen] Submit pressed — mode:", mode, "email:", email.trim());
+    console.log('[AuthScreen] Sign-in attempt — email:', email.trim());
     setLoading(true);
     try {
-      if (mode === "signup") {
-        console.log("[AuthScreen] Calling signUpWithEmail");
+      if (isSignUp) {
+        console.log('[AuthScreen] Calling signUpWithEmail...');
         await signUpWithEmail(email.trim(), password, name.trim());
       } else {
-        console.log("[AuthScreen] Calling signInWithEmail");
+        console.log('[AuthScreen] Calling signInWithEmail...');
         await signInWithEmail(email.trim(), password);
       }
-      console.log("[AuthScreen] Auth succeeded — calling fetchUser then routing");
-      await fetchUser?.();
+      console.log('[AuthScreen] Sign-in success — navigating');
       navigateAfterAuth(true);
     } catch (e: any) {
-      console.warn("[AuthScreen] Auth error:", e);
-      const msg =
-        e?.message?.includes("Invalid")
-          ? "Invalid email or password."
-          : e?.message?.includes("already")
-          ? "An account with this email already exists."
-          : e?.message || "Something went wrong. Please try again.";
+      console.log('[AuthScreen] Sign-in error:', e?.message);
+      const raw = e?.message ?? '';
+      const msg = raw.toLowerCase().includes('invalid') || raw.toLowerCase().includes('credentials') || raw.toLowerCase().includes('password')
+        ? 'Incorrect email or password. Please try again.'
+        : raw.toLowerCase().includes('not found') || raw.toLowerCase().includes('no user')
+        ? 'No account found with that email. Try signing up.'
+        : raw.toLowerCase().includes('already') || raw.toLowerCase().includes('exists')
+        ? 'An account with this email already exists. Try signing in.'
+        : raw.toLowerCase().includes('network') || raw.toLowerCase().includes('fetch')
+        ? 'Network error. Check your connection and try again.'
+        : raw || 'Something went wrong. Please try again.';
       setError(msg);
     } finally {
       setLoading(false);
     }
   }
 
-  const isSignUp = mode === "signup";
-  const submitLabel = isSignUp ? "Create Account" : "Sign In";
-  const anyLoading = loading || appleLoading || googleLoading;
+  const toggleLabel = isSignUp
+    ? "Already have an account? Sign In"
+    : "Don't have an account? Sign Up";
+  const toggleTarget: Mode = isSignUp ? "signin" : "signup";
 
   return (
     <KeyboardAvoidingView
@@ -165,68 +175,9 @@ export default function AuthScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.eyebrow}>SACRED DESIGN</Text>
-        <Text style={styles.title}>Welcome</Text>
+        <Text style={styles.title}>{isSignUp ? "Create Account" : "Welcome Back"}</Text>
 
-        {/* Tab switcher */}
-        <View style={styles.tabRow}>
-          <Pressable
-            style={[styles.tab, mode === "signin" && styles.tabActive]}
-            onPress={() => handleModeSwitch("signin")}
-          >
-            <Text style={[styles.tabText, mode === "signin" && styles.tabTextActive]}>
-              Sign In
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[styles.tab, mode === "signup" && styles.tabActive]}
-            onPress={() => handleModeSwitch("signup")}
-          >
-            <Text style={[styles.tabText, mode === "signup" && styles.tabTextActive]}>
-              Sign Up
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Apple Sign In — FIRST (App Store requirement) */}
-        <Pressable
-          style={[styles.appleButton, (appleLoading || anyLoading) && styles.buttonDisabled]}
-          onPress={handleAppleSignIn}
-          disabled={anyLoading}
-        >
-          {appleLoading ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          ) : (
-            <>
-              <MaterialCommunityIcons name="apple" size={20} color="#FFFFFF" style={styles.socialIcon} />
-              <Text style={styles.appleButtonText}>Continue with Apple</Text>
-            </>
-          )}
-        </Pressable>
-
-        {/* Google Sign In */}
-        <Pressable
-          style={[styles.googleButton, (googleLoading || anyLoading) && styles.buttonDisabled]}
-          onPress={handleGoogleSignIn}
-          disabled={anyLoading}
-        >
-          {googleLoading ? (
-            <ActivityIndicator color="#333333" size="small" />
-          ) : (
-            <>
-              <AntDesign name="google" size={18} color="#4285F4" style={styles.socialIcon} />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
-            </>
-          )}
-        </Pressable>
-
-        {/* Divider */}
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or continue with email</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Fields */}
+        {/* Email form — primary action */}
         <View style={styles.fields}>
           {isSignUp && (
             <TextInput
@@ -251,24 +202,55 @@ export default function AuthScreen() {
             autoCorrect={false}
             returnKeyType="next"
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor={TEXT_MUTED}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            returnKeyType="done"
-            onSubmitEditing={handleSubmit}
-          />
+          <View style={styles.passwordWrapper}>
+            <TextInput
+              style={[styles.input, styles.passwordInput]}
+              placeholder="Password"
+              placeholderTextColor={TEXT_MUTED}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+            />
+            <Pressable
+              style={styles.eyeToggle}
+              onPress={() => {
+                console.log('[AuthScreen] Password visibility toggled:', !showPassword);
+                setShowPassword(v => !v);
+              }}
+              hitSlop={8}
+            >
+              <MaterialCommunityIcons
+                name={showPassword ? "eye-off" : "eye"}
+                size={20}
+                color={TEXT_MUTED}
+              />
+            </Pressable>
+          </View>
+
+          {/* Forgot password */}
+          <Pressable
+            style={styles.forgotRow}
+            onPress={() => console.log('[AuthScreen] Forgot password pressed')}
+          >
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </Pressable>
         </View>
 
-        {/* Submit */}
+        {/* Error card */}
+        {error ? (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        {/* Submit button */}
         <Pressable
-          style={[styles.button, (loading || anyLoading) && styles.buttonDisabled]}
+          style={[styles.button, submitDisabled && styles.buttonDisabled]}
           onPress={handleSubmit}
-          disabled={anyLoading}
+          disabled={submitDisabled}
         >
           {loading ? (
             <ActivityIndicator color="#0A0E1A" size="small" />
@@ -277,8 +259,59 @@ export default function AuthScreen() {
           )}
         </Pressable>
 
-        {/* Error */}
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {/* Social buttons — below email form in DEV, above in prod */}
+        {__DEV__ ? (
+          <Text style={styles.devNote}>Social login available on TestFlight</Text>
+        ) : (
+          <>
+            {/* Divider */}
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Apple Sign In — FIRST (App Store requirement) */}
+            <Pressable
+              style={[styles.appleButton, anyLoading && styles.buttonDisabled]}
+              onPress={handleAppleSignIn}
+              disabled={anyLoading}
+            >
+              {appleLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="apple" size={20} color="#FFFFFF" style={styles.socialIcon} />
+                  <Text style={styles.appleButtonText}>Continue with Apple</Text>
+                </>
+              )}
+            </Pressable>
+
+            {/* Google Sign In */}
+            <Pressable
+              style={[styles.googleButton, anyLoading && styles.buttonDisabled]}
+              onPress={handleGoogleSignIn}
+              disabled={anyLoading}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color="#333333" size="small" />
+              ) : (
+                <>
+                  <AntDesign name="google" size={18} color="#4285F4" style={styles.socialIcon} />
+                  <Text style={styles.googleButtonText}>Continue with Google</Text>
+                </>
+              )}
+            </Pressable>
+          </>
+        )}
+
+        {/* Mode toggle link */}
+        <Pressable
+          style={styles.toggleLink}
+          onPress={() => handleModeSwitch(toggleTarget)}
+        >
+          <Text style={styles.toggleLinkText}>{toggleLabel}</Text>
+        </Pressable>
 
         {/* Back link */}
         <Pressable
@@ -291,16 +324,16 @@ export default function AuthScreen() {
           <Text style={styles.backLinkText}>Back</Text>
         </Pressable>
 
-        {/* Continue without signing in */}
+        {/* Skip for now */}
         <Pressable
-          style={styles.backLink}
+          style={styles.skipLink}
           onPress={async () => {
-            console.log("[AuthScreen] Continue without signing in pressed");
+            console.log("[AuthScreen] Skip for now pressed");
             await updateAppState({ guestMode: true });
             navigateAfterAuth();
           }}
         >
-          <Text style={styles.backLinkText}>Continue without signing in</Text>
+          <Text style={styles.skipLinkText}>Skip for now</Text>
         </Pressable>
 
         {__DEV__ && (
@@ -341,29 +374,102 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 32,
   },
-  tabRow: {
-    flexDirection: "row",
-    backgroundColor: "rgba(201,168,76,0.08)",
-    borderRadius: 50,
-    padding: 4,
-    marginBottom: 28,
+  fields: {
+    gap: 14,
+    marginBottom: 20,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 50,
+  input: {
+    backgroundColor: INPUT_BG,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontFamily: "Inter_400Regular",
+    fontSize: 16,
+    color: TEXT,
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  passwordWrapper: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: 48,
+  },
+  eyeToggle: {
+    position: "absolute",
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
     alignItems: "center",
   },
-  tabActive: {
-    backgroundColor: ACCENT,
+  forgotRow: {
+    alignSelf: "flex-end",
+    paddingVertical: 2,
   },
-  tabText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 14,
+  forgotText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
     color: TEXT_MUTED,
   },
-  tabTextActive: {
+  errorCard: {
+    backgroundColor: "rgba(192,57,43,0.12)",
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(192,57,43,0.3)",
+    marginBottom: 16,
+  },
+  errorText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: DANGER,
+    lineHeight: 18,
+    textAlign: "center",
+  },
+  button: {
+    backgroundColor: ACCENT,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    minHeight: 52,
+  },
+  buttonDisabled: {
+    opacity: 0.45,
+  },
+  buttonText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
     color: "#0A0E1A",
+    letterSpacing: 0.2,
+  },
+  devNote: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: TEXT_MUTED,
+    textAlign: "center",
+    marginTop: 16,
+    marginBottom: 8,
+    opacity: 0.6,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: DIVIDER_COLOR,
+  },
+  dividerText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: TEXT_MUTED,
+    letterSpacing: 0.3,
   },
   appleButton: {
     backgroundColor: "#000000",
@@ -402,66 +508,18 @@ const styles = StyleSheet.create({
   socialIcon: {
     marginRight: 10,
   },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 24,
-    gap: 10,
+  toggleLink: {
+    marginTop: 20,
+    alignSelf: "center",
+    padding: 8,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: DIVIDER_COLOR,
-  },
-  dividerText: {
+  toggleLinkText: {
     fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: TEXT_MUTED,
-    letterSpacing: 0.3,
-  },
-  fields: {
-    gap: 14,
-    marginBottom: 24,
-  },
-  input: {
-    backgroundColor: INPUT_BG,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontFamily: "Inter_400Regular",
-    fontSize: 16,
-    color: TEXT,
-    borderWidth: 1,
-    borderColor: BORDER,
-  },
-  button: {
-    backgroundColor: ACCENT,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-    minHeight: 52,
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  buttonText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
-    color: "#0A0E1A",
-    letterSpacing: 0.2,
-  },
-  errorText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: DANGER,
-    textAlign: "center",
-    lineHeight: 18,
-    marginBottom: 8,
+    fontSize: 14,
+    color: ACCENT,
   },
   backLink: {
-    marginTop: 16,
+    marginTop: 8,
     alignSelf: "center",
     padding: 8,
   },
@@ -469,6 +527,16 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     color: TEXT_MUTED,
+  },
+  skipLink: {
+    marginTop: 4,
+    alignSelf: "center",
+    padding: 8,
+  },
+  skipLinkText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: "rgba(201,168,76,0.3)",
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _cardBg: {
