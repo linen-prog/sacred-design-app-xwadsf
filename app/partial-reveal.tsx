@@ -143,21 +143,18 @@ export default function PartialRevealScreen() {
         }
       }, 1500);
 
-      // Final fallback: if still no data after 4s total, reset and send back to quiz
+      // Final fallback: if still no data after 4s total, show hardcoded fallback content
+      // Do NOT reset quiz state — the user's data may still be in AsyncStorage; we just can't reach the backend right now
       const fallbackTimer = setTimeout(async () => {
         if (backendResolved) return;
-        console.log('[PartialReveal] All restore paths failed — resetting stale state and routing to onboarding');
-        try {
-          const { updateAppState } = await import('@/utils/appState');
-          await updateAppState({
-            quizCompleted: false,
-            revealUnlocked: false,
-            revealViewed: false,
-            postQuizSaveCompleted: false,
-            currentOnboardingStep: '/onboarding/welcome',
-          });
-        } catch (e) {}
-        router.replace('/onboarding/welcome');
+        console.log('[PartialReveal] All restore paths failed — showing fallback content without resetting state');
+        // Use the hardcoded fallback content — do NOT reset quizCompleted or route to welcome
+        // The user's quiz data may still be in AsyncStorage; we just can't reach the backend right now
+        const fallbackContent = getPreviewContent(''); // returns hardcoded fallback
+        console.log('[PartialReveal] Preview fallback used');
+        setPrimaryArchetype('Your Sacred Design');
+        setSecondaryArchetype(null);
+        setPreviewContent(fallbackContent);
       }, 4000);
 
       return () => {

@@ -50,6 +50,8 @@ export default function PreparingScreen() {
 
   useEffect(() => {
     console.log('[Preparing] Computing Sacred Design');
+    // Mark currentOnboardingStep so cold relaunch resumes here, not at a phase screen
+    updateAppState({ currentOnboardingStep: '/onboarding/preparing' }).catch(() => {});
     computeSacredDesign();
   }, [computeSacredDesign]);
 

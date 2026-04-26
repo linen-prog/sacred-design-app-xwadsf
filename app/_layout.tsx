@@ -55,6 +55,7 @@ function NavigationGuard() {
   const { user, loading: authLoading } = useAuth();
   const { appState, isLoading: appStateLoading } = useAppState();
   const hasNavigated = useRef(false);
+  const lastNavigatedAt = useRef<number>(0);
   const prevUserRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
@@ -105,6 +106,13 @@ function NavigationGuard() {
       }
 
       if (hasNavigated.current) return;
+
+      const now = Date.now();
+      if (now - lastNavigatedAt.current < 1500) {
+        console.log('[RootNavigator] Throttled — last redirect was', now - lastNavigatedAt.current, 'ms ago');
+        return;
+      }
+      lastNavigatedAt.current = now;
 
       // Don't re-navigate if we're already on the target route
       // (prevents flicker when RootNavigator re-evaluates mid-flow)
