@@ -204,10 +204,13 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem('sacredDesignResult'),
+      AsyncStorage.getItem('phase1Scores'),
+      AsyncStorage.getItem('phase2Scores'),
+      AsyncStorage.getItem('phase3Scores'),
       AsyncStorage.getItem('phase4Scores'),
       AsyncStorage.getItem('phase4Computed'),
       AsyncStorage.getItem('quizCompleted'),
-    ]).then(([storedResult, storedPhase4, storedPhase4Computed, storedQuizCompleted]) => {
+    ]).then(([storedResult, storedPhase1, storedPhase2, storedPhase3, storedPhase4, storedPhase4Computed, storedQuizCompleted]) => {
       if (storedResult) {
         try {
           const parsed = JSON.parse(storedResult);
@@ -215,6 +218,30 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
           console.log('[DiscoveryContext] Restored sacredDesignResult from storage:', parsed);
         } catch (e) {
           console.log('[DiscoveryContext] Failed to parse stored sacredDesignResult:', e);
+        }
+      }
+      if (storedPhase1) {
+        try {
+          setPhase1Scores(JSON.parse(storedPhase1));
+          console.log('[DiscoveryContext] Restored phase1Scores from storage');
+        } catch (e) {
+          console.log('[DiscoveryContext] Failed to parse stored phase1Scores:', e);
+        }
+      }
+      if (storedPhase2) {
+        try {
+          setPhase2Scores(JSON.parse(storedPhase2));
+          console.log('[DiscoveryContext] Restored phase2Scores from storage');
+        } catch (e) {
+          console.log('[DiscoveryContext] Failed to parse stored phase2Scores:', e);
+        }
+      }
+      if (storedPhase3) {
+        try {
+          setPhase3Scores(JSON.parse(storedPhase3));
+          console.log('[DiscoveryContext] Restored phase3Scores from storage');
+        } catch (e) {
+          console.log('[DiscoveryContext] Failed to parse stored phase3Scores:', e);
         }
       }
       if (storedPhase4) {
@@ -240,11 +267,21 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Persist phase4Scores whenever it changes
+  // Persist phase scores whenever they change
   useEffect(() => {
-    if (phase4Scores) {
-      AsyncStorage.setItem('phase4Scores', JSON.stringify(phase4Scores)).catch(() => {});
-    }
+    if (phase1Scores) AsyncStorage.setItem('phase1Scores', JSON.stringify(phase1Scores)).catch(() => {});
+  }, [phase1Scores]);
+
+  useEffect(() => {
+    if (phase2Scores) AsyncStorage.setItem('phase2Scores', JSON.stringify(phase2Scores)).catch(() => {});
+  }, [phase2Scores]);
+
+  useEffect(() => {
+    if (phase3Scores) AsyncStorage.setItem('phase3Scores', JSON.stringify(phase3Scores)).catch(() => {});
+  }, [phase3Scores]);
+
+  useEffect(() => {
+    if (phase4Scores) AsyncStorage.setItem('phase4Scores', JSON.stringify(phase4Scores)).catch(() => {});
   }, [phase4Scores]);
 
   const setAnswer = useCallback((id: string, value: number) => {
@@ -262,7 +299,7 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     setPhase4Computed(null);
     setSacredDesignResult(null);
     setQuizCompleted(false);
-    AsyncStorage.multiRemove(['sacredDesignResult', 'phase4Scores', 'phase4Computed', 'quizCompleted']).catch(() => {});
+    AsyncStorage.multiRemove(['sacredDesignResult', 'phase1Scores', 'phase2Scores', 'phase3Scores', 'phase4Scores', 'phase4Computed', 'quizCompleted']).catch(() => {});
   }, []);
 
   const clearSacredDesign = useCallback(() => {
@@ -270,7 +307,7 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     setSacredDesignResult(null);
     setPhase4Computed(null);
     setQuizCompleted(false);
-    AsyncStorage.multiRemove(['sacredDesignResult', 'phase4Scores', 'phase4Computed', 'quizCompleted', 'hasCompletedQuiz', 'hasSeenOnboarding']).catch(() => {});
+    AsyncStorage.multiRemove(['sacredDesignResult', 'phase1Scores', 'phase2Scores', 'phase3Scores', 'phase4Scores', 'phase4Computed', 'quizCompleted', 'hasCompletedQuiz', 'hasSeenOnboarding']).catch(() => {});
   }, []);
 
   // Each computePhaseNScores just stores the raw answers — no computation yet

@@ -305,13 +305,46 @@ export default function RevealScreen() {
         </View>
       );
     }
+    // Not waiting and still no result — attempt backend restore, then go to tabs
+    const handleRetry = async () => {
+      console.log('[Reveal] Retry pressed — attempting backend restore via GET /api/archetypes/me');
+      try {
+        const res = await apiFetch('/api/archetypes/me');
+        if (res.ok) {
+          const data = await res.json();
+          console.log('[Reveal] Retry: GET /api/archetypes/me response:', data);
+          if (data?.primary_archetype) {
+            restoreFromBackend({
+              primary_archetype: data.primary_archetype,
+              secondary_archetype: data.secondary_archetype,
+              blend_name: data.blend_name,
+              scores: data.scores,
+            });
+            return; // sacredDesignResult will update and re-render
+          }
+        } else {
+          console.warn('[Reveal] Retry: GET /api/archetypes/me failed:', res.status);
+        }
+      } catch (e) {
+        console.warn('[Reveal] Retry: backend restore error:', e);
+      }
+      // If backend also fails, go home
+      console.log('[Reveal] Retry: backend restore failed, navigating to /(tabs)');
+      router.replace('/(tabs)');
+    };
     return (
       <View style={styles.fallbackContainer}>
         <Text style={styles.fallbackText}>Your Sacred Design is being prepared…</Text>
-        <AnimatedPressable onPress={() => router.replace('/onboarding/preparing')} style={styles.fallbackButton}>
+        <AnimatedPressable onPress={handleRetry} style={styles.fallbackButton}>
           <Text style={styles.fallbackButtonText}>Retry</Text>
         </AnimatedPressable>
-        <AnimatedPressable onPress={() => router.replace('/(tabs)')} style={[styles.fallbackButton, { marginTop: 8, backgroundColor: 'transparent', borderWidth: 1, borderColor: REVEAL_COLORS.accent }]}>
+        <AnimatedPressable
+          onPress={() => {
+            console.log('[Reveal] "Go to Home" pressed from fallback');
+            router.replace('/(tabs)');
+          }}
+          style={[styles.fallbackButton, { marginTop: 8, backgroundColor: 'transparent', borderWidth: 1, borderColor: REVEAL_COLORS.accent }]}
+        >
           <Text style={[styles.fallbackButtonText, { color: REVEAL_COLORS.accent }]}>Go to Home</Text>
         </AnimatedPressable>
       </View>

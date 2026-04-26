@@ -55,15 +55,18 @@ export default function PreparingScreen() {
     // Fallback timeout in case state update is delayed
     const timer = setTimeout(() => {
       if (!hasNavigated.current) {
-        hasNavigated.current = true;
-        console.log('[Preparing] Fallback timeout — navigating to /reveal immediately');
-        markQuizComplete(); // synchronous flag — must be first
-        router.replace('/reveal'); // navigate immediately — don't wait for writes
-        // writes happen in background — they'll be done before user taps CTA
-        Promise.all([
-          completeOnboarding(),
-          AsyncStorage.setItem('hasCompletedQuiz', 'true'),
-        ]).catch((e) => console.warn('[Preparing] Fallback: failed to write completion state:', e));
+        if (sacredDesignResult) {
+          hasNavigated.current = true;
+          console.log('[Preparing] Fallback timeout — sacredDesignResult ready, navigating to /reveal');
+          markQuizComplete();
+          router.replace('/reveal');
+          Promise.all([
+            completeOnboarding(),
+            AsyncStorage.setItem('hasCompletedQuiz', 'true'),
+          ]).catch((e) => console.warn('[Preparing] Fallback: failed to write completion state:', e));
+        } else {
+          console.warn('[Preparing] Fallback timeout — sacredDesignResult still null, computeSacredDesign likely aborted due to missing phase scores. Staying on preparing screen.');
+        }
       }
     }, 4000);
 
@@ -71,7 +74,7 @@ export default function PreparingScreen() {
       clearTimeout(timer);
       pulseAnimation.stop();
     };
-  }, [pulseScale, router, screenOpacity, screenTranslateY]);
+  }, [pulseScale, router, screenOpacity, screenTranslateY, sacredDesignResult]);
 
   return (
     <Animated.View
