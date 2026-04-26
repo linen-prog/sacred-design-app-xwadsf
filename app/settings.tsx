@@ -79,6 +79,20 @@ export default function SettingsScreen() {
   async function handleSignOut() {
     console.log("[Settings] 'Sign Out' pressed");
     await signOut();
+    // Reset appState so RootNavigator routes to welcome, not tabs
+    try {
+      const { updateAppState } = await import('@/utils/appState');
+      await updateAppState({
+        revealViewed: false,
+        revealUnlocked: false,
+        quizCompleted: false,
+        postQuizSaveCompleted: false,
+        guestMode: false,
+        currentOnboardingStep: '/onboarding/welcome',
+      });
+    } catch (e) {
+      console.warn('[Settings] Failed to reset appState on sign out:', e);
+    }
     router.replace("/onboarding/welcome");
   }
 

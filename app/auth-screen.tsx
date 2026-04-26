@@ -49,7 +49,7 @@ export default function AuthScreen() {
 
   const isSignUp = mode === "signup";
   const anyLoading = loading || appleLoading || googleLoading;
-  const submitDisabled = anyLoading || !email.trim() || !password.trim();
+  const submitDisabled = anyLoading || !email.trim() || !password.trim() || (isSignUp && !name.trim());
   const submitLabel = isSignUp ? "Create Account" : "Sign In";
 
   function handleModeSwitch(next: Mode) {
