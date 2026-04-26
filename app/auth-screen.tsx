@@ -372,11 +372,11 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: TEXT,
     textAlign: "center",
-    marginBottom: 32,
+    marginBottom: 36,
   },
   fields: {
     gap: 14,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   input: {
     backgroundColor: INPUT_BG,
@@ -405,12 +405,13 @@ const styles = StyleSheet.create({
   },
   forgotRow: {
     alignSelf: "flex-end",
-    paddingVertical: 2,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   forgotText: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
-    color: TEXT_MUTED,
+    color: "rgba(201,168,76,0.55)",
   },
   errorCard: {
     backgroundColor: "rgba(192,57,43,0.12)",
@@ -428,20 +429,25 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    backgroundColor: ACCENT,
+    backgroundColor: "#D4B05A",
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
     minHeight: 52,
+    shadowColor: "#C9A84C",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.45,
   },
   buttonText: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
+    fontSize: 16,
     color: "#0A0E1A",
     letterSpacing: 0.2,
   },
@@ -509,14 +515,16 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   toggleLink: {
-    marginTop: 20,
+    marginTop: 24,
     alignSelf: "center",
     padding: 8,
   },
   toggleLinkText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    fontSize: 15,
     color: ACCENT,
+    textDecorationLine: "underline",
+    textDecorationColor: "rgba(201,168,76,0.4)",
   },
   backLink: {
     marginTop: 8,
@@ -529,14 +537,14 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
   },
   skipLink: {
-    marginTop: 4,
+    marginTop: 8,
     alignSelf: "center",
     padding: 8,
   },
   skipLinkText: {
     fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: "rgba(201,168,76,0.3)",
+    fontSize: 13,
+    color: "rgba(201,168,76,0.45)",
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _cardBg: {
