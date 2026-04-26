@@ -11,28 +11,28 @@ const PHASE_DATA = {
     name: 'The Foundation',
     heading: 'Phase 1 Complete',
     message: "You've laid the foundation. Your roots run deep.",
-    nextRoute: '/onboarding/phase-1-reflection' as const,
+    nextRoute: '/onboarding/phase-2' as const,
   },
   2: {
     emoji: '🔥',
     name: 'The Fire',
     heading: 'Phase 2 Complete',
     message: 'Your inner fire has spoken. Feel its warmth.',
-    nextRoute: '/onboarding/phase-2-reflection' as const,
+    nextRoute: '/onboarding/phase-3' as const,
   },
   3: {
     emoji: '💧',
     name: 'The Flow',
     heading: 'Phase 3 Complete',
     message: "You've touched the flow. Let it carry you.",
-    nextRoute: '/onboarding/phase-3-reflection' as const,
+    nextRoute: '/onboarding/phase-4' as const,
   },
   4: {
     emoji: '✨',
     name: 'The Spark',
     heading: 'Phase 4 Complete',
     message: 'Your spark is revealed. The full picture awaits.',
-    nextRoute: '/onboarding/phase-4-reflection' as const,
+    nextRoute: '/onboarding/preparing' as const,
   },
 };
 
@@ -77,7 +77,7 @@ export default function PhaseCompleteScreen() {
   }, []);
 
   function handleContinue() {
-    console.log(`[PhaseComplete] Continue to reflection pressed — phase ${phaseNum}`);
+    console.log(`[PhaseComplete] Continue pressed — phase ${phaseNum}, navigating to ${data.nextRoute}`);
     router.push(data.nextRoute);
   }
 
@@ -190,7 +190,7 @@ export default function PhaseCompleteScreen() {
             justifyContent: 'center',
           }}
           accessibilityRole="button"
-          accessibilityLabel="Continue to Reflection"
+          accessibilityLabel="Continue"
         >
           <Text
             style={{
@@ -201,7 +201,7 @@ export default function PhaseCompleteScreen() {
               letterSpacing: 0.2,
             }}
           >
-            Continue to Reflection →
+            Continue →
           </Text>
         </AnimatedPressable>
       </View>
