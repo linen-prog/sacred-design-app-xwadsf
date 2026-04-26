@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.placeholder.app",
+      "bundleIdentifier": "com.sacreddesign.app",
       "icon": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -25,7 +25,7 @@
         "foregroundImage": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
         "backgroundColor": "#F6F1E8"
       },
-      "package": "com.placeholder.app"
+      "package": "com.sacreddesign.app"
     },
     "web": {
       "favicon": "./assets/images/c5285e11-d314-42f2-b5cc-3466932600b8.jpeg",
