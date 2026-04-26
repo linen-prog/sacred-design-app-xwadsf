@@ -10,7 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
-import { ARCHETYPE_CONTENT, ArchetypeName } from './reveal';
+import { ARCHETYPE_CONTENT, ArchetypeName } from '@/constants/ArchetypeContent';
 
 const COLORS = {
   background: '#F6F1E8',

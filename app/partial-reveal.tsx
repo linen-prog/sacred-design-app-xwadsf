@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppState } from '@/contexts/AppStateContext';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
+import { getPreviewContent, ArchetypePreviewContent } from '@/constants/ArchetypeContent';
 
 const COLORS = {
   gradientTop: '#0A0E1A',
@@ -27,11 +30,24 @@ const COLORS = {
   blurOverlay: 'rgba(10,14,26,0.82)',
 };
 
-function LockedRow({ label }: { label: string }) {
+function LockedPreviewRow({ text }: { text: string }) {
   return (
-    <View style={styles.lockedRow}>
-      <View style={styles.lockedBar} />
-      <Text style={styles.lockedLabel}>{label}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 10 }}>
+      <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(201,168,76,0.4)' }} />
+      <View style={{ flex: 1, position: 'relative' }}>
+        <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 15, color: 'rgba(245,240,232,0.15)', lineHeight: 22 }}>{text}</Text>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(10,14,26,0.7)', borderRadius: 4 }} />
+      </View>
+      <Text style={{ fontSize: 12, color: 'rgba(201,168,76,0.5)' }}>🔒</Text>
+    </View>
+  );
+}
+
+function PreviewBulletRow({ text }: { text: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 10 }}>
+      <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: '#C9A84C', marginTop: 8 }} />
+      <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 15, color: 'rgba(245,240,232,0.85)', lineHeight: 22, flex: 1 }}>{text}</Text>
     </View>
   );
 }
@@ -44,39 +60,88 @@ export default function PartialRevealScreen() {
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const glowScale = useRef(new Animated.Value(1)).current;
 
-  const primaryArchetype = sacredDesignResult?.primary_archetype ?? appState.primaryArchetype ?? 'Your Archetype';
-  const secondaryArchetype = sacredDesignResult?.secondary_archetype ?? appState.secondaryArchetype ?? 'Secondary Archetype';
+  const [primaryArchetype, setPrimaryArchetype] = useState<string | null>(null);
+  const [secondaryArchetype, setSecondaryArchetype] = useState<string | null>(null);
+  const [previewContent, setPreviewContent] = useState<ArchetypePreviewContent | null>(null);
 
+  // Resolve archetype from priority sources
   useEffect(() => {
-    if (sacredDesignResult) return; // already have data
-    // Wait for AsyncStorage restore, then try backend
-    const timer = setTimeout(async () => {
-      if (sacredDesignResult) return; // restored in the meantime
-      console.log('[PartialReveal] sacredDesignResult still null after wait — attempting backend restore');
-      try {
-        const { apiFetch } = await import('@/lib/auth');
-        const res = await apiFetch('/api/archetypes/me');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data && data.primary_archetype) {
-          console.log('[PartialReveal] Restored from backend:', data.primary_archetype, data.secondary_archetype);
-          restoreFromBackend({
-            primary_archetype: data.primary_archetype,
-            secondary_archetype: data.secondary_archetype,
-            blend_name: data.blend_name,
-            scores: data.scores,
-          });
-        }
-      } catch (e) {
-        console.warn('[PartialReveal] Backend restore failed:', e);
+    // Priority 1: live DiscoveryContext result
+    if (sacredDesignResult?.primary_archetype) {
+      const primary = sacredDesignResult.primary_archetype;
+      const secondary = sacredDesignResult.secondary_archetype ?? null;
+      setPrimaryArchetype(primary);
+      setSecondaryArchetype(secondary);
+      const content = getPreviewContent(primary);
+      setPreviewContent(content);
+      console.log('[PartialReveal] Preview loaded — archetype:', primary);
+      return;
+    }
+
+    // Priority 2: persisted appState
+    if (appState.primaryArchetype) {
+      const primary = appState.primaryArchetype;
+      const secondary = appState.secondaryArchetype ?? null;
+      setPrimaryArchetype(primary);
+      setSecondaryArchetype(secondary);
+      const content = getPreviewContent(primary);
+      setPreviewContent(content);
+      console.log('[PartialReveal] Preview loaded — archetype:', primary);
+      return;
+    }
+
+    // Priority 3: AsyncStorage direct read
+    AsyncStorage.getItem('sacredDesignResult').then((raw) => {
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed?.primary_archetype) {
+            const primary = parsed.primary_archetype;
+            const secondary = parsed.secondary_archetype ?? null;
+            setPrimaryArchetype(primary);
+            setSecondaryArchetype(secondary);
+            const content = getPreviewContent(primary);
+            setPreviewContent(content);
+            console.log('[PartialReveal] Preview loaded — archetype:', primary);
+            return;
+          }
+        } catch (_) {}
       }
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [sacredDesignResult, restoreFromBackend]);
+
+      // Priority 4: attempt backend restore after 1.5s
+      console.log('[PartialReveal] Preview missing — regenerating');
+      const timer = setTimeout(async () => {
+        try {
+          const { apiFetch } = await import('@/lib/auth');
+          const res = await apiFetch('/api/archetypes/me');
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data?.primary_archetype) {
+            console.log('[PartialReveal] Restored from backend:', data.primary_archetype);
+            restoreFromBackend({
+              primary_archetype: data.primary_archetype,
+              secondary_archetype: data.secondary_archetype,
+              blend_name: data.blend_name,
+              scores: data.scores,
+            });
+            const primary = data.primary_archetype;
+            const secondary = data.secondary_archetype ?? null;
+            setPrimaryArchetype(primary);
+            setSecondaryArchetype(secondary);
+            const content = getPreviewContent(primary);
+            setPreviewContent(content);
+            console.log('[PartialReveal] Preview loaded — archetype:', primary);
+          }
+        } catch (e) {
+          console.warn('[PartialReveal] Backend restore failed:', e);
+        }
+      }, 1500);
+      return () => clearTimeout(timer);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sacredDesignResult, appState.primaryArchetype]);
 
   useEffect(() => {
-    console.log('[PartialReveal] Screen mounted — primaryArchetype:', primaryArchetype, 'secondaryArchetype:', secondaryArchetype);
-
     Animated.timing(screenOpacity, {
       toValue: 1,
       duration: 600,
@@ -91,17 +156,54 @@ export default function PartialRevealScreen() {
     );
     glowLoop.start();
     return () => glowLoop.stop();
-  }, [screenOpacity, glowScale, primaryArchetype, secondaryArchetype]);
+  }, [screenOpacity, glowScale]);
 
   function handleUnlock() {
+    console.log('[PartialReveal] "Unlock Your Full Design" pressed');
     if (appState.revealUnlocked || appState.subscriptionActive) {
       console.log('[PartialReveal] Already subscribed/unlocked — skipping paywall, navigating to /onboarding/preparing');
       router.replace('/onboarding/preparing');
       return;
     }
-    console.log('[PartialReveal] "Unlock Your Full Design" pressed — navigating to /paywall');
+    console.log('[PartialReveal] Navigating to /paywall');
     router.replace('/paywall?source=quiz_complete');
   }
+
+  // Loading state
+  if (!previewContent || !primaryArchetype) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LinearGradient
+          colors={[COLORS.gradientTop, COLORS.gradientMid, COLORS.gradientBot]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.3, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Text style={styles.loadingText}>Loading your Sacred Design…</Text>
+      </View>
+    );
+  }
+
+  // Derived display values
+  const narrativeSentences = previewContent.narrative.split('. ');
+  const narrativeFirstSentence = narrativeSentences[0] + (narrativeSentences.length > 1 ? '.' : '');
+  const narrativeSecondLine = narrativeSentences.length > 1 ? narrativeSentences[1] + '.' : 'Your design runs deeper than you know.';
+
+  const visibleStrengths = previewContent.strengths.slice(0, 2);
+  const lockedStrengths = previewContent.strengths.slice(2, 4);
+  const lockedStrengthFallbacks = ['Your hidden strength', 'Your deepest gift'];
+  const lockedStrength1 = lockedStrengths[0] ?? lockedStrengthFallbacks[0];
+  const lockedStrength2 = lockedStrengths[1] ?? lockedStrengthFallbacks[1];
+
+  const visibleShadow = previewContent.shadowPatterns[0] ?? 'A pattern worth exploring';
+  const lockedShadow1 = previewContent.shadowPatterns[1] ?? 'A hidden pattern';
+  const lockedShadow2 = previewContent.shadowPatterns[2] ?? 'Another pattern to uncover';
+
+  const growthWords = previewContent.growthPath.split(' ');
+  const growthTeaser = growthWords.slice(0, 8).join(' ') + '...';
+
+  const secondaryDisplay = secondaryArchetype ?? 'Secondary Archetype';
 
   return (
     <View style={styles.container}>
@@ -123,57 +225,81 @@ export default function PartialRevealScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Header label */}
+            {/* 1. Eyebrow */}
             <Text style={styles.eyebrow}>YOUR SACRED DESIGN</Text>
 
-            {/* Primary archetype — fully visible */}
+            {/* 2. Primary archetype */}
             <View style={styles.primaryContainer}>
               <View style={styles.glowBehind} />
               <Text style={styles.primaryLabel}>Primary Archetype</Text>
               <Text style={styles.primaryName}>{primaryArchetype}</Text>
             </View>
 
-            {/* Secondary archetype — visible but smaller */}
+            {/* 3. Secondary archetype */}
             <View style={styles.secondaryContainer}>
               <Text style={styles.secondaryLabel}>Secondary Archetype</Text>
-              <Text style={styles.secondaryName}>{secondaryArchetype}</Text>
+              <Text style={styles.secondaryName}>{secondaryDisplay}</Text>
             </View>
 
-            {/* Divider */}
+            {/* 4. Divider */}
             <View style={styles.divider} />
 
-            {/* Locked content card */}
-            <View style={styles.lockedCard}>
-              {/* Lock overlay */}
-              <View style={styles.lockOverlay}>
-                <View style={styles.lockIconCircle}>
-                  <Text style={styles.lockIcon}>🔒</Text>
-                </View>
-                <Text style={styles.lockTitle}>Full Design Locked</Text>
-                <Text style={styles.lockBody}>
-                  Unlock your complete Sacred Design to see your narrative, strengths, growth path, and daily alignment practice.
-                </Text>
-              </View>
-
-              {/* Blurred rows beneath the overlay */}
-              <View style={styles.lockedRows}>
-                <LockedRow label="Your Narrative" />
-                <LockedRow label="Core Strengths" />
-                <LockedRow label="Shadow Patterns" />
-                <LockedRow label="Growth Path" />
-                <LockedRow label="Daily Alignment Practice" />
+            {/* 5. Narrative teaser card */}
+            <View style={styles.sectionCard}>
+              <Text style={styles.narrativeVisible}>{narrativeFirstSentence}</Text>
+              <View style={{ position: 'relative', marginTop: 10 }}>
+                <Text style={styles.narrativeLocked}>{narrativeSecondLine}</Text>
+                <View style={styles.narrativeBlurOverlay} />
+                <Text style={styles.narrativeLockIcon}>🔒</Text>
               </View>
             </View>
 
-            {/* CTA */}
-            <TouchableOpacity
-              style={styles.ctaButton}
-              onPress={handleUnlock}
-              activeOpacity={0.88}
-            >
-              <Text style={styles.ctaLabel}>Unlock Your Full Design</Text>
-            </TouchableOpacity>
+            {/* 6. Strengths preview */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>YOUR STRENGTHS</Text>
+              {visibleStrengths.map((s) => (
+                <PreviewBulletRow key={s} text={s} />
+              ))}
+              <LockedPreviewRow text={lockedStrength1} />
+              <LockedPreviewRow text={lockedStrength2} />
+            </View>
 
+            {/* 7. Shadow patterns preview */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>WHEN YOU FEEL STUCK</Text>
+              <PreviewBulletRow text={visibleShadow} />
+              <LockedPreviewRow text={lockedShadow1} />
+              <LockedPreviewRow text={lockedShadow2} />
+            </View>
+
+            {/* 8. Growth path teaser */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>YOUR GROWTH PATH</Text>
+              <View style={styles.growthTeaserRow}>
+                <Text style={styles.growthTeaserText}>{growthTeaser}</Text>
+                <Text style={styles.growthLockIcon}>🔒</Text>
+              </View>
+            </View>
+
+            {/* 9. Lock CTA card */}
+            <View style={styles.lockCtaCard}>
+              <View style={styles.lockIconCircle}>
+                <Text style={styles.lockIcon}>🔒</Text>
+              </View>
+              <Text style={styles.lockTitle}>Unlock Your Full Design</Text>
+              <Text style={styles.lockBody}>
+                See your complete narrative, all strengths, growth path, and daily alignment practice.
+              </Text>
+              <TouchableOpacity
+                style={styles.ctaButton}
+                onPress={handleUnlock}
+                activeOpacity={0.88}
+              >
+                <Text style={styles.ctaLabel}>Unlock Your Full Design</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 10. Trial note */}
             <Text style={styles.trialNote}>Start your 7-day free trial — cancel anytime</Text>
           </ScrollView>
         </Animated.View>
@@ -185,6 +311,18 @@ export default function PartialRevealScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: 'rgba(245,240,232,0.65)',
+    textAlign: 'center',
   },
   safeArea: {
     flex: 1,
@@ -280,21 +418,81 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(201,168,76,0.18)',
     marginBottom: 28,
   },
-  lockedCard: {
+  sectionCard: {
     width: '100%',
-    borderRadius: 20,
+    backgroundColor: 'rgba(245,240,232,0.07)',
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    backgroundColor: COLORS.cardBg,
-    overflow: 'hidden',
+    borderColor: 'rgba(201,168,76,0.20)',
     marginBottom: 28,
   },
-  lockOverlay: {
-    backgroundColor: COLORS.blurOverlay,
-    paddingVertical: 28,
-    paddingHorizontal: 24,
+  narrativeVisible: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: 'rgba(245,240,232,0.85)',
+    lineHeight: 24,
+  },
+  narrativeLocked: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: 'rgba(245,240,232,0.15)',
+    lineHeight: 24,
+  },
+  narrativeBlurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(10,14,26,0.7)',
+    borderRadius: 4,
+  },
+  narrativeLockIcon: {
+    position: 'absolute',
+    right: 0,
+    top: 2,
+    fontSize: 12,
+    color: 'rgba(201,168,76,0.5)',
+  },
+  section: {
+    width: '100%',
+    marginBottom: 28,
+  },
+  sectionLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+    letterSpacing: 1.8,
+    color: COLORS.gold,
+    textTransform: 'uppercase',
+    marginBottom: 14,
+  },
+  growthTeaserRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 2,
+    gap: 8,
+  },
+  growthTeaserText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: 'rgba(245,240,232,0.75)',
+    lineHeight: 24,
+    flex: 1,
+    fontStyle: 'italic',
+  },
+  growthLockIcon: {
+    fontSize: 14,
+    color: 'rgba(201,168,76,0.5)',
+  },
+  lockCtaCard: {
+    width: '100%',
+    backgroundColor: 'rgba(245,240,232,0.07)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(201,168,76,0.20)',
+    padding: 28,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   lockIconCircle: {
     width: 56,
@@ -324,29 +522,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     maxWidth: 280,
-  },
-  lockedRows: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 12,
-    opacity: 0.3,
-  },
-  lockedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  lockedBar: {
-    flex: 1,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: COLORS.whiteMuted,
-  },
-  lockedLabel: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    color: COLORS.whiteMuted,
-    width: 140,
+    marginBottom: 24,
   },
   ctaButton: {
     width: '100%',
@@ -359,7 +535,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 14,
     elevation: 6,
-    marginBottom: 14,
   },
   ctaLabel: {
     fontFamily: 'Inter_600SemiBold',

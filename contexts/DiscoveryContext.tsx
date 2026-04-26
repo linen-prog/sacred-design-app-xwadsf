@@ -1,6 +1,7 @@
 import React, { createContext, useState, useCallback, useMemo, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSessionToken, API_URL } from '@/lib/auth';
+import { updateAppState } from '@/utils/appState';
 
 // Raw fetch that always reads the token fresh — avoids timing issues where
 // apiFetch is called before setBearerToken has been written to SecureStore.
@@ -438,6 +439,10 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem('sacredDesignResult', JSON.stringify(result)).catch(() => {});
     AsyncStorage.setItem('phase4Computed', JSON.stringify(computed)).catch(() => {});
     AsyncStorage.setItem('quizCompleted', 'true').catch(() => {});
+    updateAppState({
+      primaryArchetype: result.primary_archetype,
+      secondaryArchetype: result.secondary_archetype,
+    }).catch(() => {});
 
     // Sync to backend — delayed to give auth token time to be written to SecureStore
     console.log('[DiscoveryContext] POST /api/archetypes/upsert — scheduling sync (with delay for token)');
@@ -470,6 +475,10 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     setQuizCompleted(true);
     AsyncStorage.setItem('sacredDesignResult', JSON.stringify(result)).catch(() => {});
     AsyncStorage.setItem('quizCompleted', 'true').catch(() => {});
+    updateAppState({
+      primaryArchetype: result.primary_archetype,
+      secondaryArchetype: result.secondary_archetype,
+    }).catch(() => {});
   }, []);
 
   const value = useMemo(() => ({

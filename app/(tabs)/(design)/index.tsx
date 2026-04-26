@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { DiscoveryContext, SacredDesignResult } from "@/contexts/DiscoveryContext";
-import { ARCHETYPE_CONTENT, ArchetypeName } from "@/app/reveal";
+import { ARCHETYPE_CONTENT, ArchetypeName } from "@/constants/ArchetypeContent";
 import { getSessionToken, API_URL } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
