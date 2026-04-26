@@ -98,6 +98,12 @@ function NavigationGuard() {
         return;
       }
 
+      // Clear firstLaunch flag on first evaluation so PRIORITY 5 doesn't run on every launch
+      if (appState.firstLaunch) {
+        console.log('[RootNavigator] Clearing firstLaunch flag');
+        updateAppState({ firstLaunch: false }).catch(() => {});
+      }
+
       if (hasNavigated.current) return;
 
       // Don't re-navigate if we're already on the target route

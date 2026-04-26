@@ -23,14 +23,12 @@ export default function PreparingScreen() {
   // Navigate as soon as result is ready
   useEffect(() => {
     if (sacredDesignResult && !hasNavigated.current) {
-      hasNavigated.current = true;
+      hasNavigated.current = true; // set BEFORE async work to block NavigationGuard immediately
       console.log('[Preparing] sacredDesignResult ready — writing AppState and navigating to /partial-reveal');
       markQuizComplete();
-      // Write quizCompleted=true atomically BEFORE navigating so RootNavigator
-      // never sees quizCompleted=false after this point
       updateAppState({
         quizCompleted: true,
-        postQuizSaveCompleted: false,
+        postQuizSaveCompleted: true,  // mark as done so NavigationGuard never routes to /post-quiz-save
         revealUnlocked: false,
         revealViewed: false,
         primaryArchetype: sacredDesignResult.primary_archetype,
@@ -43,7 +41,6 @@ export default function PreparingScreen() {
         console.warn('[Preparing] AppState write failed — navigating anyway:', e);
         router.replace('/partial-reveal');
       });
-      // Background writes
       Promise.all([
         completeOnboarding(),
         AsyncStorage.setItem('hasCompletedQuiz', 'true'),
@@ -74,12 +71,12 @@ export default function PreparingScreen() {
     const timer = setTimeout(() => {
       if (!hasNavigated.current) {
         if (sacredDesignResult) {
-          hasNavigated.current = true;
+          hasNavigated.current = true; // set BEFORE async work
           console.log('[Preparing] Fallback timeout — writing AppState and navigating to /partial-reveal');
           markQuizComplete();
           updateAppState({
             quizCompleted: true,
-            postQuizSaveCompleted: false,
+            postQuizSaveCompleted: true,
             revealUnlocked: false,
             revealViewed: false,
             primaryArchetype: sacredDesignResult.primary_archetype,
