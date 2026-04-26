@@ -45,8 +45,13 @@ export const unstable_settings = {
   initialRouteName: "onboarding/welcome",
 };
 
-function RootNavigator() {
+/**
+ * NavigationGuard — rendered INSIDE the <Stack> so usePathname() has a valid
+ * navigation context. Handles all initial-route determination logic.
+ */
+function NavigationGuard() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
   const { appState, isLoading: appStateLoading } = useAppState();
   const hasNavigated = useRef(false);
@@ -86,7 +91,7 @@ function RootNavigator() {
 
     async function determineInitialRoute() {
       // If the quiz was just completed in this JS session (preparing.tsx
-      // already called markQuizComplete + router.replace('/reveal')), do
+      // already called markQuizComplete + router.replace('/partial-reveal')), do
       // nothing — the navigation is already in flight.
       if (isQuizJustCompleted()) {
         console.log('[RootNavigator] Quiz just completed in-session — skipping initial route check');
@@ -95,50 +100,112 @@ function RootNavigator() {
 
       if (hasNavigated.current) return;
 
+      // Don't re-navigate if we're already on the target route
+      // (prevents flicker when RootNavigator re-evaluates mid-flow)
+      const currentPathname = pathname;
+
       console.log('[RootNavigator] Determining initial route — appState:', JSON.stringify({
         revealViewed: appState.revealViewed,
         revealUnlocked: appState.revealUnlocked,
         quizCompleted: appState.quizCompleted,
+        primaryArchetype: appState.primaryArchetype,
         onboardingStarted: appState.onboardingStarted,
         firstLaunch: appState.firstLaunch,
         currentOnboardingStep: appState.currentOnboardingStep,
-      }), '| user:', user?.id ?? 'none');
+      }), '| user:', user?.id ?? 'none', '| pathname:', currentPathname);
 
       hasNavigated.current = true;
 
       // PRIORITY 1: Reveal viewed → go to tabs
       if (appState.revealViewed) {
+        const target = '/(tabs)';
+        if (currentPathname === target) {
+          console.log('[RootNavigator] Already on target route — skipping:', target);
+          return;
+        }
         console.log('[RootNavigator] revealViewed=true — navigating to /(tabs)');
-        router.replace('/(tabs)');
+        router.replace(target as any);
         return;
       }
 
-      // PRIORITY 2: Quiz done but post-quiz save not yet completed → save screen
-      if (appState.quizCompleted && !appState.postQuizSaveCompleted) {
-        console.log('[RootNavigator] quizCompleted=true, postQuizSaveCompleted=false — navigating to /post-quiz-save');
-        router.replace('/post-quiz-save');
-        return;
-      }
-
-      // PRIORITY 3: Quiz done + reveal unlocked but not yet viewed → reveal screen
-      // (preparing.tsx requires live DiscoveryContext answers which are not persisted across
-      // cold relaunches — go directly to /reveal which shows the stored archetype data)
-      if (appState.quizCompleted && appState.revealUnlocked && !appState.revealViewed) {
-        console.log('[RootNavigator] Quiz complete + reveal unlocked — navigating to /reveal');
-        router.replace('/reveal');
-        return;
-      }
-
-      // PRIORITY 4: Quiz done but not unlocked → partial reveal (gated)
-      if (appState.quizCompleted && !appState.revealUnlocked) {
-        console.log('[RootNavigator] Quiz complete but reveal not unlocked — navigating to /partial-reveal');
-        router.replace('/partial-reveal');
+      // PRIORITY 1.5: quizCompleted in AppState OR primaryArchetype exists → never route back to onboarding
+      // This is the key guard that prevents the loop
+      if (appState.quizCompleted || appState.primaryArchetype) {
+        if (appState.revealViewed) {
+          const target = '/(tabs)';
+          if (currentPathname === target) {
+            console.log('[RootNavigator] Already on target route — skipping:', target);
+            return;
+          }
+          console.log('[RootNavigator] quizCompleted/primaryArchetype + revealViewed — routing to /(tabs)', {
+            currentRoute: currentPathname ?? 'unknown',
+            targetRoute: target,
+            quizComplete: appState.quizCompleted,
+            primaryArchetype: appState.primaryArchetype,
+            revealViewed: appState.revealViewed,
+            reasonForRedirect: 'reveal viewed, going to tabs',
+          });
+          router.replace(target as any);
+          return;
+        }
+        if (appState.revealUnlocked && !appState.revealViewed) {
+          const target = '/reveal';
+          if (currentPathname === target) {
+            console.log('[RootNavigator] Already on target route — skipping:', target);
+            return;
+          }
+          console.log('[RootNavigator] quizCompleted + revealUnlocked — routing to /reveal', {
+            currentRoute: currentPathname ?? 'unknown',
+            targetRoute: target,
+            quizComplete: appState.quizCompleted,
+            revealUnlocked: appState.revealUnlocked,
+            revealViewed: appState.revealViewed,
+            reasonForRedirect: 'reveal unlocked but not viewed',
+          });
+          router.replace(target);
+          return;
+        }
+        if (!appState.postQuizSaveCompleted) {
+          const target = '/post-quiz-save';
+          if (currentPathname === target) {
+            console.log('[RootNavigator] Already on target route — skipping:', target);
+            return;
+          }
+          console.log('[RootNavigator] quizCompleted + no postQuizSave — routing to /post-quiz-save', {
+            currentRoute: currentPathname ?? 'unknown',
+            targetRoute: target,
+            quizComplete: appState.quizCompleted,
+            postQuizSaveCompleted: appState.postQuizSaveCompleted,
+            reasonForRedirect: 'quiz done, save not completed',
+          });
+          router.replace(target);
+          return;
+        }
+        // Quiz done, save done, not unlocked → partial reveal
+        const target = '/partial-reveal';
+        if (currentPathname === target) {
+          console.log('[RootNavigator] Already on target route — skipping:', target);
+          return;
+        }
+        console.log('[RootNavigator] quizCompleted + postQuizSaveCompleted — routing to /partial-reveal', {
+          currentRoute: currentPathname ?? 'unknown',
+          targetRoute: target,
+          quizComplete: appState.quizCompleted,
+          postQuizSaveCompleted: appState.postQuizSaveCompleted,
+          revealUnlocked: appState.revealUnlocked,
+          reasonForRedirect: 'quiz done, save done, not unlocked',
+        });
+        router.replace(target);
         return;
       }
 
       // PRIORITY 4: Onboarding started but quiz not done → resume
       if (appState.onboardingStarted && !appState.quizCompleted) {
         const resumeStep = appState.currentOnboardingStep || '/onboarding/welcome';
+        if (currentPathname === resumeStep) {
+          console.log('[RootNavigator] Already on target route — skipping:', resumeStep);
+          return;
+        }
         console.log('[RootNavigator] Onboarding in progress — resuming at:', resumeStep);
         router.replace(resumeStep as any);
         return;
@@ -164,17 +231,21 @@ function RootNavigator() {
               // Legacy users completed the full flow — mark revealViewed so TabLayout doesn't redirect them
               // We don't await this to avoid blocking navigation
               updateAppState({ revealViewed: true, dailyAlignmentReady: true }).catch(() => {});
-              router.replace('/(tabs)');
+              const target = '/(tabs)';
+              if (currentPathname !== target) router.replace(target as any);
             } else {
               console.log('[RootNavigator] Legacy: quiz complete, no auth — navigating to /auth-screen');
-              router.replace('/auth-screen');
+              const target = '/auth-screen';
+              if (currentPathname !== target) router.replace(target);
             }
           } else if (hasSeenOnboarding === 'true') {
             console.log('[RootNavigator] Legacy: partial onboarding — resuming at /onboarding/welcome');
-            router.replace('/onboarding/welcome');
+            const target = '/onboarding/welcome';
+            if (currentPathname !== target) router.replace(target);
           } else {
             console.log('[RootNavigator] First launch — navigating to /onboarding/welcome');
-            router.replace('/onboarding/welcome');
+            const target = '/onboarding/welcome';
+            if (currentPathname !== target) router.replace(target);
           }
         } catch (e) {
           console.warn('[RootNavigator] Storage error during initial route check:', e);
@@ -185,12 +256,19 @@ function RootNavigator() {
 
       // Fallback
       console.log('[RootNavigator] Fallback — navigating to /onboarding/welcome');
-      router.replace('/onboarding/welcome');
+      const fallbackTarget = '/onboarding/welcome';
+      if (currentPathname !== fallbackTarget) router.replace(fallbackTarget);
     }
 
     determineInitialRoute();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, appStateLoading, user, appState]);
+  }, [authLoading, appStateLoading, user, appState, pathname]);
+
+  return null;
+}
+
+function RootNavigator() {
+  const { isLoading: appStateLoading } = useAppState();
 
   // Show a loading screen while state is being read
   if (appStateLoading) {
@@ -224,6 +302,7 @@ function RootNavigator() {
           contentStyle: { backgroundColor: 'transparent' },
         }}
       />
+      <NavigationGuard />
     </Stack>
   );
 }

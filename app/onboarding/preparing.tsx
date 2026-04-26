@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useRef } from 'react';
-import { Text, Animated, Pressable } from 'react-native';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { Text, Animated, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { completeOnboarding } from '@/utils/onboardingStorage';
 import { markQuizComplete } from '@/utils/quizState';
+import { updateAppState } from '@/utils/appState';
 
 export default function PreparingScreen() {
   const router = useRouter();
@@ -17,15 +18,32 @@ export default function PreparingScreen() {
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const screenTranslateY = useRef(new Animated.Value(20)).current;
   const hasNavigated = useRef(false);
+  const [showRetry, setShowRetry] = useState(false);
 
   // Navigate as soon as result is ready
   useEffect(() => {
     if (sacredDesignResult && !hasNavigated.current) {
       hasNavigated.current = true;
-      console.log('[Preparing] sacredDesignResult ready — navigating to /reveal immediately');
-      markQuizComplete(); // synchronous flag — must be first
-      router.replace('/reveal'); // navigate immediately — don't wait for writes
-      // writes happen in background — they'll be done before user taps CTA
+      console.log('[Preparing] sacredDesignResult ready — writing AppState and navigating to /partial-reveal');
+      markQuizComplete();
+      // Write quizCompleted=true atomically BEFORE navigating so RootNavigator
+      // never sees quizCompleted=false after this point
+      updateAppState({
+        quizCompleted: true,
+        postQuizSaveCompleted: false,
+        revealUnlocked: false,
+        revealViewed: false,
+        primaryArchetype: sacredDesignResult.primary_archetype,
+        secondaryArchetype: sacredDesignResult.secondary_archetype,
+        currentOnboardingStep: '/partial-reveal',
+      }).then(() => {
+        console.log('[Preparing] AppState written — navigating to /partial-reveal');
+        router.replace('/partial-reveal');
+      }).catch((e) => {
+        console.warn('[Preparing] AppState write failed — navigating anyway:', e);
+        router.replace('/partial-reveal');
+      });
+      // Background writes
       Promise.all([
         completeOnboarding(),
         AsyncStorage.setItem('hasCompletedQuiz', 'true'),
@@ -57,21 +75,42 @@ export default function PreparingScreen() {
       if (!hasNavigated.current) {
         if (sacredDesignResult) {
           hasNavigated.current = true;
-          console.log('[Preparing] Fallback timeout — sacredDesignResult ready, navigating to /reveal');
+          console.log('[Preparing] Fallback timeout — writing AppState and navigating to /partial-reveal');
           markQuizComplete();
-          router.replace('/reveal');
+          updateAppState({
+            quizCompleted: true,
+            postQuizSaveCompleted: false,
+            revealUnlocked: false,
+            revealViewed: false,
+            primaryArchetype: sacredDesignResult.primary_archetype,
+            secondaryArchetype: sacredDesignResult.secondary_archetype,
+            currentOnboardingStep: '/partial-reveal',
+          }).then(() => {
+            router.replace('/partial-reveal');
+          }).catch(() => {
+            router.replace('/partial-reveal');
+          });
           Promise.all([
             completeOnboarding(),
             AsyncStorage.setItem('hasCompletedQuiz', 'true'),
           ]).catch((e) => console.warn('[Preparing] Fallback: failed to write completion state:', e));
         } else {
-          console.warn('[Preparing] Fallback timeout — sacredDesignResult still null, computeSacredDesign likely aborted due to missing phase scores. Staying on preparing screen.');
+          console.warn('[Preparing] Fallback timeout — sacredDesignResult still null. Staying on screen.');
+          // Do NOT navigate away — show a retry UI instead
         }
       }
-    }, 4000);
+    }, 5000);
+
+    // Show retry UI after 6 seconds if still not navigated
+    const retryTimer = setTimeout(() => {
+      if (!hasNavigated.current) {
+        setShowRetry(true);
+      }
+    }, 6000);
 
     return () => {
       clearTimeout(timer);
+      clearTimeout(retryTimer);
       pulseAnimation.stop();
     };
   }, [pulseScale, router, screenOpacity, screenTranslateY, sacredDesignResult]);
@@ -149,6 +188,40 @@ export default function PreparingScreen() {
       >
         This will just take a moment.
       </Text>
+
+      {showRetry && (
+        <View style={{ marginTop: 32, alignItems: 'center', gap: 12 }}>
+          <Text style={{ fontSize: 14, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginBottom: 8 }}>
+            This is taking longer than expected.
+          </Text>
+          <Pressable
+            onPress={() => {
+              console.log('[Preparing] Retry pressed');
+              setShowRetry(false);
+              computeSacredDesign();
+            }}
+            style={{ backgroundColor: 'rgba(201,168,76,0.15)', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(201,168,76,0.3)' }}
+          >
+            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, color: '#C9A84C' }}>Retry</Text>
+          </Pressable>
+          <Pressable
+            onPress={async () => {
+              console.log('[Preparing] Start Over pressed from preparing screen');
+              await updateAppState({
+                quizCompleted: false,
+                revealUnlocked: false,
+                revealViewed: false,
+                postQuizSaveCompleted: false,
+                currentOnboardingStep: '/onboarding/welcome',
+              });
+              router.replace('/onboarding/welcome');
+            }}
+            style={{ paddingHorizontal: 24, paddingVertical: 12 }}
+          >
+            <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>Start Over</Text>
+          </Pressable>
+        </View>
+      )}
     </Animated.View>
   );
 }
