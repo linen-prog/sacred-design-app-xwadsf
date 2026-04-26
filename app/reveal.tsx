@@ -305,7 +305,7 @@ export default function RevealScreen() {
         </View>
       );
     }
-    // Not waiting and still no result — attempt backend restore, then go to tabs
+    // Not waiting and still no result — attempt backend restore, then reset stale state
     const handleRetry = async () => {
       console.log('[Reveal] Retry pressed — attempting backend restore via GET /api/archetypes/me');
       try {
@@ -328,24 +328,46 @@ export default function RevealScreen() {
       } catch (e) {
         console.warn('[Reveal] Retry: backend restore error:', e);
       }
-      // If backend also fails, go home
-      console.log('[Reveal] Retry: backend restore failed, navigating to /(tabs)');
-      router.replace('/(tabs)');
+      // Backend unavailable or unauthenticated — stale appState detected.
+      // Reset quiz/reveal flags so the user can go through the flow properly.
+      console.log('[Reveal] Retry: resetting stale appState and routing to onboarding');
+      try {
+        await updateAppState({
+          quizCompleted: false,
+          revealUnlocked: false,
+          revealViewed: false,
+          postQuizSaveCompleted: false,
+          currentOnboardingStep: '/onboarding/welcome',
+        });
+      } catch (e) {
+        console.warn('[Reveal] Retry: failed to reset appState:', e);
+      }
+      router.replace('/onboarding/welcome');
     };
     return (
       <View style={styles.fallbackContainer}>
-        <Text style={styles.fallbackText}>Your Sacred Design is being prepared…</Text>
-        <AnimatedPressable onPress={handleRetry} style={styles.fallbackButton}>
+        <Text style={styles.fallbackText}>We couldn't load your Sacred Design.</Text>
+        <Text style={[styles.fallbackText, { fontSize: 14, marginTop: 8, opacity: 0.7 }]}>Tap Retry to try again, or start over to retake the quiz.</Text>
+        <AnimatedPressable onPress={handleRetry} style={[styles.fallbackButton, { marginTop: 24 }]}>
           <Text style={styles.fallbackButtonText}>Retry</Text>
         </AnimatedPressable>
         <AnimatedPressable
-          onPress={() => {
-            console.log('[Reveal] "Go to Home" pressed from fallback');
-            router.replace('/(tabs)');
+          onPress={async () => {
+            console.log('[Reveal] "Start Over" pressed from fallback — resetting stale state');
+            try {
+              await updateAppState({
+                quizCompleted: false,
+                revealUnlocked: false,
+                revealViewed: false,
+                postQuizSaveCompleted: false,
+                currentOnboardingStep: '/onboarding/welcome',
+              });
+            } catch (e) {}
+            router.replace('/onboarding/welcome');
           }}
           style={[styles.fallbackButton, { marginTop: 8, backgroundColor: 'transparent', borderWidth: 1, borderColor: REVEAL_COLORS.accent }]}
         >
-          <Text style={[styles.fallbackButtonText, { color: REVEAL_COLORS.accent }]}>Go to Home</Text>
+          <Text style={[styles.fallbackButtonText, { color: REVEAL_COLORS.accent }]}>Start Over</Text>
         </AnimatedPressable>
       </View>
     );
