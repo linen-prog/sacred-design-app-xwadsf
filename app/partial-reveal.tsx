@@ -207,10 +207,28 @@ export default function PartialRevealScreen() {
   }
 
   // Derived display values
+  const NARRATIVE_HOOKS: Record<string, string> = {
+    'Peacemaker':        'You sense what others are feeling before they say a word — and you quietly adjust the room.',
+    'Courageous Leader': 'When the path isn\'t clear, you\'re already moving — and somehow others follow.',
+    'Deep Feeler':       'You notice things most people walk past. That depth isn\'t a flaw. It\'s how you\'re wired.',
+    'Faithful Steward':  'You show up when it matters, long after others have moved on. That\'s rarer than you think.',
+    'Light Bearer':      'People leave conversations with you feeling more hopeful than when they arrived.',
+    'Truth Seeker':      'You can\'t settle for surface answers. You need to understand why — and that changes everything.',
+    'Justice Carrier':   'You feel the weight of what\'s wrong before anyone else names it. That fire has a purpose.',
+  };
   const rawFirst = previewContent.narrative.split('. ')[0] + '.';
-  const narrativeHook = rawFirst.startsWith('You') ? rawFirst : `You carry something rare. ${rawFirst}`;
+  const narrativeHook = NARRATIVE_HOOKS[primaryArchetype ?? ''] ?? (rawFirst.startsWith('You') ? rawFirst : `You carry something rare. ${rawFirst}`);
 
-  const visibleStrengths = previewContent.strengths.slice(0, 2);
+  const STRENGTH_HOOKS: Record<string, [string, string]> = {
+    'Peacemaker':        ['You de-escalate tension without anyone noticing you did it', 'People feel safe saying hard things around you'],
+    'Courageous Leader': ['You make decisions when others are still weighing options', 'You hold the vision even when the team loses confidence'],
+    'Deep Feeler':       ['You pick up on emotional undercurrents in a room instantly', 'Your empathy creates space for people to be honest'],
+    'Faithful Steward':  ['You follow through on things others quietly let slide', 'You build systems that outlast your involvement'],
+    'Light Bearer':      ['You reframe problems in ways that make people feel capable', 'You remember what people told you months ago — and they notice'],
+    'Truth Seeker':      ['You ask the question that cuts through the noise', 'You sit with complexity without rushing to a tidy answer'],
+    'Justice Carrier':   ['You speak up when others go quiet', 'You stay in hard conversations long after most people exit'],
+  };
+  const visibleStrengths: [string, string] = STRENGTH_HOOKS[primaryArchetype ?? ''] ?? [previewContent.strengths[0] ?? '', previewContent.strengths[1] ?? ''];
   const secondaryDisplay = secondaryArchetype ?? 'Secondary Archetype';
 
   return (
@@ -256,10 +274,18 @@ export default function PartialRevealScreen() {
           <View style={styles.lockIconCircle}>
             <Ionicons name="lock-closed" size={20} color="rgba(201,168,76,0.8)" />
           </View>
-          <Text style={styles.lockTitle}>Your full design is ready</Text>
-          <Text style={styles.lockBody}>
-            Unlock your patterns, growth path, and daily alignment
+          <Text style={styles.lockTitle}>This is only part of the picture</Text>
+          <Text style={[styles.lockBody, { marginBottom: 12 }]}>
+            There's more here that explains why you operate this way
           </Text>
+          <View style={{ width: '100%', marginBottom: 20, gap: 6 }}>
+            {['See your patterns', 'Understand why this shows up', 'Learn how to shift it'].map((line) => (
+              <View key={line} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(201,168,76,0.5)' }} />
+                <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: 'rgba(245,240,232,0.55)', lineHeight: 20 }}>{line}</Text>
+              </View>
+            ))}
+          </View>
           <TouchableOpacity
             style={styles.ctaButton}
             onPress={handleUnlock}
