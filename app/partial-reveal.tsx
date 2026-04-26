@@ -220,13 +220,13 @@ export default function PartialRevealScreen() {
   const narrativeHook = NARRATIVE_HOOKS[primaryArchetype ?? ''] ?? (rawFirst.startsWith('You') ? rawFirst : `You carry something rare. ${rawFirst}`);
 
   const STRENGTH_HOOKS: Record<string, [string, string]> = {
-    'Peacemaker':        ['You de-escalate tension without anyone noticing you did it', 'People feel safe saying hard things around you'],
-    'Courageous Leader': ['You make decisions when others are still weighing options', 'You hold the vision even when the team loses confidence'],
-    'Deep Feeler':       ['You pick up on emotional undercurrents in a room instantly', 'Your empathy creates space for people to be honest'],
-    'Faithful Steward':  ['You follow through on things others quietly let slide', 'You build systems that outlast your involvement'],
-    'Light Bearer':      ['You reframe problems in ways that make people feel capable', 'You remember what people told you months ago — and they notice'],
-    'Truth Seeker':      ['You ask the question that cuts through the noise', 'You sit with complexity without rushing to a tidy answer'],
-    'Justice Carrier':   ['You speak up when others go quiet', 'You stay in hard conversations long after most people exit'],
+    'Peacemaker':        ['You de-escalate tension without anyone noticing you did it', 'You absorb more than you let on — and carry it longer than you should'],
+    'Courageous Leader': ['You make decisions when others are still weighing options', 'You move fast enough that people sometimes can\'t tell if you\'re leading or escaping'],
+    'Deep Feeler':       ['You pick up on emotional undercurrents in a room instantly', 'You feel things so fully that it\'s hard to know where you end and others begin'],
+    'Faithful Steward':  ['You follow through on things others quietly let slide', 'You\'d rather do it yourself than risk it being done wrong'],
+    'Light Bearer':      ['You reframe problems in ways that make people feel capable', 'You\'re so good at holding hope for others that your own doubts go unspoken'],
+    'Truth Seeker':      ['You ask the question that cuts through the noise', 'You can see the answer clearly and still not know what to do with it'],
+    'Justice Carrier':   ['You speak up when others go quiet', 'The weight of what\'s wrong follows you home — even when you try to leave it at the door'],
   };
   const visibleStrengths: [string, string] = STRENGTH_HOOKS[primaryArchetype ?? ''] ?? [previewContent.strengths[0] ?? '', previewContent.strengths[1] ?? ''];
   const secondaryDisplay = secondaryArchetype ?? 'Secondary Archetype';
@@ -257,7 +257,7 @@ export default function PartialRevealScreen() {
         <View style={styles.narrativeCard}>
           <Text style={styles.narrativeText}>{narrativeHook}</Text>
           <LinearGradient
-            colors={['transparent', 'rgba(10,14,26,0.85)']}
+            colors={['transparent', 'rgba(10,14,26,0.92)']}
             style={styles.narrativeFade}
             pointerEvents="none"
           />
@@ -276,10 +276,10 @@ export default function PartialRevealScreen() {
           </View>
           <Text style={styles.lockTitle}>This is only part of the picture</Text>
           <Text style={[styles.lockBody, { marginBottom: 12 }]}>
-            There's more here that explains why you operate this way
+            This explains more than you think it does.
           </Text>
           <View style={{ width: '100%', marginBottom: 20, gap: 6 }}>
-            {['See your patterns', 'Understand why this shows up', 'Learn how to shift it'].map((line) => (
+            {['See your patterns', 'Understand what drives them', 'Learn how to shift them'].map((line) => (
               <View key={line} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(201,168,76,0.5)' }} />
                 <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: 'rgba(245,240,232,0.55)', lineHeight: 20 }}>{line}</Text>
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 48,
+    height: 64,
   },
   sectionLabel: {
     fontFamily: 'Inter_500Medium',
