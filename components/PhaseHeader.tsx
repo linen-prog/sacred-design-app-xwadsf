@@ -9,59 +9,47 @@ interface PhaseHeaderProps {
 }
 
 export function PhaseHeader({ phase, title, current, total }: PhaseHeaderProps) {
-  const progress = total > 0 ? current / total : 0;
-  const progressWidth = `${progress * 100}%`;
-
-  const phaseLabel = 'PHASE ';
-  const phaseNum = String(phase);
-  const phaseOf = ' OF 4';
-
   return (
-    <View style={{ marginBottom: 0 }}>
+    <View style={{ marginBottom: 0, alignItems: 'center' }}>
       <Text
         style={{
           fontSize: 10,
           fontFamily: 'Inter_400Regular',
           color: '#2F3E2F',
-          opacity: 0.45,
+          opacity: 0.35,
           textTransform: 'uppercase',
           letterSpacing: 2.5,
           textAlign: 'center',
         }}
       >
-        {phaseLabel}
-        {phaseNum}
-        {phaseOf}
+        {'PHASE '}
+        {String(phase)}
+        {' OF 4'}
       </Text>
       <Text
         style={{
-          fontSize: 22,
+          fontSize: 20,
           fontFamily: 'Lora_700Bold',
           color: '#2F3E2F',
           textAlign: 'center',
           marginTop: 4,
+          opacity: 0.75,
         }}
       >
         {title}
       </Text>
-      <View
+      <Text
         style={{
-          height: 3,
-          borderRadius: 2,
-          backgroundColor: 'rgba(47,62,47,0.12)',
-          marginTop: 12,
-          overflow: 'hidden',
+          fontSize: 11,
+          fontFamily: 'Inter_400Regular',
+          color: 'rgba(47,62,47,0.35)',
+          textAlign: 'center',
+          marginTop: 6,
+          letterSpacing: 0.5,
         }}
       >
-        <View
-          style={{
-            height: 3,
-            borderRadius: 2,
-            backgroundColor: '#6F8A6A',
-            width: progressWidth,
-          }}
-        />
-      </View>
+        {`Question ${current} of ${total}`}
+      </Text>
     </View>
   );
 }

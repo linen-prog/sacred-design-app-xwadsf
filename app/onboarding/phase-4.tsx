@@ -192,18 +192,18 @@ export default function Phase4Screen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <OverallProgressBar phase={4} questionIndex={currentIndex} />
-
       <Animated.View
         style={{
           flex: 1,
-          paddingTop: 16,
+          paddingTop: 0,
           paddingBottom: 24,
           paddingHorizontal: 28,
           opacity: screenOpacity,
           transform: [{ translateY: screenTranslateY }],
         }}
       >
+        <OverallProgressBar phase={4} questionIndex={currentIndex} />
+        <View style={{ height: 32 }} />
         <PhaseHeader
           phase={4}
           title="How You Stay Grounded"
@@ -215,7 +215,7 @@ export default function Phase4Screen() {
           style={{
             opacity: questionOpacity,
             alignItems: 'center',
-            marginTop: 32,
+            marginTop: 40,
           }}
         >
           <Text
@@ -249,7 +249,7 @@ export default function Phase4Screen() {
               justifyContent: 'space-between',
               width: '100%',
               paddingHorizontal: 4,
-              marginTop: 40,
+              marginTop: 44,
             }}
           >
             {scaleValues.map((v) => (

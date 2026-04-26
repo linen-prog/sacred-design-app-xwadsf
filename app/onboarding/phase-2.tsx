@@ -197,18 +197,18 @@ export default function Phase2Screen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <OverallProgressBar phase={2} questionIndex={currentIndex} />
-
       <Animated.View
         style={{
           flex: 1,
-          paddingTop: 16,
+          paddingTop: 0,
           paddingBottom: 24,
           paddingHorizontal: 28,
           opacity: screenOpacity,
           transform: [{ translateY: screenTranslateY }],
         }}
       >
+        <OverallProgressBar phase={2} questionIndex={currentIndex} />
+        <View style={{ height: 32 }} />
         <PhaseHeader
           phase={2}
           title="What Drives You"
@@ -220,7 +220,7 @@ export default function Phase2Screen() {
           style={{
             opacity: questionOpacity,
             alignItems: 'center',
-            marginTop: 32,
+            marginTop: 40,
           }}
         >
           <Text
@@ -254,7 +254,7 @@ export default function Phase2Screen() {
               justifyContent: 'space-between',
               width: '100%',
               paddingHorizontal: 4,
-              marginTop: 40,
+              marginTop: 44,
             }}
           >
             {scaleValues.map((v) => (

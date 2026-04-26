@@ -104,18 +104,18 @@ export default function Phase1Screen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <OverallProgressBar phase={1} questionIndex={currentIndex} />
-
       <Animated.View
         style={{
           flex: 1,
-          paddingTop: 16,
+          paddingTop: 0,
           paddingBottom: 24,
           paddingHorizontal: 28,
           opacity: screenOpacity,
           transform: [{ translateY: screenTranslateY }],
         }}
       >
+        <OverallProgressBar phase={1} questionIndex={currentIndex} />
+        <View style={{ height: 32 }} />
         <PhaseHeader
           phase={1}
           title="How You Operate"
@@ -127,7 +127,7 @@ export default function Phase1Screen() {
           style={{
             opacity: questionOpacity,
             alignItems: 'center',
-            marginTop: 32,
+            marginTop: 40,
           }}
         >
           <Text
@@ -161,7 +161,7 @@ export default function Phase1Screen() {
               justifyContent: 'space-between',
               width: '100%',
               paddingHorizontal: 4,
-              marginTop: 40,
+              marginTop: 44,
             }}
           >
             {scaleValues.map((v) => (
