@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "newArchEnabled": true,
+    "name": "Sacred Design",
+    "slug": "sacred-design",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
+      "resizeMode": "cover",
+      "backgroundColor": "#0a0800"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sacreddesign.app",
+      "icon": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
+        "backgroundColor": "#F6F1E8"
+      },
+      "package": "com.sacreddesign.app"
+    },
+    "web": {
+      "favicon": "./assets/images/c5285e11-d314-42f2-b5cc-3466932600b8.jpeg",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-router",
+      "expo-web-browser",
+      "expo-secure-store"
+    ],
+    "scheme": "sacreddesign",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "backendUrl": "https://rxv2r6bszrawnrpuzqt5kh3zhd9kv48u.app.specular.dev",
+      "revenueCatApiKeyIos": "appl_SMpGzHmmGIbREDyEHHMERMsmgaW",
+      "revenueCatApiKeyAndroid": "goog_LLywlqycGjXElYzZdgACkeSlgzX",
+      "revenueCatEntitlementId": "pro",
+      "nativelyProjectId": "1b8ef625-33f1-4c4f-b692-f737f97ecb03",
+      "revenueCatTestApiKeyIos": "test_LNJxHHxvRGtloeqZlXHBIvXTMEu",
+      "revenueCatTestApiKeyAndroid": "test_LNJxHHxvRGtloeqZlXHBIvXTMEu"
+    }
+  }
+}

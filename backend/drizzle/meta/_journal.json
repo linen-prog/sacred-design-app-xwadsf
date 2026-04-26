@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1776434366305,
+      "tag": "20260417135926_military_landau",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776623319241,
+      "tag": "20260419182839_large_zaladane",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776626203942,
+      "tag": "20260419191643_tired_earthquake",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776662798191,
+      "tag": "20260420052638_brainy_cassandra_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776713514208,
+      "tag": "20260420193154_medical_jamie_braddock",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776733949034,
+      "tag": "20260421011229_tan_tattoo",
+      "breakpoints": true
+    }
+  ]
+}

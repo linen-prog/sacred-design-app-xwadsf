@@ -1,0 +1,1 @@
+ALTER TABLE "alignment_reflections" ALTER COLUMN "reflection_text" DROP NOT NULL;
