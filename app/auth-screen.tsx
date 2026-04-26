@@ -14,7 +14,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppState } from "@/contexts/AppStateContext";
-import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const BG = "#0A0E1A";
 const CARD_BG = "#131929";
@@ -31,7 +31,7 @@ type Mode = "signin" | "signup";
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { signInWithEmail, signUpWithEmail, signInWithApple, signInWithGoogle, fetchUser } = useAuth() as any;
+  const { signInWithEmail, signUpWithEmail, fetchUser } = useAuth();
   const { appState, updateAppState } = useAppState();
 
   const { from } = useLocalSearchParams<{ from?: string }>();
@@ -43,12 +43,10 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [appleLoading, setAppleLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
   const isSignUp = mode === "signup";
-  const anyLoading = loading || appleLoading || googleLoading;
+  const anyLoading = loading;
   const submitDisabled = anyLoading || !email.trim() || !password.trim() || (isSignUp && !name.trim());
   const submitLabel = isSignUp ? "Create Account" : "Sign In";
 
@@ -78,40 +76,6 @@ export default function AuthScreen() {
     } else {
       console.log("[AuthScreen] No intended route — navigating to /(tabs)");
       router.replace("/(tabs)");
-    }
-  }
-
-  async function handleAppleSignIn() {
-    console.log("[AuthScreen] 'Continue with Apple' pressed");
-    setError("");
-    setAppleLoading(true);
-    try {
-      await signInWithApple();
-      console.log("[AuthScreen] Apple sign-in succeeded — fetching user and routing");
-      await fetchUser?.();
-      navigateAfterAuth(true);
-    } catch (e: any) {
-      console.warn("[AuthScreen] Apple sign-in error:", e);
-      setError(e?.message || "Apple sign-in failed. Please try again.");
-    } finally {
-      setAppleLoading(false);
-    }
-  }
-
-  async function handleGoogleSignIn() {
-    console.log("[AuthScreen] 'Continue with Google' pressed");
-    setError("");
-    setGoogleLoading(true);
-    try {
-      await signInWithGoogle();
-      console.log("[AuthScreen] Google sign-in succeeded — fetching user and routing");
-      await fetchUser?.();
-      navigateAfterAuth(true);
-    } catch (e: any) {
-      console.warn("[AuthScreen] Google sign-in error:", e);
-      setError(e?.message || "Google sign-in failed. Please try again.");
-    } finally {
-      setGoogleLoading(false);
     }
   }
 
@@ -259,51 +223,17 @@ export default function AuthScreen() {
           )}
         </Pressable>
 
-        {/* Social buttons — below email form in DEV, above in prod */}
-        {__DEV__ ? (
-          <Text style={styles.devNote}>Social login available on TestFlight</Text>
-        ) : (
-          <>
-            {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Apple Sign In — FIRST (App Store requirement) */}
-            <Pressable
-              style={[styles.appleButton, anyLoading && styles.buttonDisabled]}
-              onPress={handleAppleSignIn}
-              disabled={anyLoading}
-            >
-              {appleLoading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <MaterialCommunityIcons name="apple" size={20} color="#FFFFFF" style={styles.socialIcon} />
-                  <Text style={styles.appleButtonText}>Continue with Apple</Text>
-                </>
-              )}
-            </Pressable>
-
-            {/* Google Sign In */}
-            <Pressable
-              style={[styles.googleButton, anyLoading && styles.buttonDisabled]}
-              onPress={handleGoogleSignIn}
-              disabled={anyLoading}
-            >
-              {googleLoading ? (
-                <ActivityIndicator color="#333333" size="small" />
-              ) : (
-                <>
-                  <AntDesign name="google" size={18} color="#4285F4" style={styles.socialIcon} />
-                  <Text style={styles.googleButtonText}>Continue with Google</Text>
-                </>
-              )}
-            </Pressable>
-          </>
-        )}
+        {/* Social login — coming in a future release */}
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+        <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: 'rgba(245,240,232,0.3)', textAlign: 'center' }}>
+            Sign in with Apple and Google coming soon
+          </Text>
+        </View>
 
         {/* Mode toggle link */}
         <Pressable
