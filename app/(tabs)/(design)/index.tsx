@@ -180,7 +180,7 @@ function TodayFocusCard({
     return (
       <View style={styles.focusCard}>
         <Text style={styles.focusLabel}>TODAY'S FOCUS</Text>
-        <Text style={styles.focusEmptyText}>No alignment yet for today.</Text>
+        <Text style={styles.focusEmptyText}>You haven't started your alignment yet.</Text>
         <Pressable
           onPress={onGenerate}
           disabled={generating}
@@ -431,7 +431,7 @@ export default function MyDesignScreen() {
       <Text style={styles.blendName}>{sacredDesignResult.blend_name}</Text>
       <Text style={styles.archetypeLine}>{archetypeLine}</Text>
       <Text style={styles.designDefinition}>
-        This is your Sacred Design — now it becomes something you live.
+        This is your Sacred Design — something you'll begin to live each day.
       </Text>
 
       <Divider />
@@ -449,12 +449,22 @@ export default function MyDesignScreen() {
       <SectionLabel text="YOUR STRENGTHS" />
       {renderListOrString(content?.strengths)}
 
+      <Divider />
+
+      {/* Growth Path — primary */}
+      <SectionLabel text="YOUR GROWTH PATH" />
+      <View style={styles.growthPathCard}>
+        <Text style={styles.bodyText}>{content?.growthPath}</Text>
+      </View>
+
+      {/* Transition line + CTA */}
+      <Text style={styles.ctaTransition}>Your first alignment is where this begins.</Text>
       <View style={styles.bottomCTAWrapper}>
         <AnimatedPressable
           onPress={handleGenerateAlignment}
           style={[styles.bottomCTA, generating && { opacity: 0.6 }]}
         >
-          <Text style={styles.bottomCTAText}>{generating ? "Generating…" : "Start My Alignment"}</Text>
+          <Text style={styles.bottomCTAText}>{generating ? "Generating…" : "Start Today's Alignment"}</Text>
           <Text style={styles.bottomCTASub}>Begin your first alignment</Text>
         </AnimatedPressable>
       </View>
@@ -478,12 +488,6 @@ export default function MyDesignScreen() {
           <Divider />
         </>
       )}
-
-      {/* Growth Path */}
-      <SectionLabel text="YOUR GROWTH PATH" />
-      <View style={styles.growthPathCard}>
-        <Text style={styles.bodyText}>{content?.growthPath}</Text>
-      </View>
 
       {/* Secondary archetype section */}
       {secondary && ARCHETYPE_CONTENT[secondary] && (() => {
@@ -812,8 +816,16 @@ const styles = StyleSheet.create({
     color: TEXT_BODY,
     lineHeight: 23,
   },
+  ctaTransition: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: TEXT_MUTED,
+    lineHeight: 22,
+    textAlign: "center",
+    marginTop: 28,
+    marginBottom: 14,
+  },
   bottomCTAWrapper: {
-    marginTop: 24,
     marginBottom: 4,
   },
   bottomCTA: {
