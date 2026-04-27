@@ -165,13 +165,11 @@ export default function WelcomeScreen() {
                 console.log('[Welcome] Dev skip pressed');
                 router.push('/dev-skip');
               }}
-              style={{ marginTop: 36, padding: 8 }}
+              style={styles.devSkipButton}
               accessibilityRole="button"
-              accessibilityLabel="Skip quiz (dev only)"
+              accessibilityLabel="Dev Skip"
             >
-              <Text style={{ fontSize: 12, color: 'rgba(47,62,47,0.20)', textAlign: 'center' }}>
-                ⚡ Skip quiz (dev only)
-              </Text>
+              <Text style={styles.devSkipText}>Dev Skip →</Text>
             </Pressable>
           )}
         </Animated.View>
@@ -215,5 +213,15 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     backgroundColor: 'rgba(201,168,76,0.20)',
+  },
+  devSkipButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    padding: 4,
+  },
+  devSkipText: {
+    fontSize: 11,
+    color: 'rgba(47,62,47,0.3)',
   },
 });
