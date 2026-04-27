@@ -22,7 +22,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { appState, updateAppState, retakeQuiz } = useAppState();
   const { user, signOut } = useAuth();
-  const { sacredDesignResult } = useContext(DiscoveryContext);
+  const { sacredDesignResult, clearSacredDesign } = useContext(DiscoveryContext);
 
   const primaryArchetype = sacredDesignResult?.primary_archetype ?? appState.primaryArchetype ?? null;
   const secondaryArchetype = sacredDesignResult?.secondary_archetype ?? appState.secondaryArchetype ?? null;
@@ -43,8 +43,9 @@ export default function ProfileScreen() {
   const [confirmModal, setConfirmModal] = useState<'startFresh' | 'takeBreak' | 'closeAccount' | null>(null);
 
   async function handleStartFresh() {
-    console.log('[Profile] handleStartFresh pressed');
+    console.log('[Profile] Start Fresh confirmed — clearing design and restarting');
     setConfirmModal(null);
+    clearSacredDesign();
     await retakeQuiz();
     await updateAppState({
       revealViewed: false,
@@ -54,35 +55,23 @@ export default function ProfileScreen() {
       guestMode: false,
       currentOnboardingStep: '/onboarding/welcome',
     });
-    console.log('[Profile] appState reset, navigating to /onboarding/welcome');
     router.replace('/onboarding/welcome' as any);
   }
 
   async function handleTakeBreak() {
-    console.log('[Profile] handleTakeBreak pressed');
+    console.log('[Profile] Take a Break confirmed — signing out, preserving design state');
     setConfirmModal(null);
     await signOut();
-    try {
-      const { updateAppState: updateUtil } = await import('@/utils/appState');
-      await updateUtil({
-        revealViewed: false,
-        revealUnlocked: false,
-        quizCompleted: false,
-        postQuizSaveCompleted: false,
-        guestMode: false,
-        currentOnboardingStep: '/onboarding/welcome',
-      });
-    } catch (e) {
-      console.log('[Profile] handleTakeBreak appState reset error:', e);
-    }
-    console.log('[Profile] signed out, navigating to /onboarding/welcome');
-    router.replace('/onboarding/welcome' as any);
+    await updateAppState({ guestMode: false });
+    router.replace('/auth-screen' as any);
   }
 
   async function handleCloseAccount() {
-    console.log('[Profile] handleCloseAccount pressed');
+    console.log('[Profile] Close Account confirmed — signing out');
     setConfirmModal(null);
-    await handleTakeBreak();
+    await signOut();
+    await updateAppState({ guestMode: false });
+    router.replace('/auth-screen' as any);
   }
 
   type ModalType = 'startFresh' | 'takeBreak' | 'closeAccount';
@@ -96,14 +85,14 @@ export default function ProfileScreen() {
     },
     takeBreak: {
       title: 'Take a break?',
-      body: "You'll be signed out. Your design will be here when you return.",
-      confirmLabel: 'Sign out',
+      body: "You'll be signed out. Your Sacred Design will be waiting when you return.",
+      confirmLabel: 'Take a break',
       onConfirm: handleTakeBreak,
     },
     closeAccount: {
       title: 'Close your account?',
-      body: 'This will sign you out. To fully delete your account, contact support.',
-      confirmLabel: 'Sign out for now',
+      body: "You'll be signed out. To permanently delete your account, contact support.",
+      confirmLabel: 'Sign out',
       onConfirm: handleCloseAccount,
     },
   };
