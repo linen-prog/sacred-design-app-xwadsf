@@ -19,6 +19,11 @@ export type App = typeof app;
 // Enable authentication with email/password, Google OAuth, Apple OAuth, and anonymous sign-in
 // OAuth providers (Google, Apple) are handled automatically via proxy - no credentials needed
 app.withAuth({
+  trustedOrigins: [
+    "sacred-design://",
+    "exp://",
+    "https://cs3k7h8f4szhmtksqpktmjeg97sgd89z.app.specular.dev",
+  ],
   plugins: [
     anonymous(),
   ],
