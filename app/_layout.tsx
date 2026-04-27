@@ -348,6 +348,7 @@ const SUBSCRIPTION_REDIRECT_BLOCKLIST = [
   '/auth-popup',
   '/auth-callback',
   '/paywall',
+  '/dev-skip',
 ];
 
 function SubscriptionRedirect() {
@@ -381,7 +382,8 @@ function SubscriptionRedirect() {
       currentPath.startsWith('/reveal') ||
       currentPath.startsWith('/completion') ||
       currentPath.startsWith('/partial-reveal') ||
-      currentPath.startsWith('/post-quiz-save');
+      currentPath.startsWith('/post-quiz-save') ||
+      currentPath.startsWith('/dev-skip');
     if (isBlocked) {
       console.log('[SubscriptionRedirect] Blocked path — skipping:', currentPath);
       return;

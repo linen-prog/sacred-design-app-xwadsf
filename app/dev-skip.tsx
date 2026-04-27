@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DiscoveryContext, Phase1Answers, Phase2Answers, Phase3Answers, Phase4Answers } from '@/contexts/DiscoveryContext';
+import { updateAppState } from '@/utils/appState';
+import { useAuth } from '@/contexts/AuthContext';
 
 const MOCK_PHASE1: Phase1Answers = {
   Q1: 4, Q2: 4, Q3: 4, Q4: 4, Q5: 4, Q6: 4, Q7: 4,
@@ -28,6 +30,7 @@ const DESTINATIONS = [
 
 export default function DevSkipScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const {
     computePhase1Scores,
     computePhase2Scores,
@@ -79,8 +82,16 @@ export default function DevSkipScreen() {
           ['sacredDesignResult', JSON.stringify(sacredDesignResult)],
         ]);
         console.log('[DevSkip] Persisted sacredDesignResult:', sacredDesignResult);
+        await updateAppState({
+          quizCompleted: true,
+          postQuizSaveCompleted: true,
+          revealUnlocked: true,
+          guestMode: true,
+          primaryArchetype: sacredDesignResult.primary_archetype,
+        }, user?.id ?? null);
+        console.log('[DevSkip] AppState updated — guards bypassed');
       } catch (e) {
-        console.log('[DevSkip] AsyncStorage error:', e);
+        console.log('[DevSkip] AsyncStorage/appState error:', e);
       }
       setIsReady(true);
     }, 300);
