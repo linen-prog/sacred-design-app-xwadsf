@@ -1,30 +1,35 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CHECKPOINT_KEY = 'quiz_checkpoint';
-
 export interface QuizCheckpoint {
   completedPhases: number[];
   answers: Record<string, number>;
 }
 
-export async function saveCheckpoint(
-  completedPhases: number[],
-  answers: Record<string, number>
-): Promise<void> {
-  const checkpoint: QuizCheckpoint = { completedPhases, answers };
-  console.log('[QuizCheckpoint] Saving checkpoint:', { completedPhases, answerCount: Object.keys(answers).length });
-  await AsyncStorage.setItem(CHECKPOINT_KEY, JSON.stringify(checkpoint));
+function getCheckpointKey(userId?: string | null): string {
+  return `quiz_checkpoint:${userId || 'anonymous'}`;
 }
 
-export async function loadCheckpoint(): Promise<QuizCheckpoint | null> {
-  const raw = await AsyncStorage.getItem(CHECKPOINT_KEY);
+export async function saveCheckpoint(
+  completedPhases: number[],
+  answers: Record<string, number>,
+  userId?: string | null
+): Promise<void> {
+  const key = getCheckpointKey(userId);
+  const checkpoint: QuizCheckpoint = { completedPhases, answers };
+  console.log('[QuizCheckpoint] Saving checkpoint:', { key, completedPhases, answerCount: Object.keys(answers).length });
+  await AsyncStorage.setItem(key, JSON.stringify(checkpoint));
+}
+
+export async function loadCheckpoint(userId?: string | null): Promise<QuizCheckpoint | null> {
+  const key = getCheckpointKey(userId);
+  const raw = await AsyncStorage.getItem(key);
   if (!raw) {
-    console.log('[QuizCheckpoint] No checkpoint found');
+    console.log('[QuizCheckpoint] No checkpoint found for key:', key);
     return null;
   }
   try {
     const parsed = JSON.parse(raw) as QuizCheckpoint;
-    console.log('[QuizCheckpoint] Loaded checkpoint:', { completedPhases: parsed.completedPhases, answerCount: Object.keys(parsed.answers).length });
+    console.log('[QuizCheckpoint] Loaded checkpoint:', { key, completedPhases: parsed.completedPhases, answerCount: Object.keys(parsed.answers).length });
     return parsed;
   } catch (e) {
     console.log('[QuizCheckpoint] Failed to parse checkpoint:', e);
@@ -32,9 +37,10 @@ export async function loadCheckpoint(): Promise<QuizCheckpoint | null> {
   }
 }
 
-export async function clearCheckpoint(): Promise<void> {
-  console.log('[QuizCheckpoint] Clearing checkpoint');
-  await AsyncStorage.removeItem(CHECKPOINT_KEY);
+export async function clearCheckpoint(userId?: string | null): Promise<void> {
+  const key = getCheckpointKey(userId);
+  console.log('[QuizCheckpoint] Clearing checkpoint for key:', key);
+  await AsyncStorage.removeItem(key);
 }
 
 export function getNextPhaseRoute(completedPhases: number[]): string {

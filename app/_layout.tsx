@@ -112,7 +112,7 @@ function NavigationGuard() {
       // Clear firstLaunch flag on first evaluation so PRIORITY 5 doesn't run on every launch
       if (appState.firstLaunch) {
         console.log('[RootNavigator] Clearing firstLaunch flag');
-        updateAppState({ firstLaunch: false }).catch(() => {});
+        updateAppState({ firstLaunch: false }, user?.id ?? null).catch(() => {});
       }
 
       if (hasNavigated.current) return;
@@ -239,6 +239,8 @@ function NavigationGuard() {
             AsyncStorage.getItem('hasCompletedQuiz'),
             AsyncStorage.getItem('hasSeenOnboarding'),
           ]);
+          // Clean up legacy global keys — they must never affect new users
+          AsyncStorage.multiRemove(['hasCompletedQuiz', 'hasSeenOnboarding']).catch(() => {});
 
           if (isQuizJustCompleted()) {
             console.log('[RootNavigator] Quiz completed during AsyncStorage read — skipping redirect');
@@ -250,7 +252,7 @@ function NavigationGuard() {
               console.log('[RootNavigator] Legacy: quiz complete + auth — setting revealViewed and navigating to /(tabs)');
               // Legacy users completed the full flow — mark revealViewed so TabLayout doesn't redirect them
               // We don't await this to avoid blocking navigation
-              updateAppState({ revealViewed: true, dailyAlignmentReady: true }).catch(() => {});
+              updateAppState({ revealViewed: true, dailyAlignmentReady: true }, user?.id ?? null).catch(() => {});
               const target = '/(tabs)';
               if (currentPathname !== target) router.replace(target as any);
             } else {
