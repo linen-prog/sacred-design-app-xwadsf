@@ -457,20 +457,6 @@ export default function MyDesignScreen() {
         <Text style={styles.bodyText}>{content?.growthPath}</Text>
       </View>
 
-      {/* Transition line + CTA */}
-      <Text style={styles.ctaTransition}>Your first alignment is where this begins.</Text>
-      <View style={styles.bottomCTAWrapper}>
-        <AnimatedPressable
-          onPress={handleGenerateAlignment}
-          style={[styles.bottomCTA, generating && { opacity: 0.6 }]}
-        >
-          <Text style={styles.bottomCTAText}>{generating ? "Generating…" : "Start Today's Alignment"}</Text>
-          <Text style={styles.bottomCTASub}>Begin your first alignment</Text>
-        </AnimatedPressable>
-      </View>
-
-      <Divider />
-
       {/* Stuck Patterns */}
       {hasStuckPatterns && (
         <>
@@ -529,6 +515,18 @@ export default function MyDesignScreen() {
           </>
         );
       })()}
+
+      {/* Transition line + CTA */}
+      <Text style={styles.ctaTransition}>Your first alignment is where this begins.</Text>
+      <View style={styles.bottomCTAWrapper}>
+        <AnimatedPressable
+          onPress={handleGenerateAlignment}
+          style={[styles.bottomCTA, generating && { opacity: 0.6 }]}
+        >
+          <Text style={styles.bottomCTAText}>{generating ? "Generating…" : "Start Today's Alignment"}</Text>
+          <Text style={styles.bottomCTASub}>Begin your first alignment</Text>
+        </AnimatedPressable>
+      </View>
 
       {/* Retake — secondary action, bottom of screen */}
       <TouchableOpacity onPress={promptRetake} style={styles.retakeButton}>
@@ -822,7 +820,7 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
     lineHeight: 22,
     textAlign: "center",
-    marginTop: 28,
+    marginTop: 32,
     marginBottom: 14,
   },
   bottomCTAWrapper: {
