@@ -2,8 +2,9 @@ import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 
-const API_URL = "https://cs3k7h8f4szhmtksqpktmjeg97sgd89z.app.specular.dev";
+const API_URL = (Constants.expoConfig?.extra?.backendUrl as string) || "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev";
 
 export const BEARER_TOKEN_KEY = "sacreddesign_bearer_token";
 const COOKIE_KEY = "sacreddesign_cookie";
