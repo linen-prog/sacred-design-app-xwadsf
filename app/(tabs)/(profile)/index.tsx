@@ -8,6 +8,7 @@ import {
   Modal,
   Pressable,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -67,11 +68,13 @@ export default function ProfileScreen() {
   }
 
   async function handleCloseAccount() {
-    console.log('[Profile] Close Account confirmed — signing out');
+    console.log('[Profile] Email Support pressed — opening mail composer');
     setConfirmModal(null);
-    await signOut();
-    await updateAppState({ guestMode: false });
-    router.replace('/auth-screen' as any);
+    const mailto =
+      'mailto:linenprayaer@gmail.com' +
+      '?subject=Account%20Deletion%20Request' +
+      '&body=Hi,%0D%0AI%20would%20like%20to%20request%20deletion%20of%20my%20account%20and%20all%20associated%20data.';
+    await Linking.openURL(mailto);
   }
 
   type ModalType = 'startFresh' | 'takeBreak' | 'closeAccount';
@@ -90,9 +93,9 @@ export default function ProfileScreen() {
       onConfirm: handleTakeBreak,
     },
     closeAccount: {
-      title: 'Close your account?',
-      body: "You'll be signed out. To permanently delete your account, contact support.",
-      confirmLabel: 'Sign out',
+      title: 'Close your account',
+      body: '',
+      confirmLabel: '',
       onConfirm: handleCloseAccount,
     },
   };
@@ -221,7 +224,30 @@ export default function ProfileScreen() {
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setConfirmModal(null)}>
           <Pressable style={styles.modalCard} onPress={() => {}}>
-            {activeModal ? (
+            {confirmModal === 'closeAccount' ? (
+              <>
+                <Text style={styles.modalTitle}>Close your account</Text>
+                <Text style={styles.modalBody}>
+                  {'To permanently delete your account and data, please email us at linenprayaer@gmail.com. We\'ll process your request as quickly as possible.'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.modalConfirmButton}
+                  onPress={handleCloseAccount}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalConfirmText}>Email Support</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    console.log('[Profile] Close account modal — Cancel pressed');
+                    setConfirmModal(null);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            ) : activeModal ? (
               <>
                 <Text style={styles.modalTitle}>{activeModal.title}</Text>
                 <Text style={styles.modalBody}>{activeModal.body}</Text>
