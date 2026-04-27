@@ -80,40 +80,75 @@ export default function AuthScreen() {
   }
 
   async function handleSubmit() {
-    setError("");
-    if (!email.trim() || !password.trim()) {
-      setError("Please fill in all fields.");
+    setError('');
+
+    // Validation
+    if (!email.trim()) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!password.trim()) {
+      setError('Please enter your password.');
+      return;
+    }
+    if (isSignUp && password.length < 6) {
+      setError('Password must be at least 6 characters.');
       return;
     }
     if (isSignUp && !name.trim()) {
-      setError("Please enter your name.");
+      setError('Please enter your name.');
       return;
     }
 
-    console.log('[AuthScreen] Sign-in attempt — email:', email.trim());
+    if (isSignUp) {
+      console.log('[Auth] Create account started — email:', email.trim());
+    } else {
+      console.log('[Auth] Sign in started — email:', email.trim());
+    }
+
     setLoading(true);
     try {
       if (isSignUp) {
-        console.log('[AuthScreen] Calling signUpWithEmail...');
         await signUpWithEmail(email.trim(), password, name.trim());
+        console.log('[Auth] Create account success');
       } else {
-        console.log('[AuthScreen] Calling signInWithEmail...');
         await signInWithEmail(email.trim(), password);
+        console.log('[Auth] Sign in success');
       }
-      console.log('[AuthScreen] Sign-in success — navigating');
       navigateAfterAuth(true);
     } catch (e: any) {
-      console.log('[AuthScreen] Sign-in error:', e?.message);
-      const raw = e?.message ?? '';
-      const msg = raw.toLowerCase().includes('invalid') || raw.toLowerCase().includes('credentials') || raw.toLowerCase().includes('password')
-        ? 'Incorrect email or password. Please try again.'
-        : raw.toLowerCase().includes('not found') || raw.toLowerCase().includes('no user')
-        ? 'No account found with that email. Try signing up.'
-        : raw.toLowerCase().includes('already') || raw.toLowerCase().includes('exists')
-        ? 'An account with this email already exists. Try signing in.'
-        : raw.toLowerCase().includes('network') || raw.toLowerCase().includes('fetch')
-        ? 'Network error. Check your connection and try again.'
-        : raw || 'Something went wrong. Please try again.';
+      const raw = (e?.message ?? '').toLowerCase();
+      console.log(isSignUp ? '[Auth] Create account error:' : '[Auth] Sign in error:', e?.message);
+
+      let msg: string;
+      if (isSignUp) {
+        if (raw.includes('already') || raw.includes('exists') || raw.includes('taken')) {
+          msg = 'An account with this email already exists. Try signing in.';
+        } else if (raw.includes('password') || raw.includes('weak') || raw.includes('short')) {
+          msg = 'Password must be at least 6 characters.';
+        } else if (raw.includes('email') || raw.includes('invalid')) {
+          msg = 'Please enter a valid email address.';
+        } else if (raw.includes('network') || raw.includes('fetch')) {
+          msg = 'Network error. Check your connection and try again.';
+        } else {
+          msg = e?.message || 'Could not create account. Please try again.';
+        }
+      } else {
+        if (raw.includes('invalid') || raw.includes('credentials') || raw.includes('password') || raw.includes('incorrect')) {
+          msg = 'Incorrect email or password. Please try again.';
+        } else if (raw.includes('not found') || raw.includes('no user')) {
+          msg = 'No account found with that email. Try signing up.';
+        } else if (raw.includes('network') || raw.includes('fetch')) {
+          msg = 'Network error. Check your connection and try again.';
+        } else {
+          msg = e?.message || 'Something went wrong. Please try again.';
+        }
+      }
       setError(msg);
     } finally {
       setLoading(false);
