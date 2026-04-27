@@ -409,11 +409,25 @@ export default function MyDesignScreen() {
   const hasStuckPatterns = content?.stuckPatterns && content.stuckPatterns.length > 0;
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.resultContent}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={{ flex: 1, backgroundColor: BG }}>
+      {/* Back arrow */}
+      <TouchableOpacity
+        onPress={() => {
+          console.log('[MyDesign] Back arrow pressed — navigating to /reveal');
+          router.push('/reveal');
+        }}
+        style={styles.backButton}
+        accessibilityRole="button"
+        accessibilityLabel="Back to reveal"
+      >
+        <Text style={styles.backArrow}>←</Text>
+      </TouchableOpacity>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.resultContent}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Today's Focus card — top of Design tab */}
       <TodayFocusCard
         hasDesignResult={hasDesignResult}
@@ -546,6 +560,7 @@ export default function MyDesignScreen() {
         <Text style={styles.retakeButtonText}>Recalculate My Design</Text>
       </TouchableOpacity>
     </ScrollView>
+    </View>
   );
 }
 
@@ -560,9 +575,21 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   resultContent: {
-    paddingTop: 60,
+    paddingTop: 80,
     paddingHorizontal: 24,
     paddingBottom: 120,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 52,
+    left: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  backArrow: {
+    fontSize: 22,
+    color: TEXT,
+    fontFamily: 'Inter_400Regular',
   },
 
   // Today's Focus card
