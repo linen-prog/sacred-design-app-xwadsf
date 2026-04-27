@@ -282,7 +282,7 @@ function TodayFocusCard({ hasDesignResult, sacredDesignResult }: TodayFocusCardP
   }
 
   if (!todayAlignment) {
-    const generateButtonText = generating ? "Generating…" : "Generate Today's Alignment →";
+    const generateButtonText = generating ? "Generating…" : "Start Today's Alignment →";
     return (
       <View style={styles.focusCard}>
         <Text style={styles.focusLabel}>TODAY'S FOCUS</Text>
@@ -351,6 +351,15 @@ export default function MyDesignScreen() {
 
   const hasDesignResult = !!sacredDesignResult;
 
+  function handleBottomCTA() {
+    console.log('[MyDesign] Bottom CTA "Start My Alignment" pressed');
+    Alert.alert(
+      'Start Your Alignment',
+      'Tap "Start Today\'s Alignment" at the top of this screen to generate your first daily alignment.',
+      [{ text: 'Got it' }]
+    );
+  }
+
   const handleStuckCardPress = (archetypeName: string, index: number) => {
     console.log(`[MyDesign] Navigating to shadow-path — archetype: "${archetypeName}", stuck: ${index}`);
     router.push(`/shadow-path?archetype=${encodeURIComponent(archetypeName)}&stuck=${index}`);
@@ -410,18 +419,31 @@ export default function MyDesignScreen() {
 
       <Text style={styles.blendName}>{sacredDesignResult.blend_name}</Text>
       <Text style={styles.archetypeLine}>{archetypeLine}</Text>
+      <Text style={styles.designDefinition}>
+        This is your Sacred Design — now it becomes something you live.
+      </Text>
 
       <Divider />
 
-      {/* Narrative */}
-      <SectionLabel text="WHO YOU ARE" />
-      <Text style={styles.bodyText}>{content?.narrative}</Text>
-
+      {/* How this becomes real */}
+      <View style={styles.howRealSection}>
+        <Text style={styles.howRealHeader}>How this becomes real</Text>
+        <Text style={styles.howRealBody}>
+          Your daily alignments give you simple, clear steps rooted in your design — helping you move forward with intention, energy, and direction.
+        </Text>
+      </View>
       <Divider />
 
       {/* Strengths */}
       <SectionLabel text="YOUR STRENGTHS" />
       {renderListOrString(content?.strengths)}
+
+      <View style={styles.bottomCTAWrapper}>
+        <AnimatedPressable onPress={handleBottomCTA} style={styles.bottomCTA}>
+          <Text style={styles.bottomCTAText}>Start My Alignment</Text>
+          <Text style={styles.bottomCTASub}>Begin your first alignment</Text>
+        </AnimatedPressable>
+      </View>
 
       <Divider />
 
@@ -751,6 +773,55 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: ACCENT,
     opacity: 0.7,
+  },
+  designDefinition: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: TEXT_MUTED,
+    lineHeight: 22,
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  howRealSection: {
+    marginBottom: 4,
+  },
+  howRealHeader: {
+    fontFamily: "Lora_700Bold",
+    fontSize: 18,
+    color: TEXT,
+    lineHeight: 26,
+    marginBottom: 8,
+  },
+  howRealBody: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: TEXT_BODY,
+    lineHeight: 23,
+  },
+  bottomCTAWrapper: {
+    marginTop: 24,
+    marginBottom: 4,
+  },
+  bottomCTA: {
+    backgroundColor: "#1A2035",
+    borderRadius: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    borderLeftWidth: 3,
+    borderLeftColor: "#C9A84C",
+  },
+  bottomCTAText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 16,
+    color: "#F5F0E8",
+    letterSpacing: 0.2,
+  },
+  bottomCTASub: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: "rgba(245,240,232,0.55)",
+    marginTop: 4,
   },
   retakeButton: {
     alignSelf: "center",
