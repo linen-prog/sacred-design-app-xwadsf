@@ -159,19 +159,17 @@ export default function WelcomeScreen() {
             </Text>
           </Pressable>
 
-          {__DEV__ && (
-            <Pressable
-              onPress={() => {
-                console.log('[Welcome] Dev skip pressed');
-                router.push('/dev-skip');
-              }}
-              style={styles.devSkipButton}
-              accessibilityRole="button"
-              accessibilityLabel="Dev Skip"
-            >
-              <Text style={styles.devSkipText}>Dev Skip →</Text>
-            </Pressable>
-          )}
+          <Pressable
+            onPress={() => {
+              console.log('[Welcome] Dev skip pressed');
+              router.push('/dev-skip');
+            }}
+            style={styles.devSkipButton}
+            accessibilityRole="button"
+            accessibilityLabel="Dev Skip"
+          >
+            <Text style={styles.devSkipText}>Dev Skip →</Text>
+          </Pressable>
         </Animated.View>
       </ScrollView>
     </View>
@@ -215,9 +213,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(201,168,76,0.20)',
   },
   devSkipButton: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
+    alignSelf: 'flex-end',
+    marginTop: 24,
     padding: 4,
   },
   devSkipText: {
