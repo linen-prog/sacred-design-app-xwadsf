@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { DiscoveryContext, SacredDesignResult } from "@/contexts/DiscoveryContext";
+import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 import { ARCHETYPE_CONTENT, ArchetypeName } from "@/constants/ArchetypeContent";
 import { getSessionToken, API_URL } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
@@ -135,142 +135,36 @@ async function rawFetch(path: string, options?: RequestInit): Promise<Response> 
 
 interface TodayFocusCardProps {
   hasDesignResult: boolean;
-  sacredDesignResult: SacredDesignResult | null;
+  todayAlignment: TodayAlignment | null;
+  loadingFocus: boolean;
+  generating: boolean;
+  onGenerate: () => void;
+  onViewAlignment: () => void;
+  onLoadFocus: () => void;
 }
 
-function TodayFocusCard({ hasDesignResult, sacredDesignResult }: TodayFocusCardProps) {
-  const router = useRouter();
-  const [todayAlignment, setTodayAlignment] = useState<TodayAlignment | null>(null);
-  const [loadingFocus, setLoadingFocus] = useState(true);
-  const [generating, setGenerating] = useState(false);
-
-  const hasFetchedRef = useRef(false);
+function TodayFocusCard({
+  hasDesignResult,
+  todayAlignment,
+  loadingFocus,
+  generating,
+  onGenerate,
+  onViewAlignment,
+  onLoadFocus,
+}: TodayFocusCardProps) {
   const prevHasDesignResult = useRef(hasDesignResult);
-
-  // Mount effect — fire exactly once
-  useEffect(() => {
-    if (hasFetchedRef.current) return;
-    hasFetchedRef.current = true;
-    console.log("[TodayFocusCard] mount — calling loadTodayFocus once");
-    loadTodayFocus();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Re-fetch only when hasDesignResult transitions from false → true (not on initial render)
   useEffect(() => {
     if (hasDesignResult && !prevHasDesignResult.current) {
       prevHasDesignResult.current = true;
       console.log("[TodayFocusCard] hasDesignResult transitioned false→true — re-fetching alignment");
-      loadTodayFocus();
+      onLoadFocus();
     } else {
       prevHasDesignResult.current = hasDesignResult;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasDesignResult]);
-
-  async function loadTodayFocus() {
-    console.log("[TodayFocusCard] GET /api/alignments/today — starting");
-    setLoadingFocus(true);
-    try {
-      let token = await getSessionToken();
-      if (!token) {
-        // Token may not be written yet — wait briefly and retry once
-        await new Promise(r => setTimeout(r, 1500));
-        token = await getSessionToken();
-      }
-      if (!token) {
-        console.warn('[TodayFocusCard] No token after retry — skipping fetch');
-        setLoadingFocus(false);
-        return;
-      }
-      const res = await fetch(`${API_URL}/api/alignments/today`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        console.warn('[TodayFocusCard] GET /api/alignments/today failed:', res.status);
-        setLoadingFocus(false);
-        return;
-      }
-      const data: { alignment: TodayAlignment | null } = await res.json();
-      console.log("[TodayFocusCard] Today alignment:", data.alignment ? data.alignment.id : "null");
-      setTodayAlignment(data.alignment ?? null);
-    } catch (e) {
-      console.warn("[TodayFocusCard] loadTodayFocus error:", e);
-    } finally {
-      setLoadingFocus(false);
-    }
-  }
-
-  function handleViewAlignment() {
-    if (!todayAlignment) return;
-    console.log("[TodayFocusCard] 'View Full Alignment' pressed — id:", todayAlignment.id);
-    router.push({
-      pathname: "/alignment-detail",
-      params: {
-        alignmentId: todayAlignment.id,
-        action: todayAlignment.action,
-        guidance: todayAlignment.guidance,
-        somatic_cue: todayAlignment.somatic_cue,
-        scripture: todayAlignment.scripture,
-        reflection_prompt: todayAlignment.reflection_prompt,
-        day_number: String(todayAlignment.day_number),
-        blend_name: todayAlignment.blend_name ?? "",
-      },
-    });
-  }
-
-  async function handleGenerateAlignment() {
-    console.log("[TodayFocusCard] 'Generate Today's Alignment' pressed");
-    setGenerating(true);
-    try {
-      let token = await getSessionToken();
-      if (!token) {
-        await new Promise(r => setTimeout(r, 1500));
-        token = await getSessionToken();
-      }
-      if (!token) {
-        Alert.alert('Not signed in', 'Please sign in to generate your alignment.');
-        return;
-      }
-
-      // Step 1: ensure archetype is in the backend
-      if (sacredDesignResult) {
-        console.log("[TodayFocusCard] Step 1 — POST /api/archetypes/upsert");
-        await fetch(`${API_URL}/api/archetypes/upsert`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            primary_archetype: sacredDesignResult.primary_archetype,
-            secondary_archetype: sacredDesignResult.secondary_archetype,
-            blend_name: sacredDesignResult.blend_name,
-            scores: sacredDesignResult.archetypeScores ?? {},
-          }),
-        });
-      }
-
-      // Step 2: generate alignment
-      console.log("[TodayFocusCard] Step 2 — POST /api/alignments/generate");
-      const res = await fetch(`${API_URL}/api/alignments/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({}),
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        console.warn('[TodayFocusCard] generate failed:', res.status, errText);
-        Alert.alert('Could not generate alignment', 'Please try again.');
-        return;
-      }
-      const data = await res.json();
-      console.log("[TodayFocusCard] POST /api/alignments/generate succeeded");
-      setTodayAlignment(data.alignment);
-    } catch (e) {
-      console.warn('[TodayFocusCard] handleGenerateAlignment error:', e);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
-    } finally {
-      setGenerating(false);
-    }
-  }
 
   if (loadingFocus) {
     return (
@@ -288,7 +182,7 @@ function TodayFocusCard({ hasDesignResult, sacredDesignResult }: TodayFocusCardP
         <Text style={styles.focusLabel}>TODAY'S FOCUS</Text>
         <Text style={styles.focusEmptyText}>No alignment yet for today.</Text>
         <Pressable
-          onPress={handleGenerateAlignment}
+          onPress={onGenerate}
           disabled={generating}
           style={styles.focusButton}
         >
@@ -307,7 +201,7 @@ function TodayFocusCard({ hasDesignResult, sacredDesignResult }: TodayFocusCardP
       <Text style={styles.focusLabel}>TODAY'S FOCUS</Text>
       <Text style={styles.focusAction} numberOfLines={2}>{actionTruncated}</Text>
       <Pressable
-        onPress={handleViewAlignment}
+        onPress={onViewAlignment}
         style={styles.focusButton}
       >
         <Text style={styles.focusButtonText}>View Full Alignment →</Text>
@@ -321,7 +215,127 @@ export default function MyDesignScreen() {
   const { sacredDesignResult } = useContext(DiscoveryContext);
   const { user } = useAuth();
   const hasSyncedRef = useRef(false);
+  const hasFetchedRef = useRef(false);
   const { promptRetake } = useRetakeQuiz();
+
+  const [todayAlignment, setTodayAlignment] = useState<TodayAlignment | null>(null);
+  const [loadingFocus, setLoadingFocus] = useState(true);
+  const [generating, setGenerating] = useState(false);
+
+  const hasDesignResult = !!sacredDesignResult;
+
+  async function loadTodayFocus() {
+    console.log("[MyDesign] GET /api/alignments/today — starting");
+    setLoadingFocus(true);
+    try {
+      let token = await getSessionToken();
+      if (!token) {
+        // Token may not be written yet — wait briefly and retry once
+        await new Promise(r => setTimeout(r, 1500));
+        token = await getSessionToken();
+      }
+      if (!token) {
+        console.warn('[MyDesign] No token after retry — skipping fetch');
+        setLoadingFocus(false);
+        return;
+      }
+      const res = await fetch(`${API_URL}/api/alignments/today`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        console.warn('[MyDesign] GET /api/alignments/today failed:', res.status);
+        setLoadingFocus(false);
+        return;
+      }
+      const data: { alignment: TodayAlignment | null } = await res.json();
+      console.log("[MyDesign] Today alignment:", data.alignment ? data.alignment.id : "null");
+      setTodayAlignment(data.alignment ?? null);
+    } catch (e) {
+      console.warn("[MyDesign] loadTodayFocus error:", e);
+    } finally {
+      setLoadingFocus(false);
+    }
+  }
+
+  function handleViewAlignment() {
+    if (!todayAlignment) return;
+    console.log("[MyDesign] 'View Full Alignment' pressed — id:", todayAlignment.id);
+    router.push({
+      pathname: "/alignment-detail",
+      params: {
+        alignmentId: todayAlignment.id,
+        action: todayAlignment.action,
+        guidance: todayAlignment.guidance,
+        somatic_cue: todayAlignment.somatic_cue,
+        scripture: todayAlignment.scripture,
+        reflection_prompt: todayAlignment.reflection_prompt,
+        day_number: String(todayAlignment.day_number),
+        blend_name: todayAlignment.blend_name ?? "",
+      },
+    });
+  }
+
+  async function handleGenerateAlignment() {
+    console.log("[MyDesign] 'Generate Today's Alignment' pressed");
+    setGenerating(true);
+    try {
+      let token = await getSessionToken();
+      if (!token) {
+        await new Promise(r => setTimeout(r, 1500));
+        token = await getSessionToken();
+      }
+      if (!token) {
+        Alert.alert('Not signed in', 'Please sign in to generate your alignment.');
+        return;
+      }
+
+      // Step 1: ensure archetype is in the backend
+      if (sacredDesignResult) {
+        console.log("[MyDesign] Step 1 — POST /api/archetypes/upsert");
+        await fetch(`${API_URL}/api/archetypes/upsert`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            primary_archetype: sacredDesignResult.primary_archetype,
+            secondary_archetype: sacredDesignResult.secondary_archetype,
+            blend_name: sacredDesignResult.blend_name,
+            scores: sacredDesignResult.archetypeScores ?? {},
+          }),
+        });
+      }
+
+      // Step 2: generate alignment
+      console.log("[MyDesign] Step 2 — POST /api/alignments/generate");
+      const res = await fetch(`${API_URL}/api/alignments/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn('[MyDesign] generate failed:', res.status, errText);
+        Alert.alert('Could not generate alignment', 'Please try again.');
+        return;
+      }
+      const data = await res.json();
+      console.log("[MyDesign] POST /api/alignments/generate succeeded");
+      setTodayAlignment(data.alignment);
+    } catch (e) {
+      console.warn('[MyDesign] handleGenerateAlignment error:', e);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  // Mount effect — fire exactly once
+  useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+    console.log("[MyDesign] mount — calling loadTodayFocus once");
+    loadTodayFocus();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // One-time sync: push existing local result to backend for users who completed
   // the quiz before the upsert call was added to computeSacredDesign.
@@ -348,17 +362,6 @@ export default function MyDesignScreen() {
       console.warn('[MyDesign] One-time sync /api/archetypes/upsert error (ignored):', e);
     });
   }, [sacredDesignResult, user]);
-
-  const hasDesignResult = !!sacredDesignResult;
-
-  function handleBottomCTA() {
-    console.log('[MyDesign] Bottom CTA "Start My Alignment" pressed');
-    Alert.alert(
-      'Start Your Alignment',
-      'Tap "Start Today\'s Alignment" at the top of this screen to generate your first daily alignment.',
-      [{ text: 'Got it' }]
-    );
-  }
 
   const handleStuckCardPress = (archetypeName: string, index: number) => {
     console.log(`[MyDesign] Navigating to shadow-path — archetype: "${archetypeName}", stuck: ${index}`);
@@ -412,7 +415,15 @@ export default function MyDesignScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Today's Focus card — top of Design tab */}
-      <TodayFocusCard hasDesignResult={hasDesignResult} sacredDesignResult={sacredDesignResult} />
+      <TodayFocusCard
+        hasDesignResult={hasDesignResult}
+        todayAlignment={todayAlignment}
+        loadingFocus={loadingFocus}
+        generating={generating}
+        onGenerate={handleGenerateAlignment}
+        onViewAlignment={handleViewAlignment}
+        onLoadFocus={loadTodayFocus}
+      />
 
       {/* Top section */}
       <Text style={styles.eyebrow}>YOUR SACRED DESIGN</Text>
@@ -439,8 +450,11 @@ export default function MyDesignScreen() {
       {renderListOrString(content?.strengths)}
 
       <View style={styles.bottomCTAWrapper}>
-        <AnimatedPressable onPress={handleBottomCTA} style={styles.bottomCTA}>
-          <Text style={styles.bottomCTAText}>Start My Alignment</Text>
+        <AnimatedPressable
+          onPress={handleGenerateAlignment}
+          style={[styles.bottomCTA, generating && { opacity: 0.6 }]}
+        >
+          <Text style={styles.bottomCTAText}>{generating ? "Generating…" : "Start My Alignment"}</Text>
           <Text style={styles.bottomCTASub}>Begin your first alignment</Text>
         </AnimatedPressable>
       </View>
