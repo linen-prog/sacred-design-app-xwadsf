@@ -517,14 +517,27 @@ export default function MyDesignScreen() {
       })()}
 
       {/* Transition line + CTA */}
-      <Text style={styles.ctaTransition}>Your first alignment is where this begins.</Text>
+      <Text style={styles.ctaTransition}>
+        {todayAlignment ? "Your alignment is ready." : "Your first alignment is where this begins."}
+      </Text>
       <View style={styles.bottomCTAWrapper}>
         <AnimatedPressable
-          onPress={handleGenerateAlignment}
+          onPress={() => {
+            console.log('[BottomCTA] pressed, todayAlignment:', !!todayAlignment);
+            if (todayAlignment) {
+              handleViewAlignment();
+            } else {
+              handleGenerateAlignment();
+            }
+          }}
           style={[styles.bottomCTA, generating && { opacity: 0.6 }]}
         >
-          <Text style={styles.bottomCTAText}>{generating ? "Generating…" : "Start Today's Alignment"}</Text>
-          <Text style={styles.bottomCTASub}>Begin your first alignment</Text>
+          <Text style={styles.bottomCTAText}>
+            {generating ? "Generating…" : todayAlignment ? "View Today's Alignment" : "Start Today's Alignment"}
+          </Text>
+          <Text style={styles.bottomCTASub}>
+            {todayAlignment ? "See your full alignment" : "Begin your first alignment"}
+          </Text>
         </AnimatedPressable>
       </View>
 
