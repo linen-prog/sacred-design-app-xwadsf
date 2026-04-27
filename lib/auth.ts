@@ -3,7 +3,7 @@ import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-const API_URL = "https://rxv2r6bszrawnrpuzqt5kh3zhd9kv48u.app.specular.dev";
+const API_URL = "https://cs3k7h8f4szhmtksqpktmjeg97sgd89z.app.specular.dev";
 
 export const BEARER_TOKEN_KEY = "sacreddesign_bearer_token";
 const COOKIE_KEY = "sacreddesign_cookie";

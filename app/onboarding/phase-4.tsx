@@ -120,6 +120,19 @@ export default function Phase4Screen() {
             transform: [{ translateY: screenTranslateY }],
           }}
         >
+          {/* Radial glow behind title area */}
+          <View
+            style={{
+              position: 'absolute',
+              top: '20%',
+              alignSelf: 'center',
+              width: 320,
+              height: 320,
+              borderRadius: 160,
+              backgroundColor: 'rgba(111,138,106,0.06)',
+            }}
+          />
+
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Text
               style={{
@@ -130,28 +143,29 @@ export default function Phase4Screen() {
                 textTransform: 'uppercase',
                 letterSpacing: 2.5,
                 textAlign: 'center',
-                marginBottom: 12,
+                marginBottom: 8,
               }}
             >
               Phase 4 of 4
             </Text>
             <Text
               style={{
-                fontSize: 22,
+                fontSize: 26,
                 fontFamily: 'Lora_700Bold',
-                color: '#2F3E2F',
+                color: '#1E2E1E',
                 textAlign: 'center',
-                marginBottom: 32,
+                lineHeight: 32,
+                marginBottom: 16,
               }}
             >
               How You Stay Grounded
             </Text>
             <Text
               style={{
-                fontSize: 17,
+                fontSize: 15,
                 fontFamily: 'Inter_400Regular',
-                color: COLORS.textSecondary,
-                lineHeight: 28,
+                color: 'rgba(47,62,47,0.60)',
+                lineHeight: 26,
                 textAlign: 'center',
                 maxWidth: 300,
               }}
@@ -160,7 +174,7 @@ export default function Phase4Screen() {
             </Text>
           </View>
 
-          <View style={{ width: '100%' }}>
+          <View style={{ width: '100%', paddingBottom: 16 }}>
             <AnimatedPressable
               onPress={handleBegin}
               style={{

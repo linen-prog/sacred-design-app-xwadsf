@@ -345,18 +345,14 @@ describe("API Integration Tests", () => {
       });
       await expectStatus(res, 200);
       const data = await res.json();
-      expect(data.alignments).toBeDefined();
-      expect(Array.isArray(data.alignments)).toBe(true);
+      expect(Array.isArray(data)).toBe(true);
     });
 
-    test("GET /api/alignments/history returns 200 with empty data when unauthenticated", async () => {
+    test("GET /api/alignments/history returns 401 without authentication", async () => {
       const res = await api("/api/alignments/history", {
         method: "GET",
       });
-      await expectStatus(res, 200);
-      const data = await res.json();
-      expect(data.alignments).toBeDefined();
-      expect(Array.isArray(data.alignments)).toBe(true);
+      await expectStatus(res, 401);
     });
 
     test("GET /api/alignments/progress returns user progress when authenticated", async () => {

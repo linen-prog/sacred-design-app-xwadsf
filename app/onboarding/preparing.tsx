@@ -13,11 +13,12 @@ import { updateAppState } from '@/utils/appState';
 export default function PreparingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { computeSacredDesign, sacredDesignResult } = useContext(DiscoveryContext);
+  const { computeSacredDesign, sacredDesignResult, phase1Scores, phase2Scores, phase3Scores, phase4Scores } = useContext(DiscoveryContext);
   const pulseScale = useRef(new Animated.Value(1)).current;
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const screenTranslateY = useRef(new Animated.Value(20)).current;
   const hasNavigated = useRef(false);
+  const hasCalledCompute = useRef(false);
   const [showRetry, setShowRetry] = useState(false);
 
   // Navigate as soon as result is ready
@@ -49,11 +50,21 @@ export default function PreparingScreen() {
   }, [sacredDesignResult, router]);
 
   useEffect(() => {
-    console.log('[Preparing] Computing Sacred Design');
-    // Mark currentOnboardingStep so cold relaunch resumes here, not at a phase screen
     updateAppState({ currentOnboardingStep: '/onboarding/preparing' }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (hasCalledCompute.current) return;
+    if (!phase1Scores || !phase2Scores || !phase3Scores || !phase4Scores) {
+      console.log('[Preparing] Waiting for phase scores to load from storage…', {
+        p1: !!phase1Scores, p2: !!phase2Scores, p3: !!phase3Scores, p4: !!phase4Scores,
+      });
+      return;
+    }
+    hasCalledCompute.current = true;
+    console.log('[Preparing] All phase scores ready — computing Sacred Design');
     computeSacredDesign();
-  }, [computeSacredDesign]);
+  }, [phase1Scores, phase2Scores, phase3Scores, phase4Scores, computeSacredDesign]);
 
   useEffect(() => {
     Animated.parallel([
@@ -197,6 +208,7 @@ export default function PreparingScreen() {
             onPress={() => {
               console.log('[Preparing] Retry pressed');
               setShowRetry(false);
+              hasCalledCompute.current = false;
               computeSacredDesign();
             }}
             style={{ backgroundColor: 'rgba(201,168,76,0.15)', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(201,168,76,0.3)' }}

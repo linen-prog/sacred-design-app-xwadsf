@@ -308,11 +308,13 @@ export function register(app: App, fastify: any) {
             {
               type: 'object',
               properties: {
-                quiz_completed: { type: 'boolean', enum: [true] },
+                id: { type: 'string' },
+                user_id: { type: 'string' },
                 primary_archetype: { type: 'string' },
                 secondary_archetype: { type: 'string' },
                 blend_name: { type: 'string' },
                 scores: { type: 'object' },
+                quiz_completed: { type: 'boolean', enum: [true] },
                 completed_at: { type: 'string', format: 'date-time' },
                 updated_at: { type: 'string', format: 'date-time' },
               },
@@ -366,11 +368,13 @@ export function register(app: App, fastify: any) {
       app.logger.info({ userId, archetypeId: archetype.id }, 'Retrieved user archetype');
 
       return {
-        quiz_completed: true,
+        id: archetype.id,
+        user_id: archetype.userId,
         primary_archetype: archetype.primaryArchetype,
         secondary_archetype: archetype.secondaryArchetype,
         blend_name: archetype.blendName,
         scores: archetype.scores,
+        quiz_completed: archetype.quizCompleted,
         completed_at: archetype.completedAt.toISOString(),
         updated_at: archetype.updatedAt.toISOString(),
       };

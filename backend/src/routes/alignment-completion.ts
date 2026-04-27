@@ -106,7 +106,7 @@ export function register(app: App, fastify: any) {
 
       if (archetypeRows.length === 0) {
         app.logger.info({ userId }, 'No archetype found');
-        return reply.status(400).send({ error: 'Archetype not found' });
+        return reply.status(400).send({ error: 'Archetype not found. Please complete the quiz first.' });
       }
 
       const archetype = archetypeRows[0];
@@ -114,19 +114,21 @@ export function register(app: App, fastify: any) {
       const secondary_archetype = archetype.secondaryArchetype;
       const blend_name = archetype.blendName;
 
-      // Get day_count from user_progress or default to 1
+      // Get day_count from user_progress or default to 0
       const progressRows = await app.db
         .select()
         .from(schema.userProgress)
         .where(eq(schema.userProgress.userId, userId))
         .limit(1);
 
-      let dayCount = 1;
+      let dayCount = 0;
       if (progressRows.length > 0) {
         dayCount = progressRows[0].dayCount;
       }
 
-      const level = determineLevelFromDayCount(dayCount);
+      // New day_number = day_count + 1
+      const dayNumber = dayCount + 1;
+      const level = determineLevelFromDayCount(dayNumber);
 
       // Check if alignment exists for today
       const existingAlignments = await app.db
@@ -161,22 +163,18 @@ export function register(app: App, fastify: any) {
         };
       }
 
-      const systemPrompt = `You are a sacred design guide. Generate a daily alignment practice for a user with the following archetype profile:
-- Primary archetype: ${primary_archetype}
-- Secondary archetype: ${secondary_archetype}
-- Blend name: ${blend_name}
-- Day number: ${dayCount}
+      const systemPrompt = `You are a sacred design coach. Generate a daily alignment for a user whose primary archetype is ${primary_archetype} and whose blend is ${blend_name}. Return ONLY valid JSON with these exact keys: action, guidance, scripture, somatic_cue, reflection_prompt. Make it spiritually grounded, practical, and personalized to the archetype.
 
-Return ONLY a valid JSON object with exactly these fields, no markdown, no code fences:
+Expected JSON format:
 {
-  "action": "A short, specific action to take today (1-2 sentences)",
-  "guidance": "Deeper spiritual guidance for the day (2-3 sentences)",
-  "scripture": "A relevant scripture or sacred text quote with reference",
-  "somatic_cue": "A body-based awareness cue or practice (1-2 sentences)",
-  "reflection_prompt": "A journaling or reflection question for the evening (1 sentence)"
+  "action": "1 sentence imperative action to take today",
+  "guidance": "2-3 sentences of spiritual/practical guidance",
+  "scripture": "Bible verse reference and full text",
+  "somatic_cue": "1 sentence body-based practice",
+  "reflection_prompt": "1 open-ended question for journaling"
 }`;
 
-      app.logger.info({ userId, dayCount, level }, 'Generating alignment with AI');
+      app.logger.info({ userId, dayNumber, level }, 'Generating alignment with AI');
 
       let aiOutput = FALLBACK_ALIGNMENT;
       try {
@@ -197,7 +195,7 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
         .insert(schema.dailyAlignments)
         .values({
           userId,
-          dayNumber: dayCount,
+          dayNumber,
           level,
           action: aiOutput.action,
           guidance: aiOutput.guidance,
@@ -220,7 +218,7 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
         await app.db
           .update(schema.userProgress)
           .set({
-            dayCount,
+            dayCount: dayNumber,
             streak: newStreak,
             lastActiveDate: today,
             updatedAt: new Date(),
@@ -229,7 +227,7 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
       } else {
         await app.db.insert(schema.userProgress).values({
           userId,
-          dayCount,
+          dayCount: dayNumber,
           streak: newStreak,
           lastActiveDate: today,
           createdAt: new Date(),
@@ -477,11 +475,11 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
         .limit(1);
 
       if (existingReflections.length === 0) {
-        // Insert reflection with optional text
+        // Insert reflection with empty text
         await app.db.insert(schema.alignmentReflections).values({
           userId,
           alignmentId: id,
-          reflectionText: reflection_text || null,
+          reflectionText: reflection_text || '',
           completedAt: new Date(),
         });
         app.logger.info({ alignmentId: id, userId, hasText: !!reflection_text }, 'Completion recorded');
@@ -666,43 +664,35 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
   // GET /api/alignments/history
   fastify.get('/api/alignments/history', {
     schema: {
-      description: 'Get alignment history for the user (returns empty array if unauthenticated)',
+      description: 'Get alignment history for the user, ordered by day_number descending',
       tags: ['alignments'],
       response: {
         200: {
-          description: 'Alignment history',
-          type: 'object',
-          properties: {
-            alignments: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  day_number: { type: 'integer' },
-                  level: { type: 'integer' },
-                  action: { type: 'string' },
-                  guidance: { type: 'string' },
-                  somatic_cue: { type: 'string' },
-                  scripture: { type: 'string' },
-                  reflection_prompt: { type: ['string', 'null'] },
-                  generated_at: { type: 'string', format: 'date-time' },
-                  reflection: {
-                    oneOf: [
-                      {
-                        type: 'object',
-                        properties: {
-                          reflection_text: { type: ['string', 'null'] },
-                          completed_at: { type: 'string', format: 'date-time' },
-                        },
-                      },
-                      { type: 'null' },
-                    ],
-                  },
-                },
-              },
+          description: 'Alignment history with reflection status',
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              day_number: { type: 'integer' },
+              level: { type: 'integer' },
+              action: { type: 'string' },
+              guidance: { type: 'string' },
+              somatic_cue: { type: 'string' },
+              scripture: { type: 'string' },
+              reflection_prompt: { type: ['string', 'null'] },
+              primary_archetype: { type: 'string' },
+              secondary_archetype: { type: 'string' },
+              blend_name: { type: 'string' },
+              generated_at: { type: 'string', format: 'date-time' },
+              hasReflection: { type: 'boolean' },
             },
           },
+        },
+        401: {
+          description: 'Unauthorized',
+          type: 'object',
+          properties: { error: { type: 'string' } },
         },
         500: {
           description: 'Server error',
@@ -714,39 +704,24 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
   }, async (
     request: FastifyRequest,
     reply: FastifyReply
-  ): Promise<{ alignments: any[] }> => {
+  ): Promise<any[] | void> => {
+    const session = await requireAuth(request, reply);
+    if (!session) return;
+
+    const userId = session.user.id;
+
+    app.logger.info({ userId }, 'Fetching alignment history');
+
     try {
-      // Convert Fastify headers to standard Headers
-      const headers = new Headers();
-      Object.entries(request.headers).forEach(([key, value]) => {
-        if (value) {
-          headers.append(key, Array.isArray(value) ? value[0] : value);
-        }
-      });
-
-      // Get session without requiring authentication
-      const session = await app.auth.api.getSession({ headers });
-      const userId = session?.user.id;
-
-      // If no authenticated user, return empty array
-      if (!userId) {
-        app.logger.info({}, 'Fetching alignment history for unauthenticated user');
-        return {
-          alignments: [],
-        };
-      }
-
-      app.logger.info({ userId }, 'Fetching alignment history');
-
-      // Fetch all alignments for this user
+      // Fetch all alignments for this user, ordered by day_number DESC
       const alignments = await app.db
         .select()
         .from(schema.dailyAlignments)
         .where(eq(schema.dailyAlignments.userId, userId))
-        .orderBy(desc(schema.dailyAlignments.generatedAt));
+        .orderBy(desc(schema.dailyAlignments.dayNumber));
 
-      // For each alignment, fetch its reflection if it exists
-      const alignmentsWithReflections = await Promise.all(
+      // For each alignment, check if a reflection exists
+      const alignmentsWithReflectionStatus = await Promise.all(
         alignments.map(async (alignment) => {
           const reflections = await app.db
             .select()
@@ -763,22 +738,20 @@ Return ONLY a valid JSON object with exactly these fields, no markdown, no code 
             somatic_cue: alignment.somaticCue,
             scripture: alignment.scripture,
             reflection_prompt: alignment.reflectionPrompt,
+            primary_archetype: alignment.primaryArchetype,
+            secondary_archetype: alignment.secondaryArchetype,
+            blend_name: alignment.blendName,
             generated_at: alignment.generatedAt.toISOString(),
-            reflection: reflections.length > 0 ? {
-              reflection_text: reflections[0].reflectionText,
-              completed_at: reflections[0].completedAt.toISOString(),
-            } : null,
+            hasReflection: reflections.length > 0,
           };
         })
       );
 
-      app.logger.info({ userId, count: alignmentsWithReflections.length }, 'Retrieved alignment history');
+      app.logger.info({ userId, count: alignmentsWithReflectionStatus.length }, 'Retrieved alignment history');
 
-      return {
-        alignments: alignmentsWithReflections,
-      };
+      return alignmentsWithReflectionStatus;
     } catch (error) {
-      app.logger.error({ err: error }, 'Failed to fetch alignment history');
+      app.logger.error({ err: error, userId }, 'Failed to fetch alignment history');
       throw error;
     }
   });

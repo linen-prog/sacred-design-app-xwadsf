@@ -31,8 +31,8 @@ export default function PostQuizSaveScreen() {
   const [skipping, setSkipping] = useState(false);
 
   useEffect(() => {
-    console.log('[PostQuizSave] Screen mounted — updating currentOnboardingStep');
-    updateAppState({ currentOnboardingStep: '/post-quiz-save' });
+    console.log('[PostQuizSave] Screen mounted — updating currentOnboardingStep + marking postQuizSaveCompleted');
+    updateAppState({ currentOnboardingStep: '/post-quiz-save', postQuizSaveCompleted: true });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

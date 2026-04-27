@@ -139,6 +139,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = async (email: string, password: string) => {
     console.log('[AuthContext] signInWithEmail attempt:', email);
+
+    console.log('[Auth] Real auth used');
     const { data, error } = await authClient.signIn.email({ email, password });
     console.log('[AuthContext] signInWithEmail response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
     if (error) {
@@ -155,6 +157,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
     console.log('[AuthContext] signUpWithEmail attempt:', email);
+
+    console.log('[Auth] Real auth used');
     const { data, error } = await authClient.signUp.email({ email, password, name: name ?? '' });
     console.log('[AuthContext] signUpWithEmail response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
     if (error) {

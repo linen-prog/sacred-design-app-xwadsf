@@ -8,6 +8,7 @@ const TABS: TabBarItem[] = [
   { name: "(home)", route: "/(tabs)/(home)", icon: "home", label: "Home" },
   { name: "(design)", route: "/(tabs)/(design)", icon: "auto-awesome", label: "My Design" },
   { name: "(journey)", route: "/(tabs)/(journey)", icon: "schedule", label: "Journey" },
+  { name: "(profile)", route: "/(tabs)/(profile)", icon: "person", label: "Profile" },
 ];
 
 export default function TabLayout() {
@@ -43,6 +44,7 @@ export default function TabLayout() {
       <Tabs.Screen name="(home)" />
       <Tabs.Screen name="(design)" />
       <Tabs.Screen name="(journey)" />
+      <Tabs.Screen name="(profile)" />
     </Tabs>
   );
 }

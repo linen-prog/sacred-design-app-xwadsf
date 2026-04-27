@@ -3,14 +3,15 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Animated,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppState } from '@/contexts/AppStateContext';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
@@ -29,19 +30,6 @@ const COLORS = {
   cardBorder: 'rgba(201,168,76,0.20)',
   blurOverlay: 'rgba(10,14,26,0.82)',
 };
-
-function LockedPreviewRow({ text }: { text: string }) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 10 }}>
-      <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(201,168,76,0.4)' }} />
-      <View style={{ flex: 1, position: 'relative' }}>
-        <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 15, color: 'rgba(245,240,232,0.15)', lineHeight: 22 }}>{text}</Text>
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(10,14,26,0.7)', borderRadius: 4 }} />
-      </View>
-      <Text style={{ fontSize: 12, color: 'rgba(201,168,76,0.5)' }}>🔒</Text>
-    </View>
-  );
-}
 
 function PreviewBulletRow({ text }: { text: string }) {
   return (
@@ -190,8 +178,8 @@ export default function PartialRevealScreen() {
   function handleUnlock() {
     console.log('[PartialReveal] "Unlock Your Full Design" pressed');
     if (appState.revealUnlocked || appState.subscriptionActive) {
-      console.log('[PartialReveal] Already subscribed/unlocked — skipping paywall, navigating to /onboarding/preparing');
-      router.replace('/onboarding/preparing');
+      console.log('[PartialReveal] Already subscribed/unlocked — navigating to /reveal');
+      router.replace('/reveal');
       return;
     }
     console.log('[PartialReveal] Navigating to /paywall');
@@ -220,27 +208,32 @@ export default function PartialRevealScreen() {
   }
 
   // Derived display values
-  const narrativeSentences = previewContent.narrative.split('. ');
-  const narrativeFirstSentence = narrativeSentences[0] + (narrativeSentences.length > 1 ? '.' : '');
-  const narrativeSecondLine = narrativeSentences.length > 1 ? narrativeSentences[1] + '.' : 'Your design runs deeper than you know.';
+  const NARRATIVE_HOOKS: Record<string, string> = {
+    'Peacemaker':        'You sense what others are feeling before they say a word — and you quietly adjust the room.',
+    'Courageous Leader': 'When the path isn\'t clear, you\'re already moving — and somehow others follow.',
+    'Deep Feeler':       'You notice things most people walk past. That depth isn\'t a flaw. It\'s how you\'re wired.',
+    'Faithful Steward':  'You show up when it matters, long after others have moved on. That\'s rarer than you think.',
+    'Light Bearer':      'People leave conversations with you feeling more hopeful than when they arrived.',
+    'Truth Seeker':      'You can\'t settle for surface answers. You need to understand why — and that changes everything.',
+    'Justice Carrier':   'You feel the weight of what\'s wrong before anyone else names it. That fire has a purpose.',
+  };
+  const rawFirst = previewContent.narrative.split('. ')[0] + '.';
+  const narrativeHook = NARRATIVE_HOOKS[primaryArchetype ?? ''] ?? (rawFirst.startsWith('You') ? rawFirst : `You carry something rare. ${rawFirst}`);
 
-  const visibleStrengths = previewContent.strengths.slice(0, 2);
-  const lockedStrengths = previewContent.strengths.slice(2, 4);
-  const lockedStrengthFallbacks = ['Your hidden strength', 'Your deepest gift'];
-  const lockedStrength1 = lockedStrengths[0] ?? lockedStrengthFallbacks[0];
-  const lockedStrength2 = lockedStrengths[1] ?? lockedStrengthFallbacks[1];
-
-  const visibleShadow = previewContent.shadowPatterns[0] ?? 'A pattern worth exploring';
-  const lockedShadow1 = previewContent.shadowPatterns[1] ?? 'A hidden pattern';
-  const lockedShadow2 = previewContent.shadowPatterns[2] ?? 'Another pattern to uncover';
-
-  const growthWords = previewContent.growthPath.split(' ');
-  const growthTeaser = growthWords.slice(0, 8).join(' ') + '...';
-
+  const STRENGTH_HOOKS: Record<string, [string, string]> = {
+    'Peacemaker':        ['You de-escalate tension without anyone noticing you did it', 'You absorb more than you let on — and carry it longer than you should'],
+    'Courageous Leader': ['You make decisions when others are still weighing options', 'You move fast enough that people sometimes can\'t tell if you\'re leading or escaping'],
+    'Deep Feeler':       ['You pick up on emotional undercurrents in a room instantly', 'You feel things so fully that it\'s hard to know where you end and others begin'],
+    'Faithful Steward':  ['You follow through on things others quietly let slide', 'You\'d rather do it yourself than risk it being done wrong'],
+    'Light Bearer':      ['You reframe problems in ways that make people feel capable', 'You\'re so good at holding hope for others that your own doubts go unspoken'],
+    'Truth Seeker':      ['You ask the question that cuts through the noise', 'You can see the answer clearly and still not know what to do with it'],
+    'Justice Carrier':   ['You speak up when others go quiet', 'The weight of what\'s wrong follows you home — even when you try to leave it at the door'],
+  };
+  const visibleStrengths: [string, string] = STRENGTH_HOOKS[primaryArchetype ?? ''] ?? [previewContent.strengths[0] ?? '', previewContent.strengths[1] ?? ''];
   const secondaryDisplay = secondaryArchetype ?? 'Secondary Archetype';
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
       <LinearGradient
         colors={[COLORS.gradientTop, COLORS.gradientMid, COLORS.gradientBot]}
         start={{ x: 0, y: 0 }}
@@ -252,98 +245,67 @@ export default function PartialRevealScreen() {
       <Animated.View style={[styles.orb1, { transform: [{ scale: glowScale }] }]} />
       <View style={styles.orb2} />
 
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <Animated.View style={[styles.animatedWrapper, { opacity: screenOpacity }]}>
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* 1. Eyebrow */}
-            <Text style={styles.eyebrow}>YOUR SACRED DESIGN</Text>
+      <Animated.View style={{ flex: 1, opacity: screenOpacity }}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={true}>
 
-            {/* 2. Primary archetype */}
-            <View style={styles.primaryContainer}>
-              <View style={styles.glowBehind} />
-              <Text style={styles.primaryLabel}>Primary Archetype</Text>
-              <Text style={styles.primaryName}>{primaryArchetype}</Text>
+          {/* 1. Eyebrow */}
+          <Text style={styles.eyebrow}>YOUR SACRED DESIGN</Text>
+
+          {/* 2. Primary + Secondary archetype names */}
+          <Text style={styles.primaryName}>{primaryArchetype}</Text>
+          <Text style={styles.secondaryName}>{secondaryDisplay}</Text>
+
+          {/* 3. Narrative hook card */}
+          <View style={styles.narrativeCard}>
+            <Text style={styles.narrativeText}>{narrativeHook}</Text>
+            <LinearGradient
+              colors={['transparent', 'rgba(10,14,26,0.92)']}
+              style={styles.narrativeFade}
+              pointerEvents="none"
+            />
+          </View>
+
+          {/* 4. Strengths — 2 visible only */}
+          <Text style={styles.sectionLabel}>YOUR STRENGTHS</Text>
+          {visibleStrengths.map((s) => (
+            <PreviewBulletRow key={s} text={s} />
+          ))}
+
+          {/* 5. Lock wall */}
+          <View style={styles.lockCard}>
+            <View style={styles.lockIconCircle}>
+              <Ionicons name="lock-closed" size={20} color="rgba(201,168,76,0.8)" />
             </View>
-
-            {/* 3. Secondary archetype */}
-            <View style={styles.secondaryContainer}>
-              <Text style={styles.secondaryLabel}>Secondary Archetype</Text>
-              <Text style={styles.secondaryName}>{secondaryDisplay}</Text>
-            </View>
-
-            {/* 4. Divider */}
-            <View style={styles.divider} />
-
-            {/* 5. Narrative teaser card */}
-            <View style={styles.sectionCard}>
-              <Text style={styles.narrativeVisible}>{narrativeFirstSentence}</Text>
-              <View style={{ position: 'relative', marginTop: 10 }}>
-                <Text style={styles.narrativeLocked}>{narrativeSecondLine}</Text>
-                <View style={styles.narrativeBlurOverlay} />
-                <Text style={styles.narrativeLockIcon}>🔒</Text>
-              </View>
-            </View>
-
-            {/* 6. Strengths preview */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>YOUR STRENGTHS</Text>
-              {visibleStrengths.map((s) => (
-                <PreviewBulletRow key={s} text={s} />
+            <Text style={styles.lockTitle}>This is only part of the picture</Text>
+            <Text style={[styles.lockBody, { marginBottom: 12 }]}>
+              This explains more than you think it does.
+            </Text>
+            <View style={{ width: '100%', marginBottom: 20, gap: 6 }}>
+              {['See your patterns', 'Understand what drives them', 'Learn how to shift them'].map((line) => (
+                <View key={line} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(201,168,76,0.5)' }} />
+                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: 'rgba(245,240,232,0.55)', lineHeight: 20 }}>{line}</Text>
+                </View>
               ))}
-              <LockedPreviewRow text={lockedStrength1} />
-              <LockedPreviewRow text={lockedStrength2} />
             </View>
+            <TouchableOpacity
+              style={styles.ctaButton}
+              onPress={handleUnlock}
+              activeOpacity={0.88}
+            >
+              <Text style={styles.ctaLabel}>Unlock Your Full Design</Text>
+            </TouchableOpacity>
+            <Text style={styles.trialNote}>Start your 7-day free trial</Text>
+          </View>
 
-            {/* 7. Shadow patterns preview */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>WHEN YOU FEEL STUCK</Text>
-              <PreviewBulletRow text={visibleShadow} />
-              <LockedPreviewRow text={lockedShadow1} />
-              <LockedPreviewRow text={lockedShadow2} />
-            </View>
-
-            {/* 8. Growth path teaser */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>YOUR GROWTH PATH</Text>
-              <View style={styles.growthTeaserRow}>
-                <Text style={styles.growthTeaserText}>{growthTeaser}</Text>
-                <Text style={styles.growthLockIcon}>🔒</Text>
-              </View>
-            </View>
-
-            {/* 9. Lock CTA card */}
-            <View style={styles.lockCtaCard}>
-              <View style={styles.lockIconCircle}>
-                <Text style={styles.lockIcon}>🔒</Text>
-              </View>
-              <Text style={styles.lockTitle}>Unlock Your Full Design</Text>
-              <Text style={styles.lockBody}>
-                See your complete narrative, all strengths, growth path, and daily alignment practice.
-              </Text>
-              <TouchableOpacity
-                style={styles.ctaButton}
-                onPress={handleUnlock}
-                activeOpacity={0.88}
-              >
-                <Text style={styles.ctaLabel}>Unlock Your Full Design</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* 10. Trial note */}
-            <Text style={styles.trialNote}>Start your 7-day free trial — cancel anytime</Text>
-          </ScrollView>
-        </Animated.View>
-      </SafeAreaView>
-    </View>
+        </ScrollView>
+      </Animated.View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
   },
   loadingContainer: {
@@ -357,21 +319,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: 'rgba(245,240,232,0.65)',
     textAlign: 'center',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  animatedWrapper: {
-    flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 28,
-    paddingTop: 48,
-    paddingBottom: 48,
-    alignItems: 'center',
   },
   orb1: {
     position: 'absolute',
@@ -391,195 +338,128 @@ const styles = StyleSheet.create({
     bottom: 120,
     left: -60,
   },
+  content: {
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    paddingTop: 0,
+    paddingBottom: 48,
+  },
   eyebrow: {
     fontFamily: 'Inter_500Medium',
     fontSize: 11,
     letterSpacing: 2.5,
     color: COLORS.gold,
     textAlign: 'center',
-    marginBottom: 36,
-  },
-  primaryContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-    position: 'relative',
-  },
-  glowBehind: {
-    position: 'absolute',
-    width: 240,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(201,168,76,0.12)',
-  },
-  primaryLabel: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
-    color: COLORS.whiteDim,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    zIndex: 1,
+    marginTop: 48,
+    marginBottom: 28,
+    alignSelf: 'center',
   },
   primaryName: {
     fontFamily: 'Lora_700Bold',
-    fontSize: 36,
+    fontSize: 40,
     color: COLORS.white,
     textAlign: 'center',
     letterSpacing: -0.5,
-    zIndex: 1,
-  },
-  secondaryContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  secondaryLabel: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-    color: COLORS.whiteDim,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 6,
+    alignSelf: 'center',
   },
   secondaryName: {
     fontFamily: 'Lora_400Regular_Italic',
-    fontSize: 22,
+    fontSize: 18,
     color: COLORS.whiteMuted,
     textAlign: 'center',
+    marginBottom: 32,
+    alignSelf: 'center',
   },
-  divider: {
-    width: '40%',
-    height: 1,
-    backgroundColor: 'rgba(201,168,76,0.18)',
-    marginBottom: 28,
-  },
-  sectionCard: {
-    width: '100%',
-    backgroundColor: 'rgba(245,240,232,0.07)',
+  narrativeCard: {
+    backgroundColor: 'rgba(245,240,232,0.06)',
     borderRadius: 16,
-    padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(201,168,76,0.20)',
+    borderColor: 'rgba(201,168,76,0.18)',
+    padding: 20,
     marginBottom: 28,
+    width: '100%',
+    overflow: 'hidden',
   },
-  narrativeVisible: {
+  narrativeText: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 15,
-    color: 'rgba(245,240,232,0.85)',
-    lineHeight: 24,
+    fontSize: 16,
+    color: 'rgba(245,240,232,0.88)',
+    lineHeight: 26,
   },
-  narrativeLocked: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 15,
-    color: 'rgba(245,240,232,0.15)',
-    lineHeight: 24,
-  },
-  narrativeBlurOverlay: {
+  narrativeFade: {
     position: 'absolute',
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(10,14,26,0.7)',
-    borderRadius: 4,
-  },
-  narrativeLockIcon: {
-    position: 'absolute',
-    right: 0,
-    top: 2,
-    fontSize: 12,
-    color: 'rgba(201,168,76,0.5)',
-  },
-  section: {
-    width: '100%',
-    marginBottom: 28,
+    height: 64,
   },
   sectionLabel: {
     fontFamily: 'Inter_500Medium',
     fontSize: 11,
     letterSpacing: 1.8,
     color: COLORS.gold,
-    textTransform: 'uppercase',
-    marginBottom: 14,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
   },
-  growthTeaserRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  growthTeaserText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 15,
-    color: 'rgba(245,240,232,0.75)',
-    lineHeight: 24,
-    flex: 1,
-    fontStyle: 'italic',
-  },
-  growthLockIcon: {
-    fontSize: 14,
-    color: 'rgba(201,168,76,0.5)',
-  },
-  lockCtaCard: {
-    width: '100%',
-    backgroundColor: 'rgba(245,240,232,0.07)',
+  lockCard: {
+    backgroundColor: 'rgba(10,14,26,0.6)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(201,168,76,0.20)',
+    borderColor: 'rgba(201,168,76,0.25)',
     padding: 28,
     alignItems: 'center',
-    marginBottom: 16,
+    width: '100%',
+    marginTop: 28,
   },
   lockIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.goldLight,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(201,168,76,0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(201,168,76,0.35)',
+    borderColor: 'rgba(201,168,76,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
-  },
-  lockIcon: {
-    fontSize: 24,
+    marginBottom: 16,
   },
   lockTitle: {
     fontFamily: 'Lora_700Bold',
-    fontSize: 20,
+    fontSize: 22,
     color: COLORS.white,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   lockBody: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: COLORS.whiteMuted,
+    color: 'rgba(245,240,232,0.6)',
     textAlign: 'center',
     lineHeight: 22,
-    maxWidth: 280,
+    maxWidth: 260,
     marginBottom: 24,
   },
   ctaButton: {
     width: '100%',
-    backgroundColor: COLORS.gold,
+    backgroundColor: '#C9A84C',
     borderRadius: 14,
     paddingVertical: 18,
     alignItems: 'center',
-    shadowColor: COLORS.gold,
+    shadowColor: '#C9A84C',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 6,
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
   },
   ctaLabel: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
     color: '#0A0E1A',
-    letterSpacing: 0.2,
   },
   trialNote: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
-    color: COLORS.whiteDim,
+    color: 'rgba(245,240,232,0.35)',
     textAlign: 'center',
+    marginTop: 12,
   },
 });

@@ -99,6 +99,16 @@ function NavigationGuard() {
         return;
       }
 
+      // Don't re-navigate if we're already on the target route
+      // (prevents flicker when RootNavigator re-evaluates mid-flow)
+      const currentPathname = pathname;
+
+      // Never redirect away from the preparing screen — it manages its own navigation
+      if (currentPathname === '/onboarding/preparing') {
+        console.log('[RootNavigator] On preparing screen — skipping redirect');
+        return;
+      }
+
       // Clear firstLaunch flag on first evaluation so PRIORITY 5 doesn't run on every launch
       if (appState.firstLaunch) {
         console.log('[RootNavigator] Clearing firstLaunch flag');
@@ -113,10 +123,6 @@ function NavigationGuard() {
         return;
       }
       lastNavigatedAt.current = now;
-
-      // Don't re-navigate if we're already on the target route
-      // (prevents flicker when RootNavigator re-evaluates mid-flow)
-      const currentPathname = pathname;
 
       console.log('[RootNavigator] Determining initial route — appState:', JSON.stringify({
         revealViewed: appState.revealViewed,
