@@ -23,43 +23,36 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
 
-  // Load persisted state on mount
-  useEffect(() => {
-    loadAppState().then((state) => {
-      setAppState(state);
-      setIsLoading(false);
-      console.log('[AppStateContext] Initial state loaded');
-    });
-  }, []);
-
-  // Sync authStatus whenever auth resolves
+  // Reload state whenever the authenticated user changes (including sign-out → null)
   useEffect(() => {
     if (authLoading) return;
-    const newStatus = user ? 'logged_in' : 'logged_out';
-    if (appState.authStatus !== newStatus && !isLoading) {
-      console.log('[AppStateContext] Auth status changed to:', newStatus);
-      updateAppStateUtil({ authStatus: newStatus }).then((next) => {
-        setAppState(next);
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading, isLoading]);
+    const userId = user?.id ?? null;
+    console.log(`[AppState] Auth user changed: ${userId}`);
+    setIsLoading(true);
+    loadAppState(userId).then((state) => {
+      // Always stamp the correct authStatus for this user
+      const withAuth: AppState = {
+        ...state,
+        authStatus: user ? 'logged_in' : 'logged_out',
+      };
+      setAppState(withAuth);
+      setIsLoading(false);
+    });
+  }, [user?.id, authLoading]);
 
   const updateAppState = useCallback(async (partial: Partial<AppState>): Promise<AppState> => {
-    console.log('[AppStateContext] updateAppState called with:', JSON.stringify(partial));
-    const newState = await updateAppStateUtil(partial);
+    const userId = user?.id ?? null;
+    const newState = await updateAppStateUtil(partial, userId);
     setAppState(newState);
-    console.log('[AppStateContext] updateAppState complete — React state synced');
     return newState;
-  }, []);
+  }, [user?.id]);
 
   const handleRetakeQuiz = useCallback(async () => {
-    console.log('[AppStateContext] retakeQuiz triggered');
-    const newState = await retakeQuizUtil();
+    const userId = user?.id ?? null;
+    const newState = await retakeQuizUtil(userId);
     setAppState(newState);
-    console.log('[AppStateContext] retakeQuiz complete — React state synced');
     return newState;
-  }, []);
+  }, [user?.id]);
 
   return (
     <AppStateContext.Provider value={{ appState, updateAppState, retakeQuiz: handleRetakeQuiz, isLoading }}>
