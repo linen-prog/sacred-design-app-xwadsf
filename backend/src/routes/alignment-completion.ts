@@ -188,8 +188,17 @@ export function register(app: App, fastify: any) {
         .limit(3);
 
       const recentReflectionsText = recentReflections.length > 0
-        ? `Recent reflections from this user (use these to make today's alignment more personally relevant — notice themes, growth edges, and what they're working through):\n${recentReflections.map((r, i) => `[${i + 1} day(s) ago] Action: "${r.action}" | Reflection: "${r.reflectionText}"`).join('\n')}`
-        : 'This is their first alignment.';
+        ? `Emotional context (do NOT quote or repeat these back to the user — use them only as a quiet undercurrent to inform tone, theme, and invitation):
+${recentReflections.map((r) => `- "${r.reflectionText}"`).join('\n')}
+
+Guidelines for using this context:
+- Sense the emotional texture beneath the words — what is this person moving through?
+- Let that texture quietly shape the action, guidance, and reflection prompt
+- Do NOT say "you seem to be..." or "I notice you..." or reference the reflections directly
+- Do NOT summarize or label their emotional state
+- Speak to the theme softly and invitationally, as if you sense it without naming it
+- The alignment should feel personally resonant without feeling like it's reading their diary`
+        : 'This is their first alignment — meet them with openness and grounded encouragement.';
 
       const systemPrompt = `You are a sacred design coach generating a daily alignment.
 
