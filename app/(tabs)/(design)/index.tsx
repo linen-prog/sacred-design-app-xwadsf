@@ -41,6 +41,14 @@ interface TodayAlignment {
   blend_name?: string;
 }
 
+function getLocalDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 const SECONDARY_INFLUENCE: Record<string, string> = {
   'Peacemaker': 'Brings a calming, relational quality to how you show up.',
   'Courageous Leader': 'Adds boldness and initiative to your expression.',
@@ -239,7 +247,9 @@ export default function MyDesignScreen() {
         setLoadingFocus(false);
         return;
       }
-      const res = await fetch(`${API_URL}/api/alignments/today`, {
+      const localDate = getLocalDateString();
+      console.log('[MyDesign] GET /api/alignments/today with local_date:', localDate);
+      const res = await fetch(`${API_URL}/api/alignments/today?local_date=${localDate}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -309,7 +319,7 @@ export default function MyDesignScreen() {
       const res = await fetch(`${API_URL}/api/alignments/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ local_date: getLocalDateString() }),
       });
       if (!res.ok) {
         const errText = await res.text();
