@@ -12,6 +12,10 @@ interface CompleteAlignmentBody {
   reflection_text?: string;
 }
 
+interface GenerateAlignmentBody {
+  local_date?: string;
+}
+
 interface ReflectionBody {
   reflection_text: string;
 }
@@ -92,9 +96,10 @@ export function register(app: App, fastify: any) {
     if (!session) return;
 
     const userId = session.user.id;
-    const today = getTodayDate();
+    const { local_date } = (request.body as GenerateAlignmentBody | undefined) || {};
+    const dateForQuery = local_date || getTodayDate();
 
-    app.logger.info({ userId }, 'Generating alignment');
+    app.logger.info({ userId, localDate: local_date }, 'Generating alignment');
 
     try {
       // Query user's archetype
@@ -137,7 +142,7 @@ export function register(app: App, fastify: any) {
         .where(
           and(
             eq(schema.dailyAlignments.userId, userId),
-            sql`DATE(${schema.dailyAlignments.generatedAt}) = ${today}`
+            sql`DATE(${schema.dailyAlignments.generatedAt}) = ${dateForQuery}`
           )
         )
         .limit(1);
@@ -163,16 +168,40 @@ export function register(app: App, fastify: any) {
         };
       }
 
-      const systemPrompt = `You are a sacred design coach. Generate a daily alignment for a user whose primary archetype is ${primary_archetype} and whose blend is ${blend_name}. Return ONLY valid JSON with these exact keys: action, guidance, scripture, somatic_cue, reflection_prompt. Make it spiritually grounded, practical, and personalized to the archetype.
+      // Fetch last 3 reflections
+      const recentReflections = await app.db
+        .select({
+          reflectionText: schema.alignmentReflections.reflectionText,
+          action: schema.dailyAlignments.action,
+          completedAt: schema.alignmentReflections.completedAt,
+        })
+        .from(schema.alignmentReflections)
+        .innerJoin(schema.dailyAlignments, eq(schema.alignmentReflections.alignmentId, schema.dailyAlignments.id))
+        .where(
+          and(
+            eq(schema.alignmentReflections.userId, userId),
+            sql`${schema.alignmentReflections.reflectionText} IS NOT NULL`,
+            sql`${schema.alignmentReflections.reflectionText} != ''`
+          )
+        )
+        .orderBy(desc(schema.alignmentReflections.completedAt))
+        .limit(3);
 
-Expected JSON format:
-{
-  "action": "1 sentence imperative action to take today",
-  "guidance": "2-3 sentences of spiritual/practical guidance",
-  "scripture": "Bible verse reference and full text",
-  "somatic_cue": "1 sentence body-based practice",
-  "reflection_prompt": "1 open-ended question for journaling"
-}`;
+      const recentReflectionsText = recentReflections.length > 0
+        ? `Recent reflections from this user (use these to make today's alignment more personally relevant — notice themes, growth edges, and what they're working through):\n${recentReflections.map((r, i) => `[${i + 1} day(s) ago] Action: "${r.action}" | Reflection: "${r.reflectionText}"`).join('\n')}`
+        : 'This is their first alignment.';
+
+      const systemPrompt = `You are a sacred design coach generating a daily alignment.
+
+User's Sacred Design:
+- Primary archetype: ${primary_archetype}
+- Secondary archetype: ${secondary_archetype}
+- Blend: ${blend_name}
+- Day ${dayNumber} of their journey (Level ${level})
+
+${recentReflectionsText}
+
+Generate today's alignment. Return ONLY valid JSON with these exact keys: action, guidance, scripture, somatic_cue, reflection_prompt. Make it spiritually grounded, practical, and personally attuned to where this person is in their journey.`;
 
       app.logger.info({ userId, dayNumber, level }, 'Generating alignment with AI');
 
@@ -181,7 +210,7 @@ Expected JSON format:
         const { text } = await generateText({
           model: gateway('openai/gpt-4o-mini'),
           system: systemPrompt,
-          prompt: 'Generate today\'s alignment.',
+          prompt: `Generate today's alignment for Day ${dayNumber}.`,
         });
 
         aiOutput = JSON.parse(text);
@@ -220,7 +249,7 @@ Expected JSON format:
           .set({
             dayCount: dayNumber,
             streak: newStreak,
-            lastActiveDate: today,
+            lastActiveDate: dateForQuery,
             updatedAt: new Date(),
           })
           .where(eq(schema.userProgress.userId, userId));
@@ -229,7 +258,7 @@ Expected JSON format:
           userId,
           dayCount: dayNumber,
           streak: newStreak,
-          lastActiveDate: today,
+          lastActiveDate: dateForQuery,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
@@ -264,6 +293,12 @@ Expected JSON format:
     schema: {
       description: "Get today's alignment or null if not found",
       tags: ['alignments'],
+      querystring: {
+        type: 'object',
+        properties: {
+          local_date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$', description: 'Optional local date in YYYY-MM-DD format' },
+        },
+      },
       response: {
         200: {
           description: "Today's alignment or null",
@@ -306,16 +341,17 @@ Expected JSON format:
       },
     },
   }, async (
-    request: FastifyRequest,
+    request: FastifyRequest<{ Querystring: { local_date?: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
     const session = await requireAuth(request, reply);
     if (!session) return;
 
     const userId = session.user.id;
-    const today = getTodayDate();
+    const { local_date } = request.query;
+    const dateForQuery = local_date || getTodayDate();
 
-    app.logger.info({ userId }, "Fetching today's alignment");
+    app.logger.info({ userId, localDate: local_date }, "Fetching today's alignment");
 
     try {
       const alignments = await app.db
@@ -324,7 +360,7 @@ Expected JSON format:
         .where(
           and(
             eq(schema.dailyAlignments.userId, userId),
-            sql`DATE(${schema.dailyAlignments.generatedAt}) = ${today}`
+            sql`DATE(${schema.dailyAlignments.generatedAt}) = ${dateForQuery}`
           )
         )
         .orderBy(desc(schema.dailyAlignments.generatedAt))
