@@ -295,7 +295,7 @@ export default function PartialRevealScreen() {
             >
               <Text style={styles.ctaLabel}>Unlock Your Full Design</Text>
             </TouchableOpacity>
-            <Text style={styles.trialNote}>Start your 7-day free trial</Text>
+            <Text style={styles.trialNote}>$4.99/month • Auto-renews. Cancel anytime.</Text>
           </View>
 
         </ScrollView>
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
   trialNote: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
-    color: 'rgba(245,240,232,0.35)',
+    color: 'rgba(245,240,232,0.55)',
     textAlign: 'center',
     marginTop: 12,
   },
