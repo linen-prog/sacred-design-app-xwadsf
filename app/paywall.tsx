@@ -101,9 +101,9 @@ export default function PaywallScreen() {
     ? "Your Sacred Design is ready."
     : "Unlock Your Full Journey";
   const subtitleText = isQuizComplete
-    ? "Start your 7-day free trial to see your results."
+    ? "Unlock your full results and begin your daily practice."
     : "Continue your daily practice with full access.";
-  const trialBadgeText = isQuizComplete ? "7-DAY FREE TRIAL" : "FREE TRIAL INCLUDED";
+  const badgeText = "SACRED DESIGN FULL ACCESS";
 
   async function navigateAfterPurchase() {
     console.log("[Paywall] navigateAfterPurchase — updating appState and routing");
@@ -239,9 +239,9 @@ export default function PaywallScreen() {
 
   const subscribeButtonLabel = selectedPackage
     ? selectedPackage.product.priceString
-      ? `Start Free Trial — then ${selectedPackage.product.priceString}`
-      : "Start Free Trial"
-    : "Select a plan";
+      ? `Subscribe for ${selectedPackage.product.priceString}/month`
+      : "Subscribe for $4.99/month"
+    : "Subscribe for $4.99/month";
 
   return (
     <View style={styles.container}>
@@ -270,7 +270,7 @@ export default function PaywallScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.trialBadge}>
-              <Text style={styles.trialBadgeText}>{trialBadgeText}</Text>
+              <Text style={styles.trialBadgeText}>{badgeText}</Text>
             </View>
             <Text style={styles.title}>{headingText}</Text>
             <Text style={styles.subtitle}>{subtitleText}</Text>
@@ -370,6 +370,11 @@ export default function PaywallScreen() {
             </>
           ) : (
             <>
+              <Text style={styles.pricingLine}>
+                {selectedPackage?.product.priceString
+                  ? `${selectedPackage.product.priceString}/month • Auto-renews. Cancel anytime.`
+                  : "$4.99/month • Auto-renews. Cancel anytime."}
+              </Text>
               <TouchableOpacity
                 style={[
                   styles.primaryButton,
@@ -392,8 +397,8 @@ export default function PaywallScreen() {
                 )}
               </TouchableOpacity>
               <Text style={styles.legalText}>
-                Payment charged to your {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account after free trial.
-                Cancel anytime in your account settings.
+                Payment charged to your {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account at confirmation.
+                Subscription auto-renews monthly. Cancel anytime in your account settings.
               </Text>
               <View style={styles.legalLinks}>
                 <TouchableOpacity onPress={() => {
@@ -690,6 +695,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.whiteDim,
     fontFamily: "Inter_400Regular",
+  },
+  pricingLine: {
+    fontSize: 13,
+    color: COLORS.whiteMuted,
+    textAlign: "center",
+    fontFamily: "Inter_400Regular",
+    marginBottom: 4,
   },
   legalText: {
     fontSize: 11,
