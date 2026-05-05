@@ -309,11 +309,9 @@ function RootNavigator() {
       <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
       <Stack.Screen name="reveal" options={{ headerShown: false }} />
       <Stack.Screen name="partial-reveal" options={{ headerShown: false }} />
-      <Stack.Screen name="dev-skip" options={{ headerShown: false }} />
       <Stack.Screen name="alignment-detail" options={{ headerShown: false }} />
       <Stack.Screen name="auth-screen" options={{ headerShown: false }} />
       <Stack.Screen name="post-quiz-save" options={{ headerShown: false }} />
-      <Stack.Screen name="debug-auth" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="shadow-path" options={{ headerShown: false }} />
       <Stack.Screen
@@ -348,7 +346,6 @@ const SUBSCRIPTION_REDIRECT_BLOCKLIST = [
   '/auth-popup',
   '/auth-callback',
   '/paywall',
-  '/dev-skip',
 ];
 
 function SubscriptionRedirect() {
@@ -382,8 +379,7 @@ function SubscriptionRedirect() {
       currentPath.startsWith('/reveal') ||
       currentPath.startsWith('/completion') ||
       currentPath.startsWith('/partial-reveal') ||
-      currentPath.startsWith('/post-quiz-save') ||
-      currentPath.startsWith('/dev-skip');
+      currentPath.startsWith('/post-quiz-save');
     if (isBlocked) {
       console.log('[SubscriptionRedirect] Blocked path — skipping:', currentPath);
       return;

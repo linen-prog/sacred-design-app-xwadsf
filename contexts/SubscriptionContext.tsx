@@ -72,8 +72,6 @@ interface SubscriptionContextType {
   restorePurchases: () => Promise<boolean>;
   /** Manually re-check subscription status */
   checkSubscription: () => Promise<void>;
-  /** Mock a successful purchase on web (preview only) - sets isSubscribed to true */
-  mockWebPurchase: () => void;
   /** Dev-only: simulate a purchase in Expo Go — persists across reloads via expo-secure-store */
   mockNativePurchase: () => Promise<void>;
 }
@@ -393,7 +391,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         purchasePackage,
         restorePurchases,
         checkSubscription,
-        mockWebPurchase,
         mockNativePurchase,
       }}
     >

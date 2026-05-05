@@ -80,7 +80,6 @@ export default function PaywallScreen() {
     isWeb,
     purchasePackage,
     restorePurchases,
-    mockWebPurchase,
     mockNativePurchase,
   } = useSubscription();
 
@@ -88,8 +87,6 @@ export default function PaywallScreen() {
     useState<PurchasesPackage | null>(packages[0] || null);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const [webMockState, setWebMockState] = useState<"idle" | "processing">("idle");
-  const [webMockDialogState, setWebMockDialogState] = useState<"hidden" | "selecting" | "failed">("hidden");
 
   React.useEffect(() => {
     if (packages.length > 0 && !selectedPackage) {
@@ -161,15 +158,6 @@ export default function PaywallScreen() {
     } finally {
       setRestoring(false);
     }
-  };
-
-  const handleWebMockPurchase = async () => {
-    if (!selectedPackage) return;
-    console.log("[Paywall] Web mock purchase pressed — package:", selectedPackage.identifier);
-    setWebMockState("processing");
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    setWebMockState("idle");
-    setWebMockDialogState("selecting");
   };
 
   // Already subscribed
@@ -363,36 +351,12 @@ export default function PaywallScreen() {
           )}
         </ScrollView>
 
-        {/* Skip escape hatch */}
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={() => {
-            console.log("[Paywall] 'Skip for now' pressed — navigating to /partial-reveal");
-            router.replace("/partial-reveal");
-          }}
-        >
-          <Text style={styles.skipButtonText}>Skip for now →</Text>
-        </TouchableOpacity>
-
         {/* Bottom Actions */}
         <View style={styles.bottomActions}>
           {isWeb ? (
             <>
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  (!selectedPackage || webMockState === "processing") && styles.buttonDisabled,
-                ]}
-                onPress={handleWebMockPurchase}
-                disabled={!selectedPackage || webMockState === "processing"}
-              >
-                {webMockState === "processing" ? (
-                  <ActivityIndicator color={COLORS.gradientTop} />
-                ) : (
-                  <Text style={styles.primaryButtonText}>
-                    {selectedPackage ? "Start Free Trial" : "Select a plan"}
-                  </Text>
-                )}
+              <TouchableOpacity style={styles.primaryButton} disabled>
+                <Text style={styles.primaryButtonText}>Purchases available in the mobile app</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.secondaryButton} onPress={handleRestore} disabled={restoring}>
                 {restoring ? (
@@ -430,76 +394,11 @@ export default function PaywallScreen() {
                 Payment charged to your {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account after free trial.
                 Cancel anytime in your account settings.
               </Text>
-              {__DEV__ && (
-                <TouchableOpacity
-                  style={styles.devSkipButton}
-                  onPress={async () => {
-                    console.log("[Paywall][DEV] Skip (Dev Only) pressed — simulating subscription");
-                    await mockNativePurchase();
-                    navigateAfterPurchase();
-                  }}
-                >
-                  <Text style={styles.devSkipText}>Skip (Dev Only)</Text>
-                </TouchableOpacity>
-              )}
             </>
           )}
         </View>
       </SafeAreaView>
 
-      {/* Web mock dialog */}
-      {isWeb && webMockDialogState !== "hidden" && (
-        <View style={styles.webDialogOverlay}>
-          <View style={styles.webDialogBox}>
-            {webMockDialogState === "selecting" && (
-              <>
-                <Text style={styles.webDialogTitle}>Test Purchase</Text>
-                <Text style={styles.webDialogBody}>
-                  {`⚠️ This is a test purchase for development only.\n\nPackage: ${selectedPackage?.identifier}\nPrice: ${selectedPackage?.product.priceString || "N/A"}`}
-                </Text>
-                <View style={styles.webDialogDivider} />
-                <TouchableOpacity
-                  style={styles.webDialogButton}
-                  onPress={() => setWebMockDialogState("failed")}
-                >
-                  <Text style={[styles.webDialogButtonText, { color: "#FF3B30" }]}>Test Failed Purchase</Text>
-                </TouchableOpacity>
-                <View style={styles.webDialogDivider} />
-                <TouchableOpacity
-                  style={styles.webDialogButton}
-                  onPress={() => {
-                    setWebMockDialogState("hidden");
-                    mockWebPurchase();
-                    navigateAfterPurchase();
-                  }}
-                >
-                  <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>Test Valid Purchase</Text>
-                </TouchableOpacity>
-                <View style={styles.webDialogDivider} />
-                <TouchableOpacity
-                  style={styles.webDialogButton}
-                  onPress={() => setWebMockDialogState("hidden")}
-                >
-                  <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>Cancel</Text>
-                </TouchableOpacity>
-              </>
-            )}
-            {webMockDialogState === "failed" && (
-              <>
-                <Text style={styles.webDialogTitle}>Purchase Failed</Text>
-                <Text style={styles.webDialogBody}>Test purchase failure: no real transaction occurred</Text>
-                <View style={styles.webDialogDivider} />
-                <TouchableOpacity
-                  style={styles.webDialogButton}
-                  onPress={() => setWebMockDialogState("hidden")}
-                >
-                  <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>OK</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      )}
     </View>
   );
 }
@@ -850,73 +749,5 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: "500",
     fontFamily: "Inter_500Medium",
-  },
-  // Web mock dialog
-  webDialogOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 100,
-  },
-  webDialogBox: {
-    backgroundColor: "#f2f2f7",
-    borderRadius: 14,
-    width: "85%",
-    maxWidth: 400,
-    overflow: "hidden",
-  },
-  webDialogTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#000",
-    textAlign: "center",
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 4,
-  },
-  webDialogBody: {
-    fontSize: 13,
-    color: "#000",
-    textAlign: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    lineHeight: 18,
-  },
-  webDialogDivider: {
-    height: 1,
-    backgroundColor: "rgba(0,0,0,0.15)",
-  },
-  webDialogButton: {
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  webDialogButtonText: {
-    fontSize: 17,
-  },
-  devSkipButton: {
-    paddingVertical: 8,
-    alignItems: "center",
-  },
-  devSkipText: {
-    fontSize: 11,
-    color: "rgba(245,240,232,0.3)",
-    fontFamily: "Inter_400Regular",
-    letterSpacing: 0.3,
-  },
-  skipButton: {
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-  },
-  skipButtonText: {
-    fontSize: 13,
-    color: "rgba(245,240,232,0.4)",
-    fontFamily: "Inter_400Regular",
-    letterSpacing: 0.2,
   },
 });
