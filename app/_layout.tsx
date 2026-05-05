@@ -109,6 +109,12 @@ function NavigationGuard() {
         return;
       }
 
+      // Never redirect away from paywall — it manages its own post-purchase navigation
+      if (currentPathname === '/paywall') {
+        console.log('[RootNavigator] On paywall screen — skipping redirect');
+        return;
+      }
+
       // Clear firstLaunch flag on first evaluation so PRIORITY 5 doesn't run on every launch
       if (appState.firstLaunch) {
         console.log('[RootNavigator] Clearing firstLaunch flag');
@@ -376,6 +382,7 @@ function SubscriptionRedirect() {
     const isBlocked =
       SUBSCRIPTION_REDIRECT_BLOCKLIST.some((p) => currentPath === p) ||
       currentPath.startsWith('/onboarding') ||
+      currentPath.startsWith('/paywall') ||
       currentPath.startsWith('/reveal') ||
       currentPath.startsWith('/completion') ||
       currentPath.startsWith('/partial-reveal') ||

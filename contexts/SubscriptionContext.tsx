@@ -71,7 +71,7 @@ interface SubscriptionContextType {
   /** Restore previous purchases - returns true if subscription found */
   restorePurchases: () => Promise<boolean>;
   /** Manually re-check subscription status */
-  checkSubscription: () => Promise<void>;
+  checkSubscription: (force?: boolean) => Promise<void>;
   /** Dev-only: simulate a purchase in Expo Go — persists across reloads via expo-secure-store */
   mockNativePurchase: () => Promise<void>;
 }
@@ -265,11 +265,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
   };
 
-  const checkSubscription = async () => {
+  const checkSubscription = async (force = false) => {
     if (isWeb) return;
 
-    // Throttle: skip if checked within the last 10 seconds
-    if (Date.now() - lastCheckedRef.current < 10000) {
+    // Throttle: skip if checked within the last 10 seconds (unless forced)
+    if (!force && Date.now() - lastCheckedRef.current < 10000) {
       console.log("[RevenueCat] checkSubscription skipped — throttled (last check < 10s ago)");
       return;
     }

@@ -82,12 +82,14 @@ export default function PaywallScreen() {
     purchasePackage,
     restorePurchases,
     mockNativePurchase,
+    checkSubscription,
   } = useSubscription();
 
   const [selectedPackage, setSelectedPackage] =
     useState<PurchasesPackage | null>(packages[0] || null);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   React.useEffect(() => {
     if (packages.length > 0 && !selectedPackage) {
@@ -106,15 +108,27 @@ export default function PaywallScreen() {
   const badgeText = "SACRED DESIGN FULL ACCESS";
 
   async function navigateAfterPurchase() {
-    console.log("[Paywall] navigateAfterPurchase — updating appState and routing");
-    const newState = await updateAppState({
-      subscriptionActive: true,
-      revealUnlocked: true,
-    });
-    console.log("[Paywall] POST-UPDATE state confirmed:", JSON.stringify(newState));
-    await new Promise(resolve => setTimeout(resolve, 75));
-    router.replace("/reveal");
-    console.log("[Paywall] Navigation triggered to /reveal");
+    console.log("[Paywall] navigateAfterPurchase — verifying entitlement and updating state");
+    setVerifying(true);
+    try {
+      // Force re-check entitlement from RevenueCat to confirm purchase is active
+      await checkSubscription(true);
+      // Update app state flags
+      await updateAppState({
+        subscriptionActive: true,
+        revealUnlocked: true,
+      });
+      // Small buffer to let state propagate before navigation
+      await new Promise(resolve => setTimeout(resolve, 150));
+      console.log("[Paywall] Entitlement confirmed — navigating to /reveal");
+      router.replace("/reveal");
+    } catch (err) {
+      console.warn("[Paywall] navigateAfterPurchase error:", err);
+      // Still navigate — purchase was confirmed by purchasePackage returning true
+      router.replace("/reveal");
+    } finally {
+      setVerifying(false);
+    }
   }
 
   function handleClose() {
@@ -420,6 +434,12 @@ export default function PaywallScreen() {
         </View>
       </SafeAreaView>
 
+      {verifying && (
+        <View style={styles.verifyingOverlay}>
+          <ActivityIndicator size="large" color={COLORS.gold} />
+          <Text style={styles.verifyingText}>Verifying purchase…</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -725,6 +745,19 @@ const styles = StyleSheet.create({
   legalLinkSeparator: {
     fontSize: 11,
     color: 'rgba(245,240,232,0.25)',
+    fontFamily: 'Inter_400Regular',
+  },
+  verifyingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10,14,26,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    zIndex: 100,
+  },
+  verifyingText: {
+    fontSize: 16,
+    color: COLORS.white,
     fontFamily: 'Inter_400Regular',
   },
   // Subscribed state
