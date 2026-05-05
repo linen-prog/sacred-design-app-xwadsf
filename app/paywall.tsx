@@ -18,6 +18,7 @@ import {
   Alert,
   Platform,
   Dimensions,
+  Linking,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -394,6 +395,21 @@ export default function PaywallScreen() {
                 Payment charged to your {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account after free trial.
                 Cancel anytime in your account settings.
               </Text>
+              <View style={styles.legalLinks}>
+                <TouchableOpacity onPress={() => {
+                  console.log('[Paywall] Privacy Policy tapped');
+                  Linking.openURL('https://sacreddesign-app.com/privacy');
+                }} activeOpacity={0.7}>
+                  <Text style={styles.legalLinkText}>Privacy Policy</Text>
+                </TouchableOpacity>
+                <Text style={styles.legalLinkSeparator}> · </Text>
+                <TouchableOpacity onPress={() => {
+                  console.log('[Paywall] Terms of Use tapped');
+                  Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/');
+                }} activeOpacity={0.7}>
+                  <Text style={styles.legalLinkText}>Terms of Use</Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
         </View>
@@ -681,6 +697,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 16,
     fontFamily: "Inter_400Regular",
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  legalLinkText: {
+    fontSize: 11,
+    color: 'rgba(245,240,232,0.45)',
+    fontFamily: 'Inter_400Regular',
+    textDecorationLine: 'underline',
+  },
+  legalLinkSeparator: {
+    fontSize: 11,
+    color: 'rgba(245,240,232,0.25)',
+    fontFamily: 'Inter_400Regular',
   },
   // Subscribed state
   subscribedContent: {

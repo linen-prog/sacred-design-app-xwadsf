@@ -163,10 +163,20 @@ export default function ProfileScreen() {
         {/* SECTION 4: Settings */}
         <Text style={styles.sectionLabel}>SETTINGS</Text>
         <View style={[styles.card, styles.settingsCard]}>
-          <View style={styles.settingsRow}>
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={() => {
+              console.log('[Profile] Notification time tapped — opening app settings');
+              Linking.openURL('app-settings:');
+            }}
+            activeOpacity={0.7}
+          >
             <Text style={styles.settingsRowLabel}>Notification time</Text>
-            <Text style={styles.settingsRowValue}>Morning</Text>
-          </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.settingsRowValue}>Morning</Text>
+              <Ionicons name="chevron-forward" size={14} color="rgba(201,168,76,0.4)" />
+            </View>
+          </TouchableOpacity>
           <View style={styles.inCardDivider} />
           <TouchableOpacity
             style={styles.settingsFeedbackRow}
