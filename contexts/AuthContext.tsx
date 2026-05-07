@@ -15,6 +15,8 @@ interface AuthContextType {
   loading: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
+  signInWithApple: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   fetchUser: () => Promise<void>;
 }
@@ -174,6 +176,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
 
+  const signInWithApple = async () => {
+    console.log('[AuthContext] signInWithApple started');
+    const callbackURL = Platform.OS === 'web'
+      ? `${window.location.origin}/auth-callback`
+      : 'sacreddesign://auth-callback';
+    const { data, error } = await authClient.signIn.social({
+      provider: 'apple',
+      callbackURL,
+    });
+    console.log('[AuthContext] signInWithApple response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
+    if (error) throw new Error(error.message || 'Apple sign in failed');
+    if ((data as any)?.session?.token) {
+      await setBearerToken((data as any).session.token);
+    }
+    await fetchUser();
+    console.log('[AuthContext] signInWithApple success');
+  };
+
+  const signInWithGoogle = async () => {
+    console.log('[AuthContext] signInWithGoogle started');
+    const callbackURL = Platform.OS === 'web'
+      ? `${window.location.origin}/auth-callback`
+      : 'sacreddesign://auth-callback';
+    const { data, error } = await authClient.signIn.social({
+      provider: 'google',
+      callbackURL,
+    });
+    console.log('[AuthContext] signInWithGoogle response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
+    if (error) throw new Error(error.message || 'Google sign in failed');
+    if ((data as any)?.session?.token) {
+      await setBearerToken((data as any).session.token);
+    }
+    await fetchUser();
+    console.log('[AuthContext] signInWithGoogle success');
+  };
+
   const signOut = async () => {
     try {
       await authClient.signOut();
@@ -192,6 +230,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signInWithEmail,
         signUpWithEmail,
+        signInWithApple,
+        signInWithGoogle,
         signOut,
         fetchUser,
       }}

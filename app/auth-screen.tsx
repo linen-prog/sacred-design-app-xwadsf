@@ -31,7 +31,7 @@ type Mode = "signin" | "signup";
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { signInWithEmail, signUpWithEmail, fetchUser } = useAuth();
+  const { signInWithEmail, signUpWithEmail, fetchUser, signInWithApple, signInWithGoogle } = useAuth();
   const { appState, updateAppState } = useAppState();
 
   const { from } = useLocalSearchParams<{ from?: string }>();
@@ -43,10 +43,12 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
   const isSignUp = mode === "signup";
-  const anyLoading = loading;
+  const anyLoading = loading || appleLoading || googleLoading;
   const submitDisabled = anyLoading || !email.trim() || !password.trim() || (isSignUp && !name.trim());
   const submitLabel = isSignUp ? "Create Account" : "Sign In";
 
@@ -258,17 +260,70 @@ export default function AuthScreen() {
           )}
         </Pressable>
 
-        {/* Social login — coming in a future release */}
+        {/* Social login */}
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>or</Text>
           <View style={styles.dividerLine} />
         </View>
-        <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: 'rgba(245,240,232,0.3)', textAlign: 'center' }}>
-            Sign in with Apple and Google coming soon
-          </Text>
-        </View>
+
+        {/* Sign in with Apple — must appear first (App Store requirement) */}
+        <Pressable
+          style={[styles.appleButton, anyLoading && styles.buttonDisabled]}
+          onPress={async () => {
+            console.log('[AuthScreen] Sign in with Apple pressed');
+            setAppleLoading(true);
+            setError('');
+            try {
+              await signInWithApple();
+              navigateAfterAuth(true);
+            } catch (e: any) {
+              const msg = e?.message || 'Apple sign in failed. Please try again.';
+              if (!msg.toLowerCase().includes('cancel')) setError(msg);
+            } finally {
+              setAppleLoading(false);
+            }
+          }}
+          disabled={anyLoading}
+        >
+          {appleLoading ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <>
+              <MaterialCommunityIcons name="apple" size={20} color="#FFFFFF" style={styles.socialIcon} />
+              <Text style={styles.appleButtonText}>Sign in with Apple</Text>
+            </>
+          )}
+        </Pressable>
+
+        {/* Sign in with Google */}
+        <Pressable
+          style={[styles.googleButton, anyLoading && styles.buttonDisabled]}
+          onPress={async () => {
+            console.log('[AuthScreen] Sign in with Google pressed');
+            setGoogleLoading(true);
+            setError('');
+            try {
+              await signInWithGoogle();
+              navigateAfterAuth(true);
+            } catch (e: any) {
+              const msg = e?.message || 'Google sign in failed. Please try again.';
+              if (!msg.toLowerCase().includes('cancel')) setError(msg);
+            } finally {
+              setGoogleLoading(false);
+            }
+          }}
+          disabled={anyLoading}
+        >
+          {googleLoading ? (
+            <ActivityIndicator color="#333333" size="small" />
+          ) : (
+            <>
+              <MaterialCommunityIcons name="google" size={20} color="#4285F4" style={styles.socialIcon} />
+              <Text style={styles.googleButtonText}>Sign in with Google</Text>
+            </>
+          )}
+        </Pressable>
 
         {/* Mode toggle link */}
         <Pressable
