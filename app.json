@@ -18,7 +18,8 @@
       "icon": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "28"
     },
     "android": {
       "adaptiveIcon": {
