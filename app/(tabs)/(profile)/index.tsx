@@ -238,7 +238,7 @@ export default function ProfileScreen() {
               <>
                 <Text style={styles.modalTitle}>Close your account</Text>
                 <Text style={styles.modalBody}>
-                  {'To permanently delete your account and data, please email us at linenprayaer@gmail.com. We\'ll process your request as quickly as possible.'}
+                  {'To permanently delete your account and data, please email us at linenprayer@gmail.com. We\'ll process your request as quickly as possible.'}
                 </Text>
                 <TouchableOpacity
                   style={styles.modalConfirmButton}
