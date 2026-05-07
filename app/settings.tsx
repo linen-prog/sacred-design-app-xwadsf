@@ -1,10 +1,11 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   Pressable,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -40,18 +41,20 @@ function TappableRow({
   label,
   onPress,
   danger,
+  disabled,
 }: {
   label: string;
   onPress: () => void;
   danger?: boolean;
+  disabled?: boolean;
 }) {
   const labelStyle = danger ? styles.rowLabelDanger : styles.rowLabel;
   return (
     <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      onPress={disabled ? undefined : onPress}
+      style={({ pressed }) => [styles.row, pressed && !disabled && styles.rowPressed, disabled && styles.rowDisabled]}
     >
-      <Text style={labelStyle}>{label}</Text>
+      <Text style={[labelStyle, disabled && styles.rowLabelDisabled]}>{label}</Text>
       <Text style={styles.chevron}>›</Text>
     </Pressable>
   );
@@ -64,6 +67,7 @@ export default function SettingsScreen() {
   const { sacredDesignResult, clearSacredDesign } = useContext(DiscoveryContext);
 
   const { promptRetake } = useRetakeQuiz();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isSignedIn = !!(user && (user as { isAnonymous?: boolean }).isAnonymous !== true);
   const userName = (user as { name?: string } | null)?.name ?? null;
@@ -94,6 +98,51 @@ export default function SettingsScreen() {
       console.warn('[Settings] Failed to reset appState on sign out:', e);
     }
     router.replace("/onboarding/welcome");
+  }
+
+  function handleDeleteAccountPress() {
+    console.log("[Settings] 'Delete Account' pressed — showing confirmation dialog");
+    Alert.alert(
+      "Delete Account",
+      "This will permanently delete your account and all your data. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel", onPress: () => console.log("[Settings] Delete Account cancelled") },
+        {
+          text: "Delete Account",
+          style: "destructive",
+          onPress: handleDeleteAccountConfirm,
+        },
+      ]
+    );
+  }
+
+  async function handleDeleteAccountConfirm() {
+    console.log("[Settings] Delete Account confirmed — sending DELETE /api/account");
+    setIsDeleting(true);
+    try {
+      const { authenticatedDelete } = await import('@/utils/api');
+      await authenticatedDelete('/api/account');
+      console.log("[Settings] DELETE /api/account succeeded — clearing state and signing out");
+      try {
+        const { updateAppState } = await import('@/utils/appState');
+        await updateAppState({
+          revealViewed: false,
+          revealUnlocked: false,
+          quizCompleted: false,
+          postQuizSaveCompleted: false,
+          guestMode: false,
+          currentOnboardingStep: '/onboarding/welcome',
+        });
+      } catch (e) {
+        console.warn('[Settings] Failed to reset appState on account deletion:', e);
+      }
+      await signOut();
+      router.replace("/onboarding/welcome");
+    } catch (e) {
+      console.error("[Settings] DELETE /api/account failed:", e);
+      setIsDeleting(false);
+      Alert.alert("Error", "Failed to delete account. Please try again.");
+    }
   }
 
   function handleSignIn() {
@@ -151,6 +200,13 @@ export default function SettingsScreen() {
               </>
             ) : null}
             <TappableRow label="Sign Out" onPress={handleSignOut} />
+            <RowDivider />
+            <TappableRow
+              label={isDeleting ? "Deleting…" : "Delete Account"}
+              onPress={handleDeleteAccountPress}
+              danger
+              disabled={isDeleting}
+            />
           </>
         ) : (
           <TappableRow label="Sign In / Create Account" onPress={handleSignIn} />
@@ -273,5 +329,11 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: DIVIDER,
     marginLeft: 16,
+  },
+  rowDisabled: {
+    opacity: 0.45,
+  },
+  rowLabelDisabled: {
+    opacity: 0.7,
   },
 });
