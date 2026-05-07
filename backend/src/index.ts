@@ -6,6 +6,7 @@ import { register as registerDailyAlignmentRoutes } from './routes/daily-alignme
 import { register as registerAlignmentCompletionRoutes } from './routes/alignment-completion.js';
 import { register as registerArchetypeRoutes } from './routes/archetypes.js';
 import { register as registerProgressRoutes } from './routes/progress.js';
+import { register as registerAccountRoutes } from './routes/account.js';
 
 // Combine app schema and auth schema
 const schema = { ...appSchema, ...authSchema };
@@ -49,6 +50,7 @@ registerDailyAlignmentRoutes(app, app.fastify);
 registerAlignmentCompletionRoutes(app, app.fastify);
 registerArchetypeRoutes(app, app.fastify);
 registerProgressRoutes(app, app.fastify);
+registerAccountRoutes(app, app.fastify);
 
 await app.run();
 app.logger.info('Application running');

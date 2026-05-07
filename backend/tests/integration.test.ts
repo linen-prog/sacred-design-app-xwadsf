@@ -433,4 +433,24 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 401);
     });
   });
+
+  describe("Account", () => {
+    test("DELETE /api/account deletes account when authenticated", async () => {
+      // Create a new user for deletion since this endpoint removes the account
+      const { token: deleteToken } = await signUpTestUser();
+      const res = await authenticatedApi("/api/account", deleteToken, {
+        method: "DELETE",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+    });
+
+    test("DELETE /api/account returns 401 without authentication", async () => {
+      const res = await api("/api/account", {
+        method: "DELETE",
+      });
+      await expectStatus(res, 401);
+    });
+  });
 });
