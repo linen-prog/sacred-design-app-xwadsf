@@ -792,4 +792,201 @@ Return ONLY a valid JSON object with these exact fields:
       throw error;
     }
   });
+
+  // GET /api/alignments/yesterday
+  fastify.get('/api/alignments/yesterday', {
+    schema: {
+      description: "Get yesterday's alignment for check-in",
+      tags: ['alignments'],
+      querystring: {
+        type: 'object',
+        required: ['local_date'],
+        properties: {
+          local_date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$', description: 'Today\'s local date in YYYY-MM-DD format' },
+        },
+      },
+      response: {
+        200: {
+          description: "Yesterday's alignment or null",
+          type: 'object',
+          properties: {
+            alignment: {
+              oneOf: [
+                {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    action: { type: 'string' },
+                    guidance: { type: 'string' },
+                    day_number: { type: 'integer' },
+                  },
+                },
+                { type: 'null' },
+              ],
+            },
+          },
+        },
+        401: {
+          description: 'Unauthorized',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+        500: {
+          description: 'Server error',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+      },
+    },
+  }, async (
+    request: FastifyRequest<{ Querystring: { local_date: string } }>,
+    reply: FastifyReply
+  ): Promise<any | void> => {
+    const session = await requireAuth(request, reply);
+    if (!session) return;
+
+    const userId = session.user.id;
+    const { local_date } = request.query;
+
+    // Calculate yesterday's date
+    const today = new Date(local_date);
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    app.logger.info({ userId, lookingForDate: yesterdayStr }, '[yesterday] userId: ' + userId + ', looking for date: ' + yesterdayStr);
+
+    try {
+      const alignments = await app.db
+        .select()
+        .from(schema.dailyAlignments)
+        .where(
+          and(
+            eq(schema.dailyAlignments.userId, userId),
+            sql`DATE(${schema.dailyAlignments.generatedAt} AT TIME ZONE 'UTC') = ${yesterdayStr}`
+          )
+        )
+        .orderBy(desc(schema.dailyAlignments.generatedAt))
+        .limit(1);
+
+      if (alignments.length === 0) {
+        app.logger.info({ userId }, '[yesterday] No alignment found for yesterday');
+        return { alignment: null };
+      }
+
+      const alignment = alignments[0];
+      app.logger.info({ userId, alignmentId: alignment.id }, '[yesterday] found alignment');
+
+      return {
+        alignment: {
+          id: alignment.id,
+          action: alignment.action,
+          guidance: alignment.guidance,
+          day_number: alignment.dayNumber,
+        },
+      };
+    } catch (error) {
+      app.logger.error({ err: error, userId }, '[yesterday] Failed to fetch yesterday\'s alignment');
+      throw error;
+    }
+  });
+
+  // POST /api/alignments/checkin
+  fastify.post('/api/alignments/checkin', {
+    schema: {
+      description: 'Submit a check-in response for an alignment',
+      tags: ['alignments'],
+      body: {
+        type: 'object',
+        required: ['alignment_id', 'response'],
+        properties: {
+          alignment_id: { type: 'string', format: 'uuid' },
+          response: { type: 'string', enum: ['practiced', 'thought_about', 'not_yet'] },
+        },
+      },
+      response: {
+        200: {
+          description: 'Check-in submitted successfully',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+          },
+        },
+        400: {
+          description: 'Bad request',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+        401: {
+          description: 'Unauthorized',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+        500: {
+          description: 'Server error',
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+      },
+    },
+  }, async (
+    request: FastifyRequest<{ Body: { alignment_id: string; response: string } }>,
+    reply: FastifyReply
+  ): Promise<any | void> => {
+    const session = await requireAuth(request, reply);
+    if (!session) return;
+
+    const userId = session.user.id;
+    const { alignment_id, response } = request.body;
+
+    app.logger.info({ userId, alignmentId: alignment_id, response }, '[checkin] userId: ' + userId + ', alignmentId: ' + alignment_id + ', response: ' + response);
+
+    try {
+      // Check if reflection already exists
+      const existingReflections = await app.db
+        .select()
+        .from(schema.alignmentReflections)
+        .where(
+          and(
+            eq(schema.alignmentReflections.userId, userId),
+            eq(schema.alignmentReflections.alignmentId, alignment_id)
+          )
+        )
+        .limit(1);
+
+      if (existingReflections.length > 0) {
+        // Update existing reflection
+        await app.db
+          .update(schema.alignmentReflections)
+          .set({
+            reflectionText: response,
+            completedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(schema.alignmentReflections.userId, userId),
+              eq(schema.alignmentReflections.alignmentId, alignment_id)
+            )
+          );
+
+        app.logger.info({ userId, alignmentId: alignment_id }, '[checkin] reflection updated');
+      } else {
+        // Insert new reflection
+        await app.db
+          .insert(schema.alignmentReflections)
+          .values({
+            userId,
+            alignmentId: alignment_id,
+            reflectionText: response,
+            completedAt: new Date(),
+          });
+
+        app.logger.info({ userId, alignmentId: alignment_id }, '[checkin] reflection created');
+      }
+
+      return { success: true };
+    } catch (error) {
+      app.logger.error({ err: error, userId, alignmentId: alignment_id }, '[checkin] Failed to submit check-in');
+      throw error;
+    }
+  });
 }

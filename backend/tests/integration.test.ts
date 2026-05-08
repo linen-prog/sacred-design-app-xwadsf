@@ -359,6 +359,78 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 400);
     });
 
+    test("POST /api/alignments/checkin submits check-in when authenticated", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: alignmentId,
+          response: "practiced",
+        }),
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+    });
+
+    test("POST /api/alignments/checkin returns 401 without authentication", async () => {
+      const res = await api("/api/alignments/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: "00000000-0000-0000-0000-000000000000",
+          response: "practiced",
+        }),
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("POST /api/alignments/checkin returns 400 with missing alignment_id field", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          response: "practiced",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/alignments/checkin returns 400 with missing response field", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: "00000000-0000-0000-0000-000000000000",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/alignments/checkin returns 400 with invalid response enum value", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: alignmentId,
+          response: "invalid_response",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/alignments/checkin returns 400 with invalid alignment_id format", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: "invalid-uuid",
+          response: "practiced",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
     test("GET /api/alignments/today returns alignment when authenticated", async () => {
       const res = await authenticatedApi("/api/alignments/today", authToken, {
         method: "GET",
@@ -389,6 +461,36 @@ describe("API Integration Tests", () => {
         method: "GET",
       });
       await expectStatus(res, 401);
+    });
+
+    test("GET /api/alignments/yesterday returns alignment or null when authenticated with valid local_date", async () => {
+      const res = await authenticatedApi("/api/alignments/yesterday?local_date=2026-05-08", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.alignment).toBeDefined();
+    });
+
+    test("GET /api/alignments/yesterday returns 401 without authentication", async () => {
+      const res = await api("/api/alignments/yesterday?local_date=2026-05-08", {
+        method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("GET /api/alignments/yesterday returns 400 with missing local_date parameter", async () => {
+      const res = await authenticatedApi("/api/alignments/yesterday", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("GET /api/alignments/yesterday returns 400 with invalid local_date format", async () => {
+      const res = await authenticatedApi("/api/alignments/yesterday?local_date=invalid-date", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
     });
 
     test("GET /api/alignments/history returns alignment history when authenticated", async () => {
