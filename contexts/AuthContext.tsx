@@ -190,8 +190,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const appleOptions: { provider: 'apple'; callbackURL?: string } = { provider: 'apple' };
       if (Platform.OS === 'web') {
         appleOptions.callbackURL = `${window.location.origin}/auth-callback`;
+      } else {
+        appleOptions.callbackURL = 'sacreddesign://auth-callback';
       }
-      console.log('[AuthContext] signInWithApple callbackURL:', appleOptions.callbackURL ?? '(none — native, handled by expoClient)');
+      console.log('[AuthContext] signInWithApple callbackURL:', appleOptions.callbackURL);
       const { data, error } = await authClient.signIn.social(appleOptions);
       console.log('[AuthContext] signInWithApple response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
       if (error) {
@@ -225,8 +227,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const googleOptions: { provider: 'google'; callbackURL?: string } = { provider: 'google' };
       if (Platform.OS === 'web') {
         googleOptions.callbackURL = `${window.location.origin}/auth-callback`;
+      } else {
+        googleOptions.callbackURL = 'sacreddesign://auth-callback';
       }
-      console.log('[AuthContext] signInWithGoogle callbackURL:', googleOptions.callbackURL ?? '(none — native, handled by expoClient)');
+      console.log('[AuthContext] signInWithGoogle callbackURL:', googleOptions.callbackURL);
       const { data, error } = await authClient.signIn.social(googleOptions);
       console.log('[AuthContext] signInWithGoogle response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
       if (error) {
