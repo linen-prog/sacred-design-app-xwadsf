@@ -144,6 +144,7 @@ export default function HomeScreen() {
   const [alignment, setAlignment] = useState<DailyAlignment | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [authRequired, setAuthRequired] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
@@ -187,6 +188,16 @@ export default function HomeScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sacredDesignResult]);
 
+  // After sign-in, reload alignment if it wasn't loaded due to 401
+  useEffect(() => {
+    if (isSignedIn && sacredDesignResult && !alignment && !loading) {
+      console.log("[Home] User just signed in — reloading alignment");
+      setAuthRequired(false);
+      loadTodayAlignment();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn]);
+
   async function loadProgress() {
     console.log("[Home] GET /api/progress");
     try {
@@ -212,6 +223,7 @@ export default function HomeScreen() {
   async function loadTodayAlignment() {
     setLoading(true);
     setError("");
+    setAuthRequired(false);
     fadeAnim.setValue(0);
     console.log("[Home] GET /api/alignments/today");
     try {
@@ -219,7 +231,12 @@ export default function HomeScreen() {
       if (!res.ok) {
         const errText = await res.text();
         console.warn("[Home] GET /api/alignments/today failed:", res.status, errText);
-        setError("Couldn't load today's alignment.");
+        if (res.status === 401) {
+          console.log("[Home] 401 — user not signed in or token expired");
+          setAuthRequired(true);
+        } else {
+          setError("Couldn't load today's alignment.");
+        }
         return;
       }
       const data: { alignment: DailyAlignment | null } = await res.json();
@@ -246,7 +263,12 @@ export default function HomeScreen() {
       if (!res.ok) {
         const errText = await res.text();
         console.warn("[Home] POST /api/alignments/generate failed:", res.status, errText);
-        setError("Couldn't generate today's alignment.");
+        if (res.status === 401) {
+          console.log("[Home] 401 on generate — user not signed in or token expired");
+          setAuthRequired(true);
+        } else {
+          setError("Couldn't generate today's alignment.");
+        }
         return;
       }
       const data: DailyAlignment = await res.json();
@@ -261,6 +283,7 @@ export default function HomeScreen() {
 
   async function handleRetry() {
     console.log("[Home] Retry button pressed");
+    setAuthRequired(false);
     await loadTodayAlignment();
   }
 
@@ -444,6 +467,21 @@ export default function HomeScreen() {
           <SkeletonCard />
           <Text style={styles.generatingHint}>Preparing your alignment…</Text>
         </>
+      ) : authRequired ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Sign In to Continue</Text>
+          <Text style={styles.cardBody}>
+            Sign in to generate your daily alignment and save your progress.
+          </Text>
+          <AnimatedPressable onPress={() => {
+            console.log("[Home] 'Sign In' CTA pressed — navigating to auth-screen");
+            router.push("/auth-screen");
+          }}>
+            <View style={styles.button}>
+              <Text style={styles.buttonText}>Sign In</Text>
+            </View>
+          </AnimatedPressable>
+        </View>
       ) : error ? (
         <View style={styles.card}>
           <Text style={styles.fallbackText}>{error}</Text>
@@ -483,7 +521,7 @@ export default function HomeScreen() {
           Retake Discovery
         </Text>
       </Pressable>
-      {!isSignedIn && (
+      {!isSignedIn && !authRequired && (
         <Pressable
           onPress={() => {
             console.log("[Home] 'Sign in to save your progress' pressed — navigating to auth-screen");
@@ -491,7 +529,13 @@ export default function HomeScreen() {
           }}
           style={{ marginTop: 8, padding: 8 }}
         >
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: TEXT_MUTED, textAlign: "center" }}>
+          <Text style={{
+            fontFamily: "Inter_500Medium",
+            fontSize: 13,
+            color: BUTTON_BG,
+            textAlign: "center",
+            textDecorationLine: "underline",
+          }}>
             Sign in to save your progress
           </Text>
         </Pressable>
