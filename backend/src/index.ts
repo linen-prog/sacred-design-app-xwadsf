@@ -36,6 +36,7 @@ const authBeforeHook = createAuthMiddleware(async (ctx) => {
 app.withAuth({
   trustedOrigins: [
     "sacreddesign://",
+    "sacreddesign://auth-callback",
     "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev",
   ],
   plugins: [
