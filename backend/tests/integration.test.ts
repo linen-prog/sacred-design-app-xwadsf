@@ -51,6 +51,42 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 400);
     });
 
+    test("POST /api/daily-alignment returns 400 with score out of range (> 10)", async () => {
+      const invalidPayload = {
+        primary_archetype: "Warrior",
+        secondary_archetype: "Sage",
+        blend_name: "Warrior Sage",
+        avoidant_score: 11,  // Invalid: exceeds maximum
+        anxious_score: 2,
+        overactive_score: 4,
+        grounded_score: 7,
+      };
+      const res = await authenticatedApi("/api/daily-alignment", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(invalidPayload),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/daily-alignment returns 400 with score out of range (< 0)", async () => {
+      const invalidPayload = {
+        primary_archetype: "Warrior",
+        secondary_archetype: "Sage",
+        blend_name: "Warrior Sage",
+        avoidant_score: -1,  // Invalid: below minimum
+        anxious_score: 2,
+        overactive_score: 4,
+        grounded_score: 7,
+      };
+      const res = await authenticatedApi("/api/daily-alignment", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(invalidPayload),
+      });
+      await expectStatus(res, 400);
+    });
+
     test("GET /api/daily-alignment/today returns alignment when authenticated", async () => {
       const res = await authenticatedApi("/api/daily-alignment/today", authToken, {
         method: "GET",
@@ -339,6 +375,13 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 200);
       const data = await res.json();
       expect(data.alignment).toBeDefined();
+    });
+
+    test("GET /api/alignments/today returns 400 with invalid local_date format", async () => {
+      const res = await authenticatedApi("/api/alignments/today?local_date=invalid-date", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
     });
 
     test("GET /api/alignments/today returns 401 without authentication", async () => {
