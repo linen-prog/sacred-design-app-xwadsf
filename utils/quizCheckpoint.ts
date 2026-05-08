@@ -44,6 +44,15 @@ export async function clearCheckpoint(userId?: string | null): Promise<void> {
 }
 
 export function getNextPhaseRoute(completedPhases: number[]): string {
+  if (
+    completedPhases.includes(1) &&
+    completedPhases.includes(2) &&
+    completedPhases.includes(3) &&
+    completedPhases.includes(4)
+  ) {
+    // All 4 phases done — go straight to results computation
+    return '/onboarding/preparing';
+  }
   if (completedPhases.includes(1) && completedPhases.includes(2) && completedPhases.includes(3)) {
     return '/onboarding/phase-4';
   }

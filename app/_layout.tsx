@@ -232,7 +232,15 @@ function NavigationGuard() {
 
       // PRIORITY 4: Onboarding started but quiz not done → resume
       if (appState.onboardingStarted && !appState.quizCompleted) {
-        const resumeStep = appState.currentOnboardingStep || '/onboarding/welcome';
+        let resumeStep = appState.currentOnboardingStep || '/onboarding/welcome';
+
+        // If all phases are complete but quiz computation hasn't run yet,
+        // skip the phase-complete celebration screen and go straight to preparing.
+        if (resumeStep === '/onboarding/phase-complete?phase=4') {
+          resumeStep = '/onboarding/preparing';
+          console.log('[RootNavigator] phase-complete?phase=4 detected — routing to /onboarding/preparing');
+        }
+
         if (currentPathname === resumeStep) {
           console.log('[RootNavigator] Already on target route — skipping:', resumeStep);
           return;

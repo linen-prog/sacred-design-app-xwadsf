@@ -68,12 +68,12 @@ export default function IntroScreen() {
 
   function handleResume() {
     if (!checkpoint) return;
-    console.log('[Intro] Resume pressed — restoring checkpoint answers and navigating');
     // Restore answers into context
     Object.entries(checkpoint.answers).forEach(([id, value]) => {
       setAnswer(id, value);
     });
     const nextRoute = getNextPhaseRoute(checkpoint.completedPhases);
+    console.log('[Intro] Resume pressed — completedPhases:', checkpoint.completedPhases, 'quizCompleted:', appState.quizCompleted, 'nextRoute:', nextRoute);
     router.push(nextRoute as Parameters<typeof router.push>[0]);
   }
 
