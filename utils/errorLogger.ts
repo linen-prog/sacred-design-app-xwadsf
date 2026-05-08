@@ -24,6 +24,20 @@ const shouldMuteMessage = (message: string): boolean => {
   return MUTED_MESSAGES.some(muted => message.includes(muted));
 };
 
+// Errors that should be queued for server logging but NOT shown in the Expo dev overlay
+const SILENT_ERRORS = [
+  'INVALID_EMAIL_OR_PASSWORD',
+  'Invalid email or password',
+  '[AuthContext] signInWithEmail error',
+  '[AuthContext] signInWithGoogle error',
+  '[AuthContext] signInWithApple error',
+];
+
+// Check if an error should be silenced from the Expo overlay (but still logged to server)
+const shouldSilenceError = (message: string): boolean => {
+  return SILENT_ERRORS.some(s => message.includes(s));
+};
+
 // Queue for batching logs
 let logQueue: { level: string; message: string; source: string; timestamp: string; platform: string }[] = [];
 let flushTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -339,8 +353,10 @@ export const setupErrorLogging = () => {
     const message = stringifyArgs(args);
     if (shouldMuteMessage(message)) return;
 
-    // Always call original first
-    originalConsoleError.apply(console, args);
+    // For known/expected errors, log to server but don't trigger the Expo dev overlay
+    if (!shouldSilenceError(message)) {
+      originalConsoleError.apply(console, args);
+    }
 
     const source = getCallerInfo();
     queueLog('error', message, source);

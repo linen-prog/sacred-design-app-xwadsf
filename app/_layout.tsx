@@ -86,7 +86,12 @@ function NavigationGuard() {
     const currentUserId = user?.id ?? null;
     if (prevUser !== undefined && prevUser !== currentUserId) {
       console.log('[RootNavigator] Auth state changed — resetting navigation guard');
-      hasNavigated.current = false;
+      // Debounce the reset to avoid firing before the navigator settles after sign-out
+      setTimeout(() => {
+        hasNavigated.current = false;
+      }, 300);
+      prevUserRef.current = currentUserId;
+      return; // Don't navigate in the same tick as the auth change
     }
     prevUserRef.current = currentUserId;
 
