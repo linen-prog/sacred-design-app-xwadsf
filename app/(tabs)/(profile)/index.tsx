@@ -9,6 +9,7 @@ import {
   Pressable,
   ActivityIndicator,
   Linking,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,7 +42,8 @@ export default function ProfileScreen() {
     ? "You've been here recently."
     : "You showed up this week.";
 
-  const [confirmModal, setConfirmModal] = useState<'startFresh' | 'takeBreak' | 'closeAccount' | null>(null);
+  const [confirmModal, setConfirmModal] = useState<'startFresh' | 'takeBreak' | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   async function handleStartFresh() {
     console.log('[Profile] Start Fresh confirmed — clearing design and restarting');
@@ -67,17 +69,61 @@ export default function ProfileScreen() {
     router.replace('/auth-screen' as any);
   }
 
-  async function handleCloseAccount() {
-    console.log('[Profile] Email Support pressed — opening mail composer');
-    setConfirmModal(null);
-    const mailto =
-      'mailto:linenprayaer@gmail.com' +
-      '?subject=Account%20Deletion%20Request' +
-      '&body=Hi,%0D%0AI%20would%20like%20to%20request%20deletion%20of%20my%20account%20and%20all%20associated%20data.';
-    await Linking.openURL(mailto);
+  function handleDeleteAccountPress() {
+    console.log('[Profile] Delete Account pressed — showing first confirmation');
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your saved data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: handleDeleteAccountConfirm,
+        },
+      ]
+    );
   }
 
-  type ModalType = 'startFresh' | 'takeBreak' | 'closeAccount';
+  async function handleDeleteAccountConfirm() {
+    console.log('[Profile] Delete Account confirmed — calling DELETE /api/account');
+    setIsDeleting(true);
+    try {
+      const { authenticatedDelete } = await import('@/utils/api');
+      await authenticatedDelete('/api/account');
+      console.log('[Profile] DELETE /api/account succeeded — clearing state and signing out');
+      try {
+        const { updateAppState: updateState } = await import('@/utils/appState');
+        await updateState({
+          revealViewed: false,
+          revealUnlocked: false,
+          quizCompleted: false,
+          postQuizSaveCompleted: false,
+          guestMode: false,
+          currentOnboardingStep: '/onboarding/welcome',
+        });
+      } catch (e) {
+        console.warn('[Profile] Failed to reset appState on account deletion:', e);
+      }
+      await signOut();
+      router.replace('/onboarding/welcome' as any);
+    } catch (e: any) {
+      console.error('[Profile] DELETE /api/account failed:', e);
+      setIsDeleting(false);
+      const msg = (e?.message ?? '').toLowerCase();
+      if (msg.includes('token') || msg.includes('sign in') || msg.includes('authentication')) {
+        Alert.alert(
+          'Session Expired',
+          'Your session has expired. Please sign out and sign back in, then try deleting your account again.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to delete account. Please try again.');
+      }
+    }
+  }
+
+  type ModalType = 'startFresh' | 'takeBreak';
 
   const modalConfig: Record<ModalType, { title: string; body: string; confirmLabel: string; onConfirm: () => void }> = {
     startFresh: {
@@ -91,12 +137,6 @@ export default function ProfileScreen() {
       body: "You'll be signed out. Your Sacred Design will be waiting when you return.",
       confirmLabel: 'Take a break',
       onConfirm: handleTakeBreak,
-    },
-    closeAccount: {
-      title: 'Close your account',
-      body: '',
-      confirmLabel: '',
-      onConfirm: handleCloseAccount,
     },
   };
 
@@ -214,13 +254,13 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.accountRow, styles.accountRowLast]}
-            onPress={() => {
-              console.log('[Profile] Close your account tapped');
-              setConfirmModal('closeAccount');
-            }}
+            onPress={handleDeleteAccountPress}
             activeOpacity={0.7}
+            disabled={isDeleting}
           >
-            <Text style={styles.accountRowTextClose}>Close your account</Text>
+            <Text style={[styles.accountRowTextClose, isDeleting && { opacity: 0.4 }]}>
+              {isDeleting ? 'Deleting…' : 'Delete Account'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -234,30 +274,7 @@ export default function ProfileScreen() {
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setConfirmModal(null)}>
           <Pressable style={styles.modalCard} onPress={() => {}}>
-            {confirmModal === 'closeAccount' ? (
-              <>
-                <Text style={styles.modalTitle}>Close your account</Text>
-                <Text style={styles.modalBody}>
-                  {'To permanently delete your account and data, please email us at linenprayer@gmail.com. We\'ll process your request as quickly as possible.'}
-                </Text>
-                <TouchableOpacity
-                  style={styles.modalConfirmButton}
-                  onPress={handleCloseAccount}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.modalConfirmText}>Email Support</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    console.log('[Profile] Close account modal — Cancel pressed');
-                    setConfirmModal(null);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
-              </>
-            ) : activeModal ? (
+            {activeModal ? (
               <>
                 <Text style={styles.modalTitle}>{activeModal.title}</Text>
                 <Text style={styles.modalBody}>{activeModal.body}</Text>
