@@ -172,6 +172,18 @@ export default function HomeScreen() {
   const [moodSaving, setMoodSaving] = useState(false);
   const [moodSaved, setMoodSaved] = useState(false);
 
+  // Yesterday's alignment check-in state
+  interface YesterdayAlignment {
+    id: string;
+    action: string;
+    guidance: string;
+    day_number: number;
+  }
+  const [yesterdayAlignment, setYesterdayAlignment] = useState<YesterdayAlignment | null>(null);
+  const [checkinDismissed, setCheckinDismissed] = useState(false);
+  const [checkinSaved, setCheckinSaved] = useState(false);
+  const [checkinSaving, setCheckinSaving] = useState(false);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const bannerOpacity = useRef(new Animated.Value(0)).current;
   const moodSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -211,6 +223,7 @@ export default function HomeScreen() {
     loadTodayAlignment();
     loadProgress();
     loadTodayMood();
+    loadYesterdayAlignment();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sacredDesignResult]);
 
@@ -221,6 +234,7 @@ export default function HomeScreen() {
       setAuthRequired(false);
       loadTodayAlignment();
       loadTodayMood();
+      loadYesterdayAlignment();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
@@ -301,6 +315,44 @@ export default function HomeScreen() {
       console.warn("[Home] handleMoodSelect error:", e);
     } finally {
       setMoodSaving(false);
+    }
+  }
+
+  async function loadYesterdayAlignment() {
+    if (!isSignedIn) return;
+    const localDate = new Date().toISOString().split("T")[0];
+    console.log("[Home] GET /api/alignments/yesterday?local_date=" + localDate);
+    try {
+      const res = await apiFetch(`/api/alignments/yesterday?local_date=${localDate}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.alignment) setYesterdayAlignment(data.alignment);
+    } catch (e) {
+      console.warn("[Home] loadYesterdayAlignment error:", e);
+    }
+  }
+
+  async function handleCheckin(response: "practiced" | "thought_about" | "not_yet") {
+    if (!yesterdayAlignment) return;
+    console.log("[Home] Check-in button pressed — response:", response, "alignment_id:", yesterdayAlignment.id);
+    setCheckinSaving(true);
+    try {
+      if (isSignedIn) {
+        console.log("[Home] POST /api/alignments/checkin — alignment_id:", yesterdayAlignment.id, "response:", response);
+        const res = await apiFetch("/api/alignments/checkin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ alignment_id: yesterdayAlignment.id, response }),
+        });
+        if (!res.ok) console.warn("[Home] checkin failed:", res.status);
+      }
+      setCheckinSaved(true);
+      setTimeout(() => setCheckinDismissed(true), 1800);
+    } catch (e) {
+      console.warn("[Home] handleCheckin error:", e);
+      setCheckinDismissed(true);
+    } finally {
+      setCheckinSaving(false);
     }
   }
 
@@ -514,6 +566,46 @@ export default function HomeScreen() {
           })}
         </ScrollView>
       </View>
+
+      {/* Yesterday's Alignment Check-In */}
+      {yesterdayAlignment && !checkinDismissed && isSignedIn && (
+        <View style={styles.checkinCard}>
+          {checkinSaved ? (
+            <View style={styles.checkinSavedRow}>
+              <Text style={styles.checkinSavedText}>Saved to your journey. 🌿</Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.checkinTitle}>How did yesterday's alignment go?</Text>
+              <View style={styles.checkinReminder}>
+                <Text style={styles.checkinReminderLabel}>Yesterday's Alignment</Text>
+                <Text style={styles.checkinReminderAction}>"{yesterdayAlignment.action}"</Text>
+                {yesterdayAlignment.guidance ? (
+                  <Text style={styles.checkinReminderGuidance} numberOfLines={2}>
+                    {getFirstSentence(yesterdayAlignment.guidance)}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={styles.checkinButtons}>
+                {[
+                  { label: "I practiced it", value: "practiced" as const },
+                  { label: "I thought about it", value: "thought_about" as const },
+                  { label: "Not yet", value: "not_yet" as const },
+                ].map((opt) => (
+                  <Pressable
+                    key={opt.value}
+                    onPress={() => handleCheckin(opt.value)}
+                    disabled={checkinSaving}
+                    style={styles.checkinButton}
+                  >
+                    <Text style={styles.checkinButtonText}>{opt.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
+        </View>
+      )}
 
       {/* Re-engagement banner */}
       {showBanner && (
@@ -938,5 +1030,76 @@ const styles = StyleSheet.create({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _unused: {
     backgroundColor: SUCCESS_TEXT,
+  },
+  checkinCard: {
+    width: "100%",
+    backgroundColor: "#F0EDE8",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#E0D9D0",
+  },
+  checkinTitle: {
+    fontFamily: "Lora_700Bold",
+    fontSize: 15,
+    color: TEXT,
+    marginBottom: 12,
+  },
+  checkinReminder: {
+    backgroundColor: "#FAFAF7",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: BUTTON_BG,
+  },
+  checkinReminderLabel: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    letterSpacing: 2,
+    color: TEXT_MUTED,
+    marginBottom: 6,
+    textTransform: "uppercase",
+  },
+  checkinReminderAction: {
+    fontFamily: "Lora_400Regular",
+    fontSize: 14,
+    color: TEXT,
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  checkinReminderGuidance: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: TEXT_MUTED,
+    lineHeight: 17,
+    marginTop: 4,
+  },
+  checkinButtons: {
+    gap: 8,
+  },
+  checkinButton: {
+    backgroundColor: CARD_BG,
+    borderRadius: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "#E0D9D0",
+    alignItems: "center",
+  },
+  checkinButtonText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 14,
+    color: TEXT,
+  },
+  checkinSavedRow: {
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  checkinSavedText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: SUCCESS_TEXT,
   },
 });
