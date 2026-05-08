@@ -254,18 +254,10 @@ function NavigationGuard() {
           }
 
           if (hasCompletedQuiz === 'true' && (await isOnboardingComplete())) {
-            if (user) {
-              console.log('[RootNavigator] Legacy: quiz complete + auth — setting revealViewed and navigating to /(tabs)');
-              // Legacy users completed the full flow — mark revealViewed so TabLayout doesn't redirect them
-              // We don't await this to avoid blocking navigation
-              updateAppState({ revealViewed: true, dailyAlignmentReady: true }, user?.id ?? null).catch(() => {});
-              const target = '/(tabs)';
-              if (currentPathname !== target) router.replace(target as any);
-            } else {
-              console.log('[RootNavigator] Legacy: quiz complete, no auth — navigating to /auth-screen');
-              const target = '/auth-screen';
-              if (currentPathname !== target) router.replace(target);
-            }
+            console.log('[RootNavigator] Legacy: quiz complete — setting revealViewed and navigating to /(tabs)');
+            updateAppState({ revealViewed: true, dailyAlignmentReady: true }, user?.id ?? null).catch(() => {});
+            const target = '/(tabs)';
+            if (currentPathname !== target) router.replace(target as any);
           } else if (hasSeenOnboarding === 'true') {
             console.log('[RootNavigator] Legacy: partial onboarding — resuming at /onboarding/welcome');
             const target = '/onboarding/welcome';
@@ -311,12 +303,9 @@ function RootNavigator() {
     <Stack>
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
-      <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
       <Stack.Screen name="reveal" options={{ headerShown: false }} />
       <Stack.Screen name="partial-reveal" options={{ headerShown: false }} />
       <Stack.Screen name="alignment-detail" options={{ headerShown: false }} />
-      <Stack.Screen name="auth-screen" options={{ headerShown: false }} />
       <Stack.Screen name="post-quiz-save" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="shadow-path" options={{ headerShown: false }} />
@@ -348,15 +337,12 @@ const SUBSCRIPTION_REDIRECT_BLOCKLIST = [
   '/partial-reveal',
   '/post-quiz-save',
   '/completion',
-  '/auth-screen',
-  '/auth-popup',
-  '/auth-callback',
   '/paywall',
 ];
 
 function SubscriptionRedirect() {
   const { isSubscribed, loading } = useSubscription();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const { appState } = useAppState();
   const router = useRouter();
   const pathname = usePathname();
@@ -373,8 +359,8 @@ function SubscriptionRedirect() {
       return;
     }
 
-    // Still loading — wait for both auth and subscription to resolve.
-    if (loading || authLoading) return;
+    // Still loading — wait for subscription to resolve.
+    if (loading) return;
 
     const currentPath = pathname;
 
@@ -392,16 +378,11 @@ function SubscriptionRedirect() {
       return;
     }
 
-    // Not signed in → send to auth, unless user deliberately chose guest mode.
-    if (!user && !appState.guestMode) {
-      console.log('[SubscriptionRedirect] No user and not guest mode — redirecting to auth-screen');
-      router.replace('/auth-screen');
-      return;
-    }
+    console.log('[SubscriptionRedirect] Evaluated — user:', user?.id ?? 'none', 'isSubscribed:', isSubscribed);
 
     // Subscription status is available but we do NOT auto-redirect to paywall.
     // The paywall is only shown when the user explicitly accesses a premium feature.
-  }, [isSubscribed, loading, authLoading, user, appState, router, pathname]);
+  }, [isSubscribed, loading, user, appState, router, pathname]);
 
   return null;
 }
