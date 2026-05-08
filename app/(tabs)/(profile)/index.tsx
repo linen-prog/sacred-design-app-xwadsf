@@ -44,7 +44,7 @@ export default function ProfileScreen() {
     ? "You've been here recently."
     : "You showed up this week.";
 
-  const [confirmModal, setConfirmModal] = useState<'startFresh' | 'takeBreak' | null>(null);
+  const [confirmModal, setConfirmModal] = useState<'startFresh' | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   async function handleStartFresh() {
@@ -63,12 +63,10 @@ export default function ProfileScreen() {
     router.replace('/onboarding/welcome' as any);
   }
 
-  async function handleTakeBreak() {
-    console.log('[Profile] Take a Break confirmed — signing out, preserving design state');
-    setConfirmModal(null);
+  async function handleSignOut() {
+    console.log('[Profile] Sign Out pressed');
     await signOut();
-    await updateAppState({ guestMode: false });
-    router.replace('/auth-screen' as any);
+    router.replace('/onboarding/welcome' as any);
   }
 
   function handleDeleteAccountPress() {
@@ -125,7 +123,7 @@ export default function ProfileScreen() {
     }
   }
 
-  type ModalType = 'startFresh' | 'takeBreak';
+  type ModalType = 'startFresh';
 
   const modalConfig: Record<ModalType, { title: string; body: string; confirmLabel: string; onConfirm: () => void }> = {
     startFresh: {
@@ -134,15 +132,11 @@ export default function ProfileScreen() {
       confirmLabel: 'Yes, start fresh',
       onConfirm: handleStartFresh,
     },
-    takeBreak: {
-      title: 'Take a break?',
-      body: "You'll be signed out. Your Sacred Design will be waiting when you return.",
-      confirmLabel: 'Take a break',
-      onConfirm: handleTakeBreak,
-    },
   };
 
   const activeModal = confirmModal ? modalConfig[confirmModal] : null;
+
+  const userIdentifier = userEmail ?? userName ?? null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -244,15 +238,18 @@ export default function ProfileScreen() {
           >
             <Text style={styles.accountRowTextMuted}>Start fresh</Text>
           </TouchableOpacity>
+          {userIdentifier ? (
+            <Text style={styles.userIdentifierText}>{userIdentifier}</Text>
+          ) : null}
           <TouchableOpacity
             style={styles.accountRow}
             onPress={() => {
-              console.log('[Profile] Take a break tapped');
-              setConfirmModal('takeBreak');
+              console.log('[Profile] Sign Out pressed');
+              handleSignOut();
             }}
             activeOpacity={0.7}
           >
-            <Text style={styles.accountRowTextMuted}>Take a break</Text>
+            <Text style={styles.accountRowTextMuted}>Sign Out</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.accountRow, styles.accountRowLast]}
@@ -483,6 +480,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
     color: 'rgba(201,168,76,0.4)',
+  },
+  userIdentifierText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    color: 'rgba(245,240,232,0.35)',
+    textAlign: 'center',
+    marginBottom: 8,
   },
 
   // Modal

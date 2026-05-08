@@ -78,7 +78,22 @@ export async function clearAuthTokens() {
 }
 
 export async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
-  const token = await getSessionToken();
+  let token = await getSessionToken();
+
+  // Fallback: if no cached token, try getting it directly from the live session
+  if (!token) {
+    try {
+      const { data: session } = await authClient.getSession();
+      if (session?.session?.token) {
+        token = session.session.token;
+        await setBearerToken(token);
+        console.log('[apiFetch] Token restored from live session');
+      }
+    } catch (e) {
+      console.warn('[apiFetch] Could not restore token from session:', e);
+    }
+  }
+
   return fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
