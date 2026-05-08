@@ -12,6 +12,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 import { useRetakeQuiz } from "@/hooks/useRetakeQuiz";
+import { authenticatedDelete } from '@/utils/api';
+import { updateAppState } from '@/utils/appState';
 
 const BG = "#F6F1E8";
 const TEXT = "#2F3E2F";
@@ -83,9 +85,7 @@ export default function SettingsScreen() {
   async function handleSignOut() {
     console.log("[Settings] 'Sign Out' pressed");
     await signOut();
-    // Reset appState so RootNavigator routes to welcome, not tabs
     try {
-      const { updateAppState } = await import('@/utils/appState');
       await updateAppState({
         revealViewed: false,
         revealUnlocked: false,
@@ -120,11 +120,10 @@ export default function SettingsScreen() {
     console.log("[Settings] Delete Account confirmed — sending DELETE /api/account");
     setIsDeleting(true);
     try {
-      const { authenticatedDelete } = await import('@/utils/api');
+      console.log("[Settings] Calling authenticatedDelete('/api/account')");
       await authenticatedDelete('/api/account');
       console.log("[Settings] DELETE /api/account succeeded — clearing state and signing out");
       try {
-        const { updateAppState } = await import('@/utils/appState');
         await updateAppState({
           revealViewed: false,
           revealUnlocked: false,
@@ -137,9 +136,10 @@ export default function SettingsScreen() {
         console.warn('[Settings] Failed to reset appState on account deletion:', e);
       }
       await signOut();
+      Alert.alert('Account Deleted', 'Your account has been permanently deleted.');
       router.replace("/onboarding/welcome");
     } catch (e: any) {
-      console.error("[Settings] DELETE /api/account failed:", e);
+      console.error("[Settings] DELETE /api/account failed:", e?.message, e?.status, JSON.stringify(e));
       setIsDeleting(false);
       const msg = (e?.message ?? '').toLowerCase();
       if (msg.includes('token') || msg.includes('sign in') || msg.includes('authentication')) {

@@ -19,6 +19,8 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 import { ARCHETYPE_CONTENT, ArchetypeName } from '@/constants/ArchetypeContent';
+import { authenticatedDelete } from '@/utils/api';
+import { updateAppState as updateStateUtil } from '@/utils/appState';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -89,12 +91,11 @@ export default function ProfileScreen() {
     console.log('[Profile] Delete Account confirmed — calling DELETE /api/account');
     setIsDeleting(true);
     try {
-      const { authenticatedDelete } = await import('@/utils/api');
+      console.log('[Profile] Calling authenticatedDelete /api/account');
       await authenticatedDelete('/api/account');
       console.log('[Profile] DELETE /api/account succeeded — clearing state and signing out');
       try {
-        const { updateAppState: updateState } = await import('@/utils/appState');
-        await updateState({
+        await updateStateUtil({
           revealViewed: false,
           revealUnlocked: false,
           quizCompleted: false,
@@ -106,9 +107,10 @@ export default function ProfileScreen() {
         console.warn('[Profile] Failed to reset appState on account deletion:', e);
       }
       await signOut();
+      Alert.alert('Account Deleted', 'Your account has been permanently deleted.');
       router.replace('/onboarding/welcome' as any);
     } catch (e: any) {
-      console.error('[Profile] DELETE /api/account failed:', e);
+      console.error('[Profile] DELETE /api/account failed:', e?.message, e?.status, JSON.stringify(e));
       setIsDeleting(false);
       const msg = (e?.message ?? '').toLowerCase();
       if (msg.includes('token') || msg.includes('sign in') || msg.includes('authentication')) {
