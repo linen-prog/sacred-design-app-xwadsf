@@ -1,7 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
-import * as schema from '../db/schema/schema.js';
-import * as authSchema from '../db/schema/auth-schema.js';
+import { sql } from 'drizzle-orm';
 import type { App } from '../index.js';
 
 export function register(app: App, fastify: any) {
@@ -44,57 +42,27 @@ export function register(app: App, fastify: any) {
     app.logger.info({ userId }, 'Deleting user account');
 
     try {
-      // Get user email before deletion
-      const userRows = await app.db
-        .select()
-        .from(authSchema.user)
-        .where(eq(authSchema.user.id, userId))
-        .limit(1);
-
-      const userEmail = userRows.length > 0 ? userRows[0].email : null;
-
-      // Delete in order to respect FK constraints
+      // Delete in FK-safe order using raw SQL
       // 1. alignment_reflections
-      await app.db
-        .delete(schema.alignmentReflections)
-        .where(eq(schema.alignmentReflections.userId, userId));
+      await app.db.execute(sql`DELETE FROM alignment_reflections WHERE user_id = ${userId}`);
 
       // 2. daily_alignments
-      await app.db
-        .delete(schema.dailyAlignments)
-        .where(eq(schema.dailyAlignments.userId, userId));
+      await app.db.execute(sql`DELETE FROM daily_alignments WHERE user_id = ${userId}`);
 
       // 3. user_archetypes
-      await app.db
-        .delete(schema.userArchetypes)
-        .where(eq(schema.userArchetypes.userId, userId));
+      await app.db.execute(sql`DELETE FROM user_archetypes WHERE user_id = ${userId}`);
 
       // 4. user_progress
-      await app.db
-        .delete(schema.userProgress)
-        .where(eq(schema.userProgress.userId, userId));
+      await app.db.execute(sql`DELETE FROM user_progress WHERE user_id = ${userId}`);
 
       // 5. account
-      await app.db
-        .delete(authSchema.account)
-        .where(eq(authSchema.account.userId, userId));
+      await app.db.execute(sql`DELETE FROM account WHERE user_id = ${userId}`);
 
       // 6. session
-      await app.db
-        .delete(authSchema.session)
-        .where(eq(authSchema.session.userId, userId));
+      await app.db.execute(sql`DELETE FROM "session" WHERE user_id = ${userId}`);
 
-      // 7. verification (only if user has email)
-      if (userEmail) {
-        await app.db
-          .delete(authSchema.verification)
-          .where(eq(authSchema.verification.identifier, userEmail));
-      }
-
-      // 8. user
-      await app.db
-        .delete(authSchema.user)
-        .where(eq(authSchema.user.id, userId));
+      // 7. user
+      await app.db.execute(sql`DELETE FROM "user" WHERE id = ${userId}`);
 
       app.logger.info({ userId }, 'Account deleted successfully');
 
