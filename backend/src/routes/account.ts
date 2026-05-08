@@ -64,25 +64,25 @@ export function register(app: App, fastify: any) {
         .delete(schema.dailyAlignments)
         .where(eq(schema.dailyAlignments.userId, userId));
 
-      // 3. user_progress
-      await app.db
-        .delete(schema.userProgress)
-        .where(eq(schema.userProgress.userId, userId));
-
-      // 4. user_archetypes
+      // 3. user_archetypes
       await app.db
         .delete(schema.userArchetypes)
         .where(eq(schema.userArchetypes.userId, userId));
 
-      // 5. session
+      // 4. user_progress
       await app.db
-        .delete(authSchema.session)
-        .where(eq(authSchema.session.userId, userId));
+        .delete(schema.userProgress)
+        .where(eq(schema.userProgress.userId, userId));
 
-      // 6. account
+      // 5. account
       await app.db
         .delete(authSchema.account)
         .where(eq(authSchema.account.userId, userId));
+
+      // 6. session
+      await app.db
+        .delete(authSchema.session)
+        .where(eq(authSchema.session.userId, userId));
 
       // 7. verification (only if user has email)
       if (userEmail) {

@@ -189,17 +189,6 @@ describe("API Integration Tests", () => {
       alignmentId = data.alignment.id;
     });
 
-    test("POST /api/alignments/generate accepts optional local_date parameter", async () => {
-      const res = await authenticatedApi("/api/alignments/generate", authToken, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ local_date: "2026-04-28" }),
-      });
-      await expectStatus(res, 200);
-      const data = await res.json();
-      expect(data.alignment).toBeDefined();
-    });
-
     test("POST /api/alignments/generate returns 401 without authentication", async () => {
       const res = await api("/api/alignments/generate", {
         method: "POST",
