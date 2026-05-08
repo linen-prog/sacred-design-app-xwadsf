@@ -36,7 +36,7 @@ export function register(app: App, fastify: any) {
       description: 'Generate a daily alignment using the user\'s saved archetype',
       tags: ['alignments'],
       response: {
-        200: {
+        201: {
           description: 'Daily alignment generated successfully',
           type: 'object',
           properties: {
@@ -109,14 +109,22 @@ export function register(app: App, fastify: any) {
       const secondaryArchetype = row.secondaryArchetype;
       const blendName = row.blendName;
 
-      // Count existing daily_alignments to determine day_number
-      const alignmentCount = await app.db
-        .select({ count: count() })
-        .from(schema.dailyAlignments)
-        .where(eq(schema.dailyAlignments.userId, userId));
+      // Query user_progress to get day_count
+      const progressRows = await app.db
+        .select()
+        .from(schema.userProgress)
+        .where(eq(schema.userProgress.userId, userId))
+        .limit(1);
 
-      const dayNumber = (alignmentCount[0]?.count || 0) + 1;
-      const level = Math.ceil(dayNumber / 7);
+      let dayCount = 1;
+      if (progressRows.length > 0) {
+        dayCount = progressRows[0].dayCount || 1;
+      }
+
+      const dayNumber = dayCount;
+      const level = Math.min(Math.ceil(dayCount / 7), 10);
+
+      app.logger.info({ userId, dayNumber, level }, '[generate] day_number: ' + dayNumber + ', level: ' + level);
 
       // Call AI to generate alignment
       const prompt = `You are a sacred design spiritual guide. Generate a daily alignment for someone whose sacred design blend is '${blendName}' (primary archetype: ${primaryArchetype}, secondary: ${secondaryArchetype}). Day ${dayNumber}, Level ${level}.
@@ -163,8 +171,40 @@ Return ONLY valid JSON with these exact keys:
         .returning();
 
       const inserted = insertResult[0];
-      app.logger.info({ userId }, '[generate] inserted alignment id: ' + inserted.id);
+      app.logger.info({ userId, alignmentId: inserted.id }, '[generate] inserted alignment id: ' + inserted.id);
 
+      // Get today's date in YYYY-MM-DD format for last_active_date
+      const today = new Date().toISOString().split('T')[0];
+
+      // Upsert user_progress
+      if (progressRows.length > 0) {
+        // Update existing row
+        await app.db
+          .update(schema.userProgress)
+          .set({
+            dayCount: dayCount + 1,
+            lastActiveDate: today,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.userProgress.userId, userId));
+
+        app.logger.info({ userId, newDayCount: dayCount + 1 }, '[generate] user_progress updated');
+      } else {
+        // Insert new row
+        await app.db
+          .insert(schema.userProgress)
+          .values({
+            userId,
+            dayCount: 2,
+            lastActiveDate: today,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+
+        app.logger.info({ userId }, '[generate] user_progress created');
+      }
+
+      reply.status(201);
       return { alignment: inserted };
     } catch (error) {
       app.logger.error({ err: error, userId }, '[generate] Failed to generate alignment');

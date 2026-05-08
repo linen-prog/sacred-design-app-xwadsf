@@ -218,7 +218,7 @@ describe("API Integration Tests", () => {
       const res = await authenticatedApi("/api/alignments/generate", authToken, {
         method: "POST",
       });
-      await expectStatus(res, 200);
+      await expectStatus(res, 201);
       const data = await res.json();
       expect(data.alignment).toBeDefined();
       expect(data.alignment.id).toBeDefined();
@@ -284,7 +284,7 @@ describe("API Integration Tests", () => {
       const alignRes = await authenticatedApi("/api/alignments/generate", authToken, {
         method: "POST",
       });
-      await expectStatus(alignRes, 200);
+      await expectStatus(alignRes, 201);
       const alignData = await alignRes.json();
       const otherAlignmentId = alignData.alignment.id;
 
