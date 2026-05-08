@@ -186,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithApple = async () => {
     console.log('[AuthContext] signInWithApple started — platform:', Platform.OS);
+    let cancelled = false;
     try {
       const appleOptions: { provider: 'apple'; callbackURL?: string } = { provider: 'apple' };
       if (Platform.OS === 'web') {
@@ -209,20 +210,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const isCancel = msg.includes('cancel') || msg.includes('dismiss') || msg.includes('closed');
       if (!isCancel) {
         console.error('[AuthContext] signInWithApple threw:', e?.message, e?.code);
-        throw e; // Only re-throw non-cancel errors
+        throw e;
       } else {
+        cancelled = true;
         console.log('[AuthContext] signInWithApple cancelled/dismissed by user');
-        return; // Don't call fetchUser on cancel
       }
     } finally {
-      // Always refresh session — expoClient may have set cookies even if response had no token
-      await fetchUser();
-      console.log('[AuthContext] signInWithApple: fetchUser completed');
+      if (!cancelled) {
+        // expoClient writes the session cookie to SecureStore asynchronously.
+        // Retry fetchUser up to 4 times with 500ms gaps to avoid a race condition.
+        let attempts = 0;
+        const maxAttempts = 4;
+        let sessionFound = false;
+        while (attempts < maxAttempts) {
+          await fetchUser();
+          const { data: session } = await authClient.getSession();
+          if (session?.user) {
+            sessionFound = true;
+            break;
+          }
+          attempts++;
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+        console.log('[AuthContext] signInWithApple: session found after retry:', sessionFound);
+      }
     }
   };
 
   const signInWithGoogle = async () => {
     console.log('[AuthContext] signInWithGoogle started — platform:', Platform.OS);
+    let cancelled = false;
     try {
       const googleOptions: { provider: 'google'; callbackURL?: string } = { provider: 'google' };
       if (Platform.OS === 'web') {
@@ -246,15 +265,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const isCancel = msg.includes('cancel') || msg.includes('dismiss') || msg.includes('closed');
       if (!isCancel) {
         console.error('[AuthContext] signInWithGoogle threw:', e?.message, e?.code);
-        throw e; // Only re-throw non-cancel errors
+        throw e;
       } else {
+        cancelled = true;
         console.log('[AuthContext] signInWithGoogle cancelled/dismissed by user');
-        return; // Don't call fetchUser on cancel
       }
     } finally {
-      // Always refresh session — expoClient may have set cookies even if response had no token
-      await fetchUser();
-      console.log('[AuthContext] signInWithGoogle: fetchUser completed');
+      if (!cancelled) {
+        // expoClient writes the session cookie to SecureStore asynchronously.
+        // Retry fetchUser up to 4 times with 500ms gaps to avoid a race condition.
+        let attempts = 0;
+        const maxAttempts = 4;
+        let sessionFound = false;
+        while (attempts < maxAttempts) {
+          await fetchUser();
+          const { data: session } = await authClient.getSession();
+          if (session?.user) {
+            sessionFound = true;
+            break;
+          }
+          attempts++;
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+        console.log('[AuthContext] signInWithGoogle: session found after retry:', sessionFound);
+      }
     }
   };
 
