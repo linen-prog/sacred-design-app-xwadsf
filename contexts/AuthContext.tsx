@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
 import { authClient, setBearerToken, clearAuthTokens, getSessionToken } from "@/lib/auth";
+import { clearAppState } from "@/utils/appState";
 
 interface User {
   id: string;
@@ -74,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Guard against concurrent or rapid-fire fetchUser calls
   const isFetchingRef = useRef(false);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track whether this is the first fetchUser call — only show loading spinner on initial load
+  const isInitialFetchRef = useRef(true);
 
   useEffect(() => {
     fetchUser();
@@ -106,7 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async () => {
     try {
-      setLoading(true);
+      // Only show the loading spinner on the very first call — interval polls
+      // must not cause the whole app to re-render into a loading state.
+      if (isInitialFetchRef.current) {
+        setLoading(true);
+      }
       const { data: session } = await authClient.getSession();
       console.log('[AuthContext] fetchUser raw session data:', JSON.stringify(session));
       console.log("[AuthContext] fetchUser session:", JSON.stringify(session));
@@ -135,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Failed to fetch user:", error);
       setUser(null);
     } finally {
+      isInitialFetchRef.current = false;
       setLoading(false);
     }
   };
@@ -190,18 +198,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AuthContext] signInWithApple response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
       if (error) {
         console.error('[AuthContext] signInWithApple error code:', error.code, 'message:', error.message);
-        throw new Error(error.message || 'Apple sign in failed');
+        // Don't throw — let fetchUser() run in finally to pick up any session
       }
       if ((data as any)?.session?.token) {
         await setBearerToken((data as any).session.token);
         console.log('[AuthContext] signInWithApple: stored token from response');
       }
-      // Always refresh session after OAuth — expoClient may have set cookies
-      await fetchUser();
-      console.log('[AuthContext] signInWithApple success — user loaded');
     } catch (e: any) {
-      console.error('[AuthContext] signInWithApple threw:', e?.message, e?.code);
-      throw e;
+      const msg = (e?.message ?? '').toLowerCase();
+      const isCancel = msg.includes('cancel') || msg.includes('dismiss') || msg.includes('closed');
+      if (!isCancel) {
+        console.error('[AuthContext] signInWithApple threw:', e?.message, e?.code);
+        throw e; // Only re-throw non-cancel errors
+      } else {
+        console.log('[AuthContext] signInWithApple cancelled/dismissed by user');
+        return; // Don't call fetchUser on cancel
+      }
+    } finally {
+      // Always refresh session — expoClient may have set cookies even if response had no token
+      await fetchUser();
+      console.log('[AuthContext] signInWithApple: fetchUser completed');
     }
   };
 
@@ -219,18 +235,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AuthContext] signInWithGoogle response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
       if (error) {
         console.error('[AuthContext] signInWithGoogle error code:', error.code, 'message:', error.message);
-        throw new Error(error.message || 'Google sign in failed');
+        // Don't throw — let fetchUser() run in finally to pick up any session
       }
       if ((data as any)?.session?.token) {
         await setBearerToken((data as any).session.token);
         console.log('[AuthContext] signInWithGoogle: stored token from response');
       }
-      // Always refresh session after OAuth — expoClient may have set cookies
-      await fetchUser();
-      console.log('[AuthContext] signInWithGoogle success — user loaded');
     } catch (e: any) {
-      console.error('[AuthContext] signInWithGoogle threw:', e?.message, e?.code);
-      throw e;
+      const msg = (e?.message ?? '').toLowerCase();
+      const isCancel = msg.includes('cancel') || msg.includes('dismiss') || msg.includes('closed');
+      if (!isCancel) {
+        console.error('[AuthContext] signInWithGoogle threw:', e?.message, e?.code);
+        throw e; // Only re-throw non-cancel errors
+      } else {
+        console.log('[AuthContext] signInWithGoogle cancelled/dismissed by user');
+        return; // Don't call fetchUser on cancel
+      }
+    } finally {
+      // Always refresh session — expoClient may have set cookies even if response had no token
+      await fetchUser();
+      console.log('[AuthContext] signInWithGoogle: fetchUser completed');
     }
   };
 
@@ -242,6 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setUser(null);
       await clearAuthTokens();
+      await clearAppState(); // bust in-memory cache so next user doesn't see stale state
     }
   };
 

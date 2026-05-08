@@ -138,10 +138,19 @@ export default function SettingsScreen() {
       }
       await signOut();
       router.replace("/onboarding/welcome");
-    } catch (e) {
+    } catch (e: any) {
       console.error("[Settings] DELETE /api/account failed:", e);
       setIsDeleting(false);
-      Alert.alert("Error", "Failed to delete account. Please try again.");
+      const msg = (e?.message ?? '').toLowerCase();
+      if (msg.includes('token') || msg.includes('sign in') || msg.includes('authentication')) {
+        Alert.alert(
+          "Session Expired",
+          "Your session has expired. Please sign out and sign back in, then try deleting your account again.",
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert("Error", "Failed to delete account. Please try again.");
+      }
     }
   }
 

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
@@ -75,6 +76,7 @@ function StuckCard({ item, index, archetypeName, onPress }: StuckCardProps) {
 
 export default function RevealScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { sacredDesignResult, restoreFromBackend } = useContext(DiscoveryContext);
   const { user } = useAuth();
   const { updateAppState } = useAppState();
@@ -380,7 +382,7 @@ export default function RevealScreen() {
         <Animated.View
           style={[
             styles.promptCard,
-            { transform: [{ translateY: promptTranslateY }], opacity: promptOpacity },
+            { transform: [{ translateY: promptTranslateY }], opacity: promptOpacity, paddingBottom: Math.max(40, insets.bottom + 24) },
           ]}
         >
           <View style={styles.promptHandle} />

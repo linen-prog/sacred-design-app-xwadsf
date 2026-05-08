@@ -231,13 +231,6 @@ export default function AuthScreen() {
             </Pressable>
           </View>
 
-          {/* Forgot password */}
-          <Pressable
-            style={styles.forgotRow}
-            onPress={() => console.log('[AuthScreen] Forgot password pressed')}
-          >
-            <Text style={styles.forgotText}>Forgot password?</Text>
-          </Pressable>
         </View>
 
         {/* Error card */}
@@ -279,7 +272,7 @@ export default function AuthScreen() {
               navigateAfterAuth(true);
             } catch (e: any) {
               const msg = e?.message || 'Apple sign in failed. Please try again.';
-              const isCancel = msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss');
+              const isCancel = msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss') || msg.toLowerCase().includes('closed');
               if (!isCancel) {
                 console.error('[AuthScreen] Apple sign in error:', msg);
                 setError(msg);
@@ -314,7 +307,7 @@ export default function AuthScreen() {
               navigateAfterAuth(true);
             } catch (e: any) {
               const msg = e?.message || 'Google sign in failed. Please try again.';
-              const isCancel = msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss');
+              const isCancel = msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss') || msg.toLowerCase().includes('closed');
               if (!isCancel) {
                 console.error('[AuthScreen] Google sign in error:', msg);
                 setError(msg);
@@ -401,6 +394,9 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
     paddingHorizontal: 28,
     alignItems: "stretch",
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
   },
   eyebrow: {
     fontFamily: "Inter_400Regular",
@@ -445,16 +441,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-  },
-  forgotRow: {
-    alignSelf: "flex-end",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  forgotText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: "rgba(201,168,76,0.55)",
   },
   errorCard: {
     backgroundColor: "rgba(192,57,43,0.12)",

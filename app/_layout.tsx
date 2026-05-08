@@ -310,6 +310,7 @@ function RootNavigator() {
       <Stack.Screen name="partial-reveal" options={{ headerShown: false }} />
       <Stack.Screen name="alignment-detail" options={{ headerShown: false }} />
       <Stack.Screen name="post-quiz-save" options={{ headerShown: false }} />
+      <Stack.Screen name="paywall" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="shadow-path" options={{ headerShown: false }} />
       <Stack.Screen
