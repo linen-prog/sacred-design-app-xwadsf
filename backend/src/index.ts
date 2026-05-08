@@ -18,10 +18,9 @@ export const app = await createApplication(schema);
 export type App = typeof app;
 
 // Enable authentication with email/password, Google OAuth, Apple OAuth, and anonymous sign-in
-// OAuth providers (Google, Apple) are handled automatically via proxy - no credentials needed
 app.withAuth({
   trustedOrigins: [
-    "sacred-design://",
+    "sacreddesign://",
     "exp://",
     "https://cs3k7h8f4szhmtksqpktmjeg97sgd89z.app.specular.dev",
   ],
@@ -39,9 +38,14 @@ app.withAuth({
       });
     },
   },
-  // OAuth providers configured automatically:
-  // - Google OAuth (/api/auth/sign-in/social with provider=google)
-  // - Apple OAuth (/api/auth/sign-in/social with provider=apple)
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      redirectURI: "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev/api/auth/callback/google",
+    },
+  },
+  // Apple OAuth is configured via the proxy (no explicit config needed)
 });
 
 // Register routes - add your route modules here
