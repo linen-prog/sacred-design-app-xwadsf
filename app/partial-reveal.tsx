@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiFetch } from '@/lib/auth';
 import { useAppState } from '@/contexts/AppStateContext';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 import { getPreviewContent, ArchetypePreviewContent } from '@/constants/ArchetypeContent';
@@ -102,7 +103,6 @@ export default function PartialRevealScreen() {
       let backendResolved = false;
       const backendTimer = setTimeout(async () => {
         try {
-          const { apiFetch } = await import('@/lib/auth');
           const res = await apiFetch('/api/archetypes/me');
           if (!res.ok) {
             console.warn('[PartialReveal] Backend restore failed with status:', res.status);

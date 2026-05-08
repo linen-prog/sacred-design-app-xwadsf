@@ -5,14 +5,13 @@
  *
  * Also backed by AsyncStorage so it survives hot-reload within the same session.
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 let quizJustCompleted = false;
 
 export function markQuizComplete() {
   quizJustCompleted = true;
-  // Also write to AsyncStorage as a backup for hot-reload scenarios
-  import('@react-native-async-storage/async-storage').then(({ default: AsyncStorage }) => {
-    AsyncStorage.setItem('quizJustCompleted_session', 'true').catch(() => {});
-  });
+  AsyncStorage.setItem('quizJustCompleted_session', 'true').catch(() => {});
   console.log('[quizState] markQuizComplete() called — navigation guard disabled');
 }
 
@@ -24,7 +23,6 @@ export function isQuizJustCompleted() {
 export async function clearQuizJustCompleted() {
   quizJustCompleted = false;
   try {
-    const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
     await AsyncStorage.removeItem('quizJustCompleted_session');
   } catch (e) {}
 }
