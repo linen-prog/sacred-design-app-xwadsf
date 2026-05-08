@@ -10,6 +10,7 @@ import {
   Animated,
   ImageSourcePropType,
   Pressable,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,6 +27,7 @@ const CARD_BG = "#FFFFFF";
 const BUTTON_BG = "#6F8A6A";
 const SKELETON_BG = "#E8E3DA";
 const SUCCESS_TINT = "#EAF2EA";
+const SUCCESS_TEXT = "#4A7A4A";
 const BANNER_BG = "#FDF6E3";
 const BANNER_BORDER = "#C9A84C";
 const BANNER_TEXT = "#7A5C1E";
@@ -55,6 +57,21 @@ interface ProgressData {
   streak: number;
   last_active_date?: string;
 }
+
+interface MoodOption {
+  emoji: string;
+  label: string;
+  value: string;
+}
+
+const MOOD_OPTIONS: MoodOption[] = [
+  { emoji: "😌", label: "Peaceful", value: "peaceful" },
+  { emoji: "😰", label: "Anxious", value: "anxious" },
+  { emoji: "🙏", label: "Grateful", value: "grateful" },
+  { emoji: "😔", label: "Heavy", value: "heavy" },
+  { emoji: "✨", label: "Hopeful", value: "hopeful" },
+  { emoji: "😴", label: "Tired", value: "tired" },
+];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resolveImageSource(
@@ -150,11 +167,18 @@ export default function HomeScreen() {
   const [alignment, setAlignment] = useState<DailyAlignment | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [authRequired, setAuthRequired] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
+  // Mood state
+  const [todayMood, setTodayMood] = useState<string | null>(null);
+  const [moodSaving, setMoodSaving] = useState(false);
+  const [moodSaved, setMoodSaved] = useState(false);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const bannerOpacity = useRef(new Animated.Value(0)).current;
+  const moodSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // On mount: if result is missing and user is signed in, try to restore from backend
   useEffect(() => {
@@ -190,8 +214,27 @@ export default function HomeScreen() {
     if (!sacredDesignResult) return;
     loadTodayAlignment();
     loadProgress();
+    loadTodayMood();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sacredDesignResult]);
+
+  // After sign-in, reload alignment if it wasn't loaded due to 401
+  useEffect(() => {
+    if (isSignedIn && sacredDesignResult && !alignment && !loading) {
+      console.log("[Home] User just signed in — reloading alignment");
+      setAuthRequired(false);
+      loadTodayAlignment();
+      loadTodayMood();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn]);
+
+  // Cleanup mood saved timer on unmount
+  useEffect(() => {
+    return () => {
+      if (moodSavedTimer.current) clearTimeout(moodSavedTimer.current);
+    };
+  }, []);
 
   async function loadProgress() {
     console.log("[Home] GET /api/progress");
@@ -214,53 +257,90 @@ export default function HomeScreen() {
     }
   }
 
+  async function loadTodayMood() {
+    if (!isSignedIn) return;
+    const localDate = new Date().toISOString().split("T")[0];
+    console.log("[Home] GET /api/moods/today?date=" + localDate);
+    try {
+      const res = await apiFetch(`/api/moods/today?date=${localDate}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn("[Home] GET /api/moods/today failed:", res.status, errText);
+        return;
+      }
+      const data = await res.json();
+      console.log("[Home] /api/moods/today response:", data);
+      if (data && data.mood) {
+        setTodayMood(data.mood);
+      }
+    } catch (e) {
+      console.warn("[Home] loadTodayMood error:", e);
+    }
+  }
+
+  async function handleMoodSelect(value: string) {
+    console.log("[Home] Mood selected:", value);
+    setTodayMood(value);
+    if (!isSignedIn) return;
+    setMoodSaving(true);
+    const localDate = new Date().toISOString().split("T")[0];
+    console.log("[Home] POST /api/moods — mood:", value, "date:", localDate);
+    try {
+      const res = await apiFetch("/api/moods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mood: value, date: localDate }),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn("[Home] POST /api/moods failed:", res.status, errText);
+      } else {
+        console.log("[Home] Mood saved successfully");
+        setMoodSaved(true);
+        if (moodSavedTimer.current) clearTimeout(moodSavedTimer.current);
+        moodSavedTimer.current = setTimeout(() => setMoodSaved(false), 1500);
+      }
+    } catch (e) {
+      console.warn("[Home] handleMoodSelect error:", e);
+    } finally {
+      setMoodSaving(false);
+    }
+  }
+
   async function loadTodayAlignment() {
     setLoading(true);
     setError("");
+    setAuthRequired(false);
     fadeAnim.setValue(0);
-    console.log("[Home] GET /api/alignments/today");
+    const localDate = new Date().toISOString().split("T")[0];
+    console.log("[Home] GET /api/alignments/today?local_date=" + localDate);
     try {
-      const res = await apiFetch("/api/alignments/today");
+      const res = await apiFetch(`/api/alignments/today?local_date=${localDate}`);
       if (!res.ok) {
         const errText = await res.text();
         console.warn("[Home] GET /api/alignments/today failed:", res.status, errText);
-        setError("Couldn't load today's alignment.");
+        if (res.status === 401) {
+          setAuthRequired(true);
+        } else {
+          setError("Couldn't load today's alignment.");
+        }
         return;
       }
-      const data: { alignment: DailyAlignment | null } = await res.json();
-      console.log("[Home] /api/alignments/today response — alignment:", data.alignment ? data.alignment.id : "null");
-
+      const data: { alignment: DailyAlignment | null; reason?: string } = await res.json();
+      console.log("[Home] alignment:", data.alignment?.id ?? "null", "reason:", data.reason ?? "none");
       if (data.alignment) {
         setAlignment(data.alignment);
         Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+      } else if (data.reason === "no_archetype") {
+        setError("Complete your Sacred Design quiz to generate your alignment.");
       } else {
-        await generateAlignment();
+        setError("Couldn't generate today's alignment.");
       }
     } catch (e) {
       console.warn("[Home] loadTodayAlignment error:", e);
       setError("Couldn't load today's alignment.");
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function generateAlignment() {
-    console.log("[Home] POST /api/alignments/generate — generating today's alignment");
-    try {
-      const res = await apiFetch("/api/alignments/generate", { method: "POST" });
-      if (!res.ok) {
-        const errText = await res.text();
-        console.warn("[Home] POST /api/alignments/generate failed:", res.status, errText);
-        setError("Couldn't generate today's alignment.");
-        return;
-      }
-      const data: DailyAlignment = await res.json();
-      console.log("[Home] Alignment generated:", data.id, "day", data.day_number);
-      setAlignment(data);
-      Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
-    } catch (e) {
-      console.warn("[Home] generateAlignment error:", e);
-      setError("Couldn't generate today's alignment.");
     }
   }
 
@@ -327,6 +407,9 @@ export default function HomeScreen() {
   const dayCount = progress?.day_count ?? 0;
   const showDay2Upsell = !isSubscribed && dayCount >= 1 && sacredDesignResult != null;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _quizCompleted = quizCompleted;
+
   // ── State A: quiz not complete ──────────────────────────────────────────────
   if (!sacredDesignResult) {
     return (
@@ -378,9 +461,6 @@ export default function HomeScreen() {
   const streakLabel = progress ? `🔥 ${progress.streak}-day streak` : "";
   const daysLabel = progress ? `${progress.day_count} days total` : "";
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _quizCompleted = quizCompleted;
-
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
       <Pressable
@@ -400,6 +480,40 @@ export default function HomeScreen() {
       ) : (
         <Text style={styles.subtitle}>Your daily practice awaits.</Text>
       )}
+
+      {/* Mood check-in row */}
+      <View style={styles.moodSection}>
+        <View style={styles.moodLabelRow}>
+          <Text style={styles.moodLabel}>How are you feeling?</Text>
+          {moodSaved && !moodSaving && (
+            <Text style={styles.moodSavedText}>✓ Saved</Text>
+          )}
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.moodScrollContent}
+        >
+          {MOOD_OPTIONS.map((option) => {
+            const isSelected = todayMood === option.value;
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => handleMoodSelect(option.value)}
+                style={[
+                  styles.moodPill,
+                  isSelected ? styles.moodPillSelected : styles.moodPillUnselected,
+                ]}
+              >
+                <Text style={styles.moodEmoji}>{option.emoji}</Text>
+                <Text style={[styles.moodPillLabel, isSelected && styles.moodPillLabelSelected]}>
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {showBanner && (
         <Animated.View style={[styles.reengageBanner, { opacity: bannerOpacity }]}>
@@ -447,6 +561,21 @@ export default function HomeScreen() {
           <SkeletonCard />
           <Text style={styles.generatingHint}>Preparing your alignment…</Text>
         </>
+      ) : authRequired ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Sign In to Continue</Text>
+          <Text style={styles.cardBody}>
+            Sign in to generate your daily alignment and save your progress.
+          </Text>
+          <AnimatedPressable onPress={() => {
+            console.log("[Home] 'Sign In' CTA pressed — navigating to auth-screen");
+            router.push("/auth-screen");
+          }}>
+            <View style={styles.button}>
+              <Text style={styles.buttonText}>Sign In</Text>
+            </View>
+          </AnimatedPressable>
+        </View>
       ) : error ? (
         <View style={styles.card}>
           <Text style={styles.fallbackText}>{error}</Text>
@@ -479,7 +608,7 @@ export default function HomeScreen() {
           Retake Discovery
         </Text>
       </Pressable>
-      {!isSignedIn && (
+      {!isSignedIn && !authRequired && (
         <Pressable
           onPress={() => {
             console.log("[Home] 'Sign in to save your progress' pressed — navigating to auth-screen");
@@ -487,7 +616,13 @@ export default function HomeScreen() {
           }}
           style={{ marginTop: 8, padding: 8 }}
         >
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: TEXT_MUTED, textAlign: "center" }}>
+          <Text style={{
+            fontFamily: "Inter_500Medium",
+            fontSize: 13,
+            color: BUTTON_BG,
+            textAlign: "center",
+            textDecorationLine: "underline",
+          }}>
             Sign in to save your progress
           </Text>
         </Pressable>
@@ -525,7 +660,7 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
     textAlign: "center",
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   blendSubtitle: {
     fontFamily: "Inter_400Regular",
@@ -534,7 +669,62 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontStyle: "italic",
     lineHeight: 20,
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  // Mood section
+  moodSection: {
+    width: "100%",
+    marginBottom: 20,
+  },
+  moodLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  moodLabel: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: TEXT_MUTED,
+    letterSpacing: 0.3,
+  },
+  moodSavedText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    color: SUCCESS_TEXT,
+  },
+  moodScrollContent: {
+    gap: 8,
+    paddingRight: 4,
+  },
+  moodPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 50,
+    gap: 5,
+  },
+  moodPillSelected: {
+    backgroundColor: BUTTON_BG,
+  },
+  moodPillUnselected: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#D4CFC8",
+  },
+  moodEmoji: {
+    fontSize: 15,
+  },
+  moodPillLabel: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: TEXT,
+  },
+  moodPillLabelSelected: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_500Medium",
   },
   reengageBanner: {
     width: "100%",
@@ -734,5 +924,9 @@ const styles = StyleSheet.create({
   settingsIcon: {
     fontSize: 18,
     color: TEXT_MUTED,
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _unused: {
+    backgroundColor: SUCCESS_TEXT,
   },
 });
