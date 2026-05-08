@@ -303,6 +303,9 @@ function RootNavigator() {
     <Stack>
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
+      <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+      <Stack.Screen name="auth-screen" options={{ headerShown: false }} />
       <Stack.Screen name="reveal" options={{ headerShown: false }} />
       <Stack.Screen name="partial-reveal" options={{ headerShown: false }} />
       <Stack.Screen name="alignment-detail" options={{ headerShown: false }} />
@@ -338,6 +341,9 @@ const SUBSCRIPTION_REDIRECT_BLOCKLIST = [
   '/post-quiz-save',
   '/completion',
   '/paywall',
+  '/auth-screen',
+  '/auth-popup',
+  '/auth-callback',
 ];
 
 function SubscriptionRedirect() {

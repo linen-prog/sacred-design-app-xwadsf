@@ -279,7 +279,13 @@ export default function AuthScreen() {
               navigateAfterAuth(true);
             } catch (e: any) {
               const msg = e?.message || 'Apple sign in failed. Please try again.';
-              if (!msg.toLowerCase().includes('cancel')) setError(msg);
+              const isCancel = msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss');
+              if (!isCancel) {
+                console.error('[AuthScreen] Apple sign in error:', msg);
+                setError(msg);
+              } else {
+                console.log('[AuthScreen] Apple sign in cancelled by user');
+              }
             } finally {
               setAppleLoading(false);
             }
@@ -308,7 +314,13 @@ export default function AuthScreen() {
               navigateAfterAuth(true);
             } catch (e: any) {
               const msg = e?.message || 'Google sign in failed. Please try again.';
-              if (!msg.toLowerCase().includes('cancel')) setError(msg);
+              const isCancel = msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss');
+              if (!isCancel) {
+                console.error('[AuthScreen] Google sign in error:', msg);
+                setError(msg);
+              } else {
+                console.log('[AuthScreen] Google sign in cancelled by user');
+              }
             } finally {
               setGoogleLoading(false);
             }

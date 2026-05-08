@@ -177,39 +177,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const signInWithApple = async () => {
-    console.log('[AuthContext] signInWithApple started');
-    const callbackURL = Platform.OS === 'web'
-      ? `${window.location.origin}/auth-callback`
-      : 'sacreddesign://auth-callback';
-    const { data, error } = await authClient.signIn.social({
-      provider: 'apple',
-      callbackURL,
-    });
-    console.log('[AuthContext] signInWithApple response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
-    if (error) throw new Error(error.message || 'Apple sign in failed');
-    if ((data as any)?.session?.token) {
-      await setBearerToken((data as any).session.token);
+    console.log('[AuthContext] signInWithApple started — platform:', Platform.OS);
+    try {
+      const callbackURL = Platform.OS === 'web'
+        ? `${window.location.origin}/auth-callback`
+        : 'sacreddesign://auth-callback';
+      console.log('[AuthContext] signInWithApple callbackURL:', callbackURL);
+      const { data, error } = await authClient.signIn.social({
+        provider: 'apple',
+        callbackURL,
+      });
+      console.log('[AuthContext] signInWithApple response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
+      if (error) {
+        console.error('[AuthContext] signInWithApple error code:', error.code, 'message:', error.message);
+        throw new Error(error.message || 'Apple sign in failed');
+      }
+      if ((data as any)?.session?.token) {
+        await setBearerToken((data as any).session.token);
+        console.log('[AuthContext] signInWithApple: stored token from response');
+      }
+      // Always refresh session after OAuth — expoClient may have set cookies
+      await fetchUser();
+      console.log('[AuthContext] signInWithApple success — user loaded');
+    } catch (e: any) {
+      console.error('[AuthContext] signInWithApple threw:', e?.message, e?.code);
+      throw e;
     }
-    await fetchUser();
-    console.log('[AuthContext] signInWithApple success');
   };
 
   const signInWithGoogle = async () => {
-    console.log('[AuthContext] signInWithGoogle started');
-    const callbackURL = Platform.OS === 'web'
-      ? `${window.location.origin}/auth-callback`
-      : 'sacreddesign://auth-callback';
-    const { data, error } = await authClient.signIn.social({
-      provider: 'google',
-      callbackURL,
-    });
-    console.log('[AuthContext] signInWithGoogle response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
-    if (error) throw new Error(error.message || 'Google sign in failed');
-    if ((data as any)?.session?.token) {
-      await setBearerToken((data as any).session.token);
+    console.log('[AuthContext] signInWithGoogle started — platform:', Platform.OS);
+    try {
+      const callbackURL = Platform.OS === 'web'
+        ? `${window.location.origin}/auth-callback`
+        : 'sacreddesign://auth-callback';
+      console.log('[AuthContext] signInWithGoogle callbackURL:', callbackURL);
+      const { data, error } = await authClient.signIn.social({
+        provider: 'google',
+        callbackURL,
+      });
+      console.log('[AuthContext] signInWithGoogle response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
+      if (error) {
+        console.error('[AuthContext] signInWithGoogle error code:', error.code, 'message:', error.message);
+        throw new Error(error.message || 'Google sign in failed');
+      }
+      if ((data as any)?.session?.token) {
+        await setBearerToken((data as any).session.token);
+        console.log('[AuthContext] signInWithGoogle: stored token from response');
+      }
+      // Always refresh session after OAuth — expoClient may have set cookies
+      await fetchUser();
+      console.log('[AuthContext] signInWithGoogle success — user loaded');
+    } catch (e: any) {
+      console.error('[AuthContext] signInWithGoogle threw:', e?.message, e?.code);
+      throw e;
     }
-    await fetchUser();
-    console.log('[AuthContext] signInWithGoogle success');
   };
 
   const signOut = async () => {
