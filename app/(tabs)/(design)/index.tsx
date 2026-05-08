@@ -295,7 +295,9 @@ export default function MyDesignScreen() {
         token = await getSessionToken();
       }
       if (!token) {
-        Alert.alert('Not signed in', 'Please sign in to generate your alignment.');
+        console.log('[MyDesign] No session token after retry — routing to auth-screen');
+        setGenerating(false);
+        router.push('/auth-screen' as any);
         return;
       }
 
