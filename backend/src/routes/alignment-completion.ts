@@ -218,7 +218,7 @@ Return ONLY valid JSON with these exact keys:
   // GET /api/alignments/today
   fastify.get('/api/alignments/today', {
     schema: {
-      description: "Get today's alignment",
+      description: "Get today's alignment (auto-generates if missing)",
       tags: ['alignments'],
       querystring: {
         type: 'object',
@@ -254,7 +254,7 @@ Return ONLY valid JSON with these exact keys:
                 { type: 'null' },
               ],
             },
-            message: { type: 'string' },
+            reason: { type: 'string' },
           },
         },
         401: {
@@ -295,17 +295,99 @@ Return ONLY valid JSON with these exact keys:
         .orderBy(desc(schema.dailyAlignments.generatedAt))
         .limit(1);
 
-      if (alignments.length === 0) {
-        app.logger.info({ userId }, '[today] No alignment found for today');
-        return { alignment: null, message: 'No alignment found for today' };
+      if (alignments.length > 0) {
+        const alignment = alignments[0];
+        app.logger.info({ userId, alignmentId: alignment.id }, '[today] found alignment');
+        return { alignment };
       }
 
-      const alignment = alignments[0];
-      app.logger.info({ userId }, '[today] found alignment id: ' + alignment.id);
+      // Auto-generate alignment for today
+      app.logger.info({ userId }, '[today] auto-generating alignment for userId: ' + userId);
 
-      return { alignment };
+      // Look up user's archetype
+      const archetypeRows = await app.db
+        .select()
+        .from(schema.userArchetypes)
+        .where(eq(schema.userArchetypes.userId, userId))
+        .orderBy(desc(schema.userArchetypes.completedAt))
+        .limit(1);
+
+      if (archetypeRows.length === 0) {
+        app.logger.info({ userId }, '[today] No archetype found');
+        return { alignment: null, reason: 'no_archetype' };
+      }
+
+      const archetypeRow = archetypeRows[0];
+      const primaryArchetype = archetypeRow.primaryArchetype;
+      const secondaryArchetype = archetypeRow.secondaryArchetype;
+      const blendName = archetypeRow.blendName;
+
+      // Count existing alignments to determine day_number
+      const alignmentCount = await app.db
+        .select({ count: count() })
+        .from(schema.dailyAlignments)
+        .where(eq(schema.dailyAlignments.userId, userId));
+
+      const dayNumber = (alignmentCount[0]?.count || 0) + 1;
+      const level = Math.ceil(dayNumber / 7);
+
+      // Call AI to generate alignment
+      const prompt = `You are a sacred design guide. Generate a daily alignment practice for someone whose primary archetype is "${primaryArchetype}" and secondary archetype is "${secondaryArchetype}" (blend: "${blendName}"). This is day ${dayNumber} of their journey.
+
+Return ONLY a valid JSON object with these exact fields:
+- action: a short (1 sentence) actionable spiritual practice for today
+- guidance: 2-3 sentences of personalized guidance for their archetype blend
+- scripture: a relevant Bible verse or wisdom quote (include reference)
+- somatic_cue: a brief body-based awareness practice (1-2 sentences)
+- reflection_prompt: a journaling question for today`;
+
+      let aiOutput = FALLBACK_ALIGNMENT;
+      try {
+        const { text } = await generateText({
+          model: gateway('openai/gpt-4o-mini'),
+          prompt,
+        });
+
+        app.logger.info({ userId }, '[today] AI raw response: ' + text);
+
+        // Strip markdown code fences if present
+        let jsonText = text;
+        if (jsonText.includes('```json')) {
+          jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+        } else if (jsonText.includes('```')) {
+          jsonText = jsonText.replace(/```\n?/g, '');
+        }
+
+        aiOutput = JSON.parse(jsonText.trim());
+      } catch (aiError) {
+        app.logger.warn({ err: aiError, userId }, '[today] AI generation failed, using fallback');
+      }
+
+      // Insert into daily_alignments
+      const insertResult = await app.db
+        .insert(schema.dailyAlignments)
+        .values({
+          userId,
+          dayNumber,
+          level,
+          action: aiOutput.action,
+          guidance: aiOutput.guidance,
+          scripture: aiOutput.scripture,
+          somaticCue: aiOutput.somatic_cue,
+          reflectionPrompt: aiOutput.reflection_prompt,
+          primaryArchetype: primaryArchetype,
+          secondaryArchetype: secondaryArchetype,
+          blendName: blendName,
+          generatedAt: new Date(),
+        })
+        .returning();
+
+      const inserted = insertResult[0];
+      app.logger.info({ userId, alignmentId: inserted.id }, '[today] alignment generated successfully, id: ' + inserted.id);
+
+      return { alignment: inserted };
     } catch (error) {
-      app.logger.error({ err: error, userId }, '[today] Failed to fetch today\'s alignment');
+      app.logger.error({ err: error, userId }, '[today] generation failed: ' + (error instanceof Error ? error.message : String(error)));
       throw error;
     }
   });

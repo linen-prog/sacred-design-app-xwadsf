@@ -46,3 +46,12 @@ export const userArchetypes = pgTable('user_archetypes', {
   completedAt: timestamp('completed_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const moodEntries = pgTable('mood_entries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  mood: text('mood').notNull(),
+  note: text('note'),
+  recordedAt: timestamp('recorded_at', { withTimezone: true }).defaultNow().notNull(),
+  date: text('date').notNull(),
+});

@@ -466,6 +466,156 @@ describe("API Integration Tests", () => {
     });
   });
 
+  describe("Moods", () => {
+    let moodId: string;
+
+    test("POST /api/moods creates a mood entry when authenticated", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mood: "happy",
+          date: "2026-05-08",
+          note: "Had a great day",
+        }),
+      });
+      await expectStatus(res, 201);
+      const data = await res.json();
+      expect(data.mood).toBeDefined();
+      expect(data.mood.id).toBeDefined();
+      expect(data.mood.mood).toBe("happy");
+      expect(data.mood.date).toBe("2026-05-08");
+      moodId = data.mood.id;
+    });
+
+    test("POST /api/moods creates mood without optional note field", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mood: "calm",
+          date: "2026-05-07",
+        }),
+      });
+      await expectStatus(res, 201);
+      const data = await res.json();
+      expect(data.mood).toBeDefined();
+      expect(data.mood.id).toBeDefined();
+    });
+
+    test("POST /api/moods returns 401 without authentication", async () => {
+      const res = await api("/api/moods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mood: "happy",
+          date: "2026-05-08",
+        }),
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("POST /api/moods returns 400 with missing mood field", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: "2026-05-08",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/moods returns 400 with missing date field", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mood: "happy",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/moods returns 400 with invalid date format", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mood: "happy",
+          date: "invalid-date",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("GET /api/moods returns moods array when authenticated", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.moods).toBeDefined();
+      expect(Array.isArray(data.moods)).toBe(true);
+    });
+
+    test("GET /api/moods accepts optional limit query parameter", async () => {
+      const res = await authenticatedApi("/api/moods?limit=10", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.moods).toBeDefined();
+      expect(Array.isArray(data.moods)).toBe(true);
+    });
+
+    test("GET /api/moods returns 401 without authentication", async () => {
+      const res = await api("/api/moods", {
+        method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("GET /api/moods/today returns mood for specific date when authenticated", async () => {
+      const res = await authenticatedApi("/api/moods/today?date=2026-05-08", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.mood).toBeDefined();
+    });
+
+    test("GET /api/moods/today returns null if no mood found for date", async () => {
+      const res = await authenticatedApi("/api/moods/today?date=1990-01-01", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.mood).toBeNull();
+    });
+
+    test("GET /api/moods/today returns 401 without authentication", async () => {
+      const res = await api("/api/moods/today?date=2026-05-08", {
+        method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("GET /api/moods/today returns 400 with missing required date parameter", async () => {
+      const res = await authenticatedApi("/api/moods/today", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("GET /api/moods/today returns 400 with invalid date format", async () => {
+      const res = await authenticatedApi("/api/moods/today?date=invalid-date", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
+    });
+  });
+
   describe("Account", () => {
     test("DELETE /api/account deletes account when authenticated", async () => {
       // Create a new user for deletion since this endpoint removes the account
