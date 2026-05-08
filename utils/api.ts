@@ -1,5 +1,5 @@
 import Constants from "expo-constants";
-import { getSessionToken, API_URL } from "@/lib/auth";
+import { getSessionToken, setBearerToken, authClient, API_URL } from "@/lib/auth";
 
 export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || API_URL;
 
@@ -83,7 +83,21 @@ export const authenticatedApiCall = async <T = any>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> => {
-  const token = await getBearerToken();
+  let token = await getBearerToken();
+
+  // Fallback: if no cached token, try getting it directly from the auth client session
+  if (!token) {
+    try {
+      const { data: session } = await authClient.getSession();
+      if (session?.session?.token) {
+        token = session.session.token;
+        await setBearerToken(token); // cache it for next time
+        console.log('[api] authenticatedApiCall: token retrieved from authClient session and cached');
+      }
+    } catch (e) {
+      console.warn('[api] authenticatedApiCall: failed to get session from authClient:', e);
+    }
+  }
 
   if (!token) {
     throw new Error("Authentication token not found. Please sign in.");

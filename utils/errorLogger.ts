@@ -31,6 +31,8 @@ const SILENT_ERRORS = [
   '[AuthContext] signInWithEmail error',
   '[AuthContext] signInWithGoogle error',
   '[AuthContext] signInWithApple error',
+  'Authentication token not found',
+  'DELETE /api/account failed',
 ];
 
 // Check if an error should be silenced from the Expo overlay (but still logged to server)
