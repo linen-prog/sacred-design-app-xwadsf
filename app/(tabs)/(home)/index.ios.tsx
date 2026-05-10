@@ -73,6 +73,8 @@ const MOOD_OPTIONS: MoodOption[] = [
   { emoji: "😴", label: "Tired", value: "tired" },
 ];
 
+let _hasRestoredFromBackend = false;
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resolveImageSource(
   source: string | number | ImageSourcePropType | undefined
@@ -192,7 +194,9 @@ export default function HomeScreen() {
 
   // On mount: if result is missing and user is signed in, try to restore from backend
   useEffect(() => {
+    if (_hasRestoredFromBackend) return;
     if (!sacredDesignResult && isSignedIn) {
+      _hasRestoredFromBackend = true;
       console.log("[Home] No local result but user is signed in — attempting restore from backend");
       apiFetch("/api/archetypes/me")
         .then(async (res) => {
@@ -214,6 +218,7 @@ export default function HomeScreen() {
         })
         .catch((e) => {
           console.warn("[Home] GET /api/archetypes/me error:", e);
+          _hasRestoredFromBackend = false; // allow retry on error
         });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

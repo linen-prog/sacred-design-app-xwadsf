@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from 'react';
 import { AppState, DEFAULT_APP_STATE, loadAppState, updateAppState as updateAppStateUtil, retakeQuiz as retakeQuizUtil } from '@/utils/appState';
@@ -22,6 +23,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [appState, setAppState] = useState<AppState>(DEFAULT_APP_STATE);
   const [isLoading, setIsLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
+  const prevAppStateRef = useRef<AppState | null>(null);
 
   // Reload state whenever the authenticated user changes (including sign-out → null)
   useEffect(() => {
@@ -35,7 +37,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         ...state,
         authStatus: user ? 'logged_in' : 'logged_out',
       };
-      setAppState(withAuth);
+      // Only update if something meaningful changed — prevents re-render cascade
+      const prev = prevAppStateRef.current;
+      const changed = !prev ||
+        prev.revealViewed !== withAuth.revealViewed ||
+        prev.quizCompleted !== withAuth.quizCompleted ||
+        prev.primaryArchetype !== withAuth.primaryArchetype ||
+        prev.revealUnlocked !== withAuth.revealUnlocked ||
+        prev.onboardingStarted !== withAuth.onboardingStarted ||
+        prev.authStatus !== withAuth.authStatus;
+      if (changed) {
+        prevAppStateRef.current = withAuth;
+        setAppState(withAuth);
+      }
       setIsLoading(false);
     });
   }, [user?.id, authLoading]);

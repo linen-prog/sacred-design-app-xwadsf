@@ -475,10 +475,8 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     setQuizCompleted(true);
     AsyncStorage.setItem('sacredDesignResult', JSON.stringify(result)).catch(() => {});
     AsyncStorage.setItem('quizCompleted', 'true').catch(() => {});
-    updateAppState({
-      primaryArchetype: result.primary_archetype,
-      secondaryArchetype: result.secondary_archetype,
-    }).catch(() => {});
+    // Do NOT call updateAppState here — it triggers AppStateContext re-render
+    // which remounts the home screen in an infinite loop
   }, []);
 
   const value = useMemo(() => ({
