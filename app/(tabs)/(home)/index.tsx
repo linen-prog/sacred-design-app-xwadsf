@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
 const SUNRISE_BG = require("../../../assets/images/d3098b1f-c5af-4697-be26-2cfc5ed63440.jpeg");
-const CROSS_ICON = require("../../../assets/images/a4de0a35-1abd-4849-ad35-b3ca6d982180.jpeg");
+const CROSS_ICON = require("../../../assets/images/65fa7755-083f-43bd-82a4-789333225a03.jpeg");
 
 const BG = "#F5EFE6";
 const TEXT = "#2A3A2F";
@@ -524,7 +524,7 @@ export default function HomeScreen() {
           <Text style={styles.eyebrow}>SACRED DESIGN</Text>
           <Image
             source={CROSS_ICON}
-            style={[styles.crossIcon, { blendMode: 'multiply' } as any]}
+            style={[styles.crossIcon, { blendMode: 'screen' } as any]}
             resizeMode="contain"
           />
           <Text style={styles.heroTitle}>Bring Your{"\n"}Design to Life</Text>
@@ -607,7 +607,7 @@ export default function HomeScreen() {
         <Text style={styles.eyebrow}>SACRED DESIGN</Text>
         <Image
           source={CROSS_ICON}
-          style={[styles.crossIcon, { blendMode: 'multiply' } as any]}
+          style={[styles.crossIcon, { blendMode: 'screen' } as any]}
           resizeMode="contain"
         />
 
@@ -1183,8 +1183,8 @@ const styles = StyleSheet.create({
     color: BUTTON_BG,
   },
   crossIcon: {
-    width: 80,
-    height: 80,
+    width: 96,
+    height: 96,
     alignSelf: "center",
     marginBottom: 8,
   },
