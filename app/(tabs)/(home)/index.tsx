@@ -522,11 +522,23 @@ export default function HomeScreen() {
 
         <View style={styles.contentWrapper}>
           <Text style={styles.eyebrow}>SACRED DESIGN</Text>
-          <Image
-            source={CROSS_ICON}
-            style={[styles.crossIcon, { blendMode: 'multiply' } as any]}
-            resizeMode="contain"
-          />
+          <View style={styles.crossIconWrapper}>
+            <LinearGradient
+              colors={[
+                "rgba(255,215,130,0.38)",
+                "rgba(255,230,160,0.18)",
+                "rgba(255,244,220,0.00)",
+              ]}
+              locations={[0, 0.5, 1]}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+            <Image
+              source={CROSS_ICON}
+              style={[styles.crossIcon, { blendMode: 'multiply' } as any]}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.heroTitle}>Bring Your{"\n"}Design to Life</Text>
           <Text style={styles.subtitle}>One small step today makes it real.</Text>
           <View style={styles.card}>
@@ -605,11 +617,23 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.eyebrow}>SACRED DESIGN</Text>
-        <Image
-          source={CROSS_ICON}
-          style={[styles.crossIcon, { blendMode: 'multiply' } as any]}
-          resizeMode="contain"
-        />
+        <View style={styles.crossIconWrapper}>
+          <LinearGradient
+            colors={[
+              "rgba(255,215,130,0.38)",
+              "rgba(255,230,160,0.18)",
+              "rgba(255,244,220,0.00)",
+            ]}
+            locations={[0, 0.5, 1]}
+            style={StyleSheet.absoluteFillObject}
+            pointerEvents="none"
+          />
+          <Image
+            source={CROSS_ICON}
+            style={[styles.crossIcon, { blendMode: 'multiply' } as any]}
+            resizeMode="contain"
+          />
+        </View>
 
         {/* Dynamic greeting */}
         <Text style={styles.heroTitle}>{greetingLine}</Text>
@@ -1182,11 +1206,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: BUTTON_BG,
   },
+  crossIconWrapper: {
+    alignSelf: "center",
+    marginBottom: 8,
+    width: 200,
+    height: 110,
+    borderRadius: 18,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,244,220,0.28)",
+    borderWidth: 1,
+    borderColor: "rgba(196,154,87,0.22)",
+    shadowColor: "#C49A57",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 3,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   crossIcon: {
     width: 200,
     height: 110,
-    alignSelf: "center",
-    marginBottom: 8,
+    opacity: 0.90,
   },
   settingsButton: {
     position: "absolute",
