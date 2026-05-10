@@ -140,6 +140,17 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      {/* Settings button — top right */}
+      <TouchableOpacity
+        style={styles.settingsButton}
+        onPress={() => {
+          console.log('[Profile] Settings button pressed');
+          router.push('/settings' as any);
+        }}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="settings-outline" size={22} color="rgba(201,168,76,0.8)" />
+      </TouchableOpacity>
       <LinearGradient
         colors={['#0A0E1A', '#1A1030', '#0D1A14']}
         style={StyleSheet.absoluteFill}
@@ -536,5 +547,12 @@ const styles = StyleSheet.create({
     color: 'rgba(245,240,232,0.5)',
     paddingVertical: 12,
     textAlign: 'center',
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: 56,
+    right: 24,
+    zIndex: 10,
+    padding: 8,
   },
 });
