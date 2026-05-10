@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, ImageBackground } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import type { LucideIcon } from 'lucide-react-native';
+
+const QUIZ_BG = require('../assets/images/6203a26c-7e60-4d20-91a8-e4ec578007fc.jpeg');
 
 interface ReflectionScreenProps {
   icon: LucideIcon;
@@ -25,7 +27,12 @@ export function ReflectionScreen({ icon: Icon, text, buttonLabel, onContinue }: 
   }, [opacity, translateY]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+    <ImageBackground
+      source={QUIZ_BG}
+      style={{ flex: 1, backgroundColor: COLORS.background }}
+      resizeMode="cover"
+      imageStyle={{ opacity: 0.55 }}
+    >
       {/* Animated content area */}
       <Animated.View
         style={{
@@ -92,6 +99,6 @@ export function ReflectionScreen({ icon: Icon, text, buttonLabel, onContinue }: 
           </Text>
         </AnimatedPressable>
       </View>
-    </View>
+    </ImageBackground>
   );
 }

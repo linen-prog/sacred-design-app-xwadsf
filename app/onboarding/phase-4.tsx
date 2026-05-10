@@ -1,7 +1,9 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated, Modal } from 'react-native';
+import { View, Text, Animated, Modal, ImageBackground } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
+
+const QUIZ_BG = require('../../assets/images/6203a26c-7e60-4d20-91a8-e4ec578007fc.jpeg');
 import { DiscoveryContext, Phase4Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
 import { ScaleButton } from '@/components/ScaleButton';
@@ -249,7 +251,12 @@ export default function Phase4Screen() {
 
   if (showIntro) {
     return (
-      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <ImageBackground
+        source={QUIZ_BG}
+        style={{ flex: 1, backgroundColor: COLORS.background }}
+        resizeMode="cover"
+        imageStyle={{ opacity: 0.55 }}
+      >
         {savedModal}
         <OverallProgressBar phase={4} questionIndex={0} />
         <Animated.View
@@ -342,12 +349,17 @@ export default function Phase4Screen() {
             </AnimatedPressable>
           </View>
         </Animated.View>
-      </View>
+      </ImageBackground>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+    <ImageBackground
+      source={QUIZ_BG}
+      style={{ flex: 1, backgroundColor: COLORS.background }}
+      resizeMode="cover"
+      imageStyle={{ opacity: 0.55 }}
+    >
       {savedModal}
       <Animated.View
         style={{
@@ -487,6 +499,6 @@ export default function Phase4Screen() {
           </Text>
         </AnimatedPressable>
       </Animated.View>
-    </View>
+    </ImageBackground>
   );
 }

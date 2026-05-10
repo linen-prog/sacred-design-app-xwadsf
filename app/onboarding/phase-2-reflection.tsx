@@ -8,6 +8,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,11 +16,13 @@ import { OverallProgressBar } from '@/components/OverallProgressBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { updateAppState } from '@/utils/appState';
 
-const BG = '#0A0E1A';
-const TEXT = '#F5F0E8';
-const TEXT_MUTED = '#8B7355';
+const QUIZ_BG = require('../../assets/images/6203a26c-7e60-4d20-91a8-e4ec578007fc.jpeg');
+
+const BG = '#F7F4EF';
+const TEXT = '#2C3A2C';
+const TEXT_MUTED = '#8A8070';
 const GOLD = '#C9A84C';
-const INPUT_BG = '#131929';
+const INPUT_BG = 'rgba(255,252,245,0.85)';
 const INPUT_BORDER = 'rgba(201,168,76,0.35)';
 
 export default function Phase2ReflectionScreen() {
@@ -57,8 +60,14 @@ export default function Phase2ReflectionScreen() {
   const buttonLabel = saving ? 'Saving…' : 'Continue to Phase 3 →';
 
   return (
+    <ImageBackground
+      source={QUIZ_BG}
+      style={{ flex: 1, backgroundColor: '#F7F4EF' }}
+      resizeMode="cover"
+      imageStyle={{ opacity: 0.55 }}
+    >
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: BG }}
+      style={{ flex: 1, backgroundColor: 'transparent' }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <OverallProgressBar phase={2} questionIndex={10} />
@@ -104,13 +113,14 @@ export default function Phase2ReflectionScreen() {
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: BG,
+    backgroundColor: 'transparent',
     paddingHorizontal: 28,
     alignItems: 'stretch',
   },
@@ -174,7 +184,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
-    color: '#0A0E1A',
+    color: '#FFFFFF',
     letterSpacing: 0.2,
   },
   skipLink: {
