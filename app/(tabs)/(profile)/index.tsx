@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,8 @@ import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 import { ARCHETYPE_CONTENT, ArchetypeName } from '@/constants/ArchetypeContent';
 import { authenticatedDelete } from '@/utils/api';
 import { updateAppState as updateStateUtil } from '@/utils/appState';
+
+const PROFILE_BG = require('../../../assets/images/6091b954-bfb4-49c9-99c8-72885c920f6a.jpeg');
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -138,6 +141,12 @@ export default function ProfileScreen() {
   const userIdentifier = userEmail ?? userName ?? null;
 
   return (
+    <ImageBackground
+      source={PROFILE_BG}
+      style={{ flex: 1, backgroundColor: '#F5F0EB' }}
+      resizeMode="cover"
+      imageStyle={{ opacity: 0.45 }}
+    >
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       {/* Settings button — top right */}
       <TouchableOpacity
@@ -308,13 +317,14 @@ export default function ProfileScreen() {
         </Pressable>
       </Modal>
     </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F5F0EB',
+    backgroundColor: 'transparent',
   },
   scroll: {
     flex: 1,
@@ -386,7 +396,7 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.82)',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(111,138,106,0.12)',
@@ -407,7 +417,7 @@ const styles = StyleSheet.create({
 
   // Alignment card
   alignmentCard: {
-    backgroundColor: 'rgba(111,138,106,0.08)',
+    backgroundColor: 'rgba(111,138,106,0.10)',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(111,138,106,0.2)',
