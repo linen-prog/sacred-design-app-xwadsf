@@ -157,7 +157,15 @@ function getFirstSentence(text: string): string {
 }
 
 export default function HomeScreen() {
-  console.log('[DailyAlignment] render');
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  console.log('[DailyAlignment] render count:', renderCount.current);
+
+  useEffect(() => {
+    console.log('[DailyAlignment] MOUNT');
+    return () => console.log('[DailyAlignment] UNMOUNT');
+  }, []);
+
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { sacredDesignResult, quizCompleted, clearSacredDesign, restoreFromBackend } = useContext(DiscoveryContext);

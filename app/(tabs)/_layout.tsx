@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Tabs, useRouter } from "expo-router";
 import FloatingTabBar, { TabBarItem } from "@/components/FloatingTabBar";
 import { useSubscriptionGuard } from "@/hooks/useSubscriptionGuard";
@@ -15,10 +15,14 @@ export default function TabLayout() {
   useSubscriptionGuard();
   const router = useRouter();
   const { appState, isLoading } = useAppState();
+  const hasRedirectedRef = useRef(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- router intentionally omitted: useRouter() returns new refs on every render
   useEffect(() => {
     if (isLoading) return;
+    if (hasRedirectedRef.current) return;
     if (!appState.revealViewed) {
+      hasRedirectedRef.current = true;
       console.log("[TabLayout] revealViewed=false — guarding tabs access");
       if (appState.revealUnlocked) {
         console.log("[TabLayout] revealUnlocked=true — redirecting to /reveal");
@@ -32,7 +36,7 @@ export default function TabLayout() {
         router.replace(resumeStep as any);
       }
     }
-  }, [appState.revealViewed, appState.revealUnlocked, appState.quizCompleted, appState.currentOnboardingStep, isLoading, router]);
+  }, [appState.revealViewed, appState.revealUnlocked, appState.quizCompleted, appState.currentOnboardingStep, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Tabs
