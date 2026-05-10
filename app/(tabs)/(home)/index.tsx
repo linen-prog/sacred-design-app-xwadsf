@@ -37,7 +37,7 @@ const UPSELL_BG = "#1A1208";
 const UPSELL_GOLD = "#C8A96B";
 const UPSELL_TEXT = "#F5EFE6";
 const UPSELL_MUTED = "rgba(245,239,230,0.65)";
-const CROSS_COLOR = "rgba(200,169,107,0.25)";
+
 
 interface DailyAlignment {
   id: string;
@@ -494,9 +494,6 @@ export default function HomeScreen() {
           style={styles.bgGlow}
           pointerEvents="none"
         />
-        {/* Faint cross background */}
-        <Text style={styles.bgCross} pointerEvents="none">✝</Text>
-
         <Pressable
           onPress={() => {
             console.log("[Home] Settings button pressed");
@@ -508,7 +505,7 @@ export default function HomeScreen() {
         </Pressable>
 
         <View style={styles.contentWrapper}>
-          <Text style={styles.eyebrow}>✝  SACRED DESIGN</Text>
+          <Text style={styles.eyebrow}>SACRED DESIGN</Text>
           <Text style={styles.heroTitle}>Bring Your{"\n"}Design to Life</Text>
           <Text style={styles.subtitle}>One small step today makes it real.</Text>
           <View style={styles.card}>
@@ -560,9 +557,6 @@ export default function HomeScreen() {
         style={styles.bgGlow}
         pointerEvents="none"
       />
-      {/* Faint cross background */}
-      <Text style={styles.bgCross} pointerEvents="none">✝</Text>
-
       <Pressable
         onPress={() => {
           console.log("[Home] Settings button pressed");
@@ -578,7 +572,7 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.eyebrow}>✝  SACRED DESIGN</Text>
+        <Text style={styles.eyebrow}>SACRED DESIGN</Text>
 
         {/* Dynamic greeting */}
         <Text style={styles.heroTitle}>{greetingLine}</Text>
@@ -763,9 +757,8 @@ export default function HomeScreen() {
             {/* Action */}
             <Text style={styles.actionText}>{alignment.action}</Text>
 
-            {/* Gold divider + cross */}
+            {/* Gold divider */}
             <View style={styles.cardDivider} />
-            <Text style={styles.cardCross}>✝</Text>
 
             {/* Guidance preview */}
             <Text style={styles.guidancePreview} numberOfLines={2} ellipsizeMode="tail">
@@ -780,7 +773,7 @@ export default function HomeScreen() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Text style={styles.buttonText}>✝  Respond to Today  →</Text>
+                <Text style={styles.buttonText}>Respond to Today</Text>
               </LinearGradient>
             </AnimatedPressable>
           </Animated.View>
@@ -827,14 +820,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 280,
-    zIndex: 0,
-  },
-  bgCross: {
-    position: "absolute",
-    top: 60,
-    alignSelf: "center",
-    fontSize: 120,
-    color: CROSS_COLOR,
     zIndex: 0,
   },
   contentWrapper: {
@@ -1090,13 +1075,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: GOLD,
     opacity: 0.5,
-    marginBottom: 16,
-  },
-  cardCross: {
-    fontSize: 14,
-    color: GOLD,
-    opacity: 0.6,
-    textAlign: "center",
     marginBottom: 16,
   },
   guidancePreview: {
