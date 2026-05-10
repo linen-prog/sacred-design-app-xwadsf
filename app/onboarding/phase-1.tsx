@@ -1,6 +1,6 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, Animated, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase1Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
@@ -27,8 +27,12 @@ const scaleValues = [1, 2, 3, 4, 5];
 
 export default function Phase1Screen() {
   const router = useRouter();
+  const { resumeIndex } = useLocalSearchParams<{ resumeIndex?: string }>();
   const { answers, setAnswer, computePhase1Scores } = useContext(DiscoveryContext);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    const idx = parseInt(resumeIndex ?? '0', 10);
+    return isNaN(idx) ? 0 : idx;
+  });
   const questionOpacity = useRef(new Animated.Value(1)).current;
   const screenOpacity = useRef(new Animated.Value(1)).current;
   const screenTranslateY = useRef(new Animated.Value(20)).current;
@@ -75,7 +79,7 @@ export default function Phase1Screen() {
         };
         console.log('[Phase1] All questions answered, storing phase 1 answers:', phaseAnswers);
         computePhase1Scores(phaseAnswers);
-        saveCheckpoint([1], updatedAnswers).catch(() => {});
+        saveCheckpoint([1], updatedAnswers, 1, PHASE_1_QUESTIONS.length - 1).catch(() => {});
         router.push('/onboarding/phase-complete?phase=1');
       }
     }, 300);
@@ -89,12 +93,18 @@ export default function Phase1Screen() {
   }
 
   async function handleSaveAndExit() {
-    console.log('[Phase1] Save & Continue Later pressed');
-    await saveCheckpoint([], answers);
+    console.log('[Phase1] Save & Continue Later pressed — currentIndex:', currentIndex, 'answers:', Object.keys(answers).length);
+    try {
+      await saveCheckpoint([], answers, 1, currentIndex);
+      await updateAppState({ currentOnboardingStep: '/onboarding/phase-1', onboardingStarted: true });
+      console.log('[Phase1] Checkpoint saved successfully');
+    } catch (e) {
+      console.warn('[Phase1] Failed to save checkpoint:', e);
+    }
     Alert.alert(
       'Progress Saved',
       'Your progress is saved. Come back anytime.',
-      [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+      [{ text: 'OK', onPress: () => setTimeout(() => router.replace('/(tabs)'), 50) }]
     );
   }
 

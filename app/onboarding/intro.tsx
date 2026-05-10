@@ -66,15 +66,18 @@ export default function IntroScreen() {
     router.push('/onboarding/phase-1');
   }
 
-  function handleResume() {
+  async function handleResume() {
     if (!checkpoint) return;
     // Restore answers into context
     Object.entries(checkpoint.answers).forEach(([id, value]) => {
       setAnswer(id, value);
     });
-    const nextRoute = getNextPhaseRoute(checkpoint.completedPhases);
-    console.log('[Intro] Resume pressed — completedPhases:', checkpoint.completedPhases, 'quizCompleted:', appState.quizCompleted, 'nextRoute:', nextRoute);
-    router.push(nextRoute as Parameters<typeof router.push>[0]);
+    const nextRoute = getNextPhaseRoute(checkpoint);
+    const resumeIndex = checkpoint.currentQuestionIndex ?? 0;
+    console.log('[Intro] Resume pressed — completedPhases:', checkpoint.completedPhases, 'currentPhase:', checkpoint.currentPhase, 'resumeIndex:', resumeIndex, 'nextRoute:', nextRoute);
+    await updateAppState({ currentOnboardingStep: nextRoute, onboardingStarted: true });
+    const routeWithIndex = resumeIndex > 0 ? `${nextRoute}?resumeIndex=${resumeIndex}` : nextRoute;
+    router.push(routeWithIndex as Parameters<typeof router.push>[0]);
   }
 
   function handleStartOver() {

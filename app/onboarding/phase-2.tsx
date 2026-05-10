@@ -1,6 +1,6 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, Animated, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase2Answers } from '@/contexts/DiscoveryContext';
 import { PhaseHeader } from '@/components/PhaseHeader';
@@ -29,9 +29,16 @@ const scaleValues = [1, 2, 3, 4, 5];
 
 export default function Phase2Screen() {
   const router = useRouter();
+  const { resumeIndex } = useLocalSearchParams<{ resumeIndex?: string }>();
   const { answers, setAnswer, computePhase2Scores } = useContext(DiscoveryContext);
-  const [showIntro, setShowIntro] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [showIntro, setShowIntro] = useState(() => {
+    const idx = parseInt(resumeIndex ?? '0', 10);
+    return isNaN(idx) || idx === 0;
+  });
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    const idx = parseInt(resumeIndex ?? '0', 10);
+    return isNaN(idx) ? 0 : idx;
+  });
   const questionOpacity = useRef(new Animated.Value(1)).current;
   const screenOpacity = useRef(new Animated.Value(1)).current;
   const screenTranslateY = useRef(new Animated.Value(20)).current;
@@ -83,7 +90,7 @@ export default function Phase2Screen() {
         };
         console.log('[Phase2] All questions answered, storing phase 2 answers:', phaseAnswers);
         computePhase2Scores(phaseAnswers);
-        saveCheckpoint([1, 2], updatedAnswers).catch(() => {});
+        saveCheckpoint([1, 2], updatedAnswers, 2, PHASE_2_QUESTIONS.length - 1).catch(() => {});
         router.push('/onboarding/phase-complete?phase=2');
       }
     }, 300);
@@ -97,12 +104,18 @@ export default function Phase2Screen() {
   }
 
   async function handleSaveAndExit() {
-    console.log('[Phase2] Save & Continue Later pressed');
-    await saveCheckpoint([1], answers);
+    console.log('[Phase2] Save & Continue Later pressed — currentIndex:', currentIndex, 'answers:', Object.keys(answers).length);
+    try {
+      await saveCheckpoint([1], answers, 2, currentIndex);
+      await updateAppState({ currentOnboardingStep: '/onboarding/phase-2', onboardingStarted: true });
+      console.log('[Phase2] Checkpoint saved successfully');
+    } catch (e) {
+      console.warn('[Phase2] Failed to save checkpoint:', e);
+    }
     Alert.alert(
       'Progress Saved',
       'Your progress is saved. Come back anytime.',
-      [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+      [{ text: 'OK', onPress: () => setTimeout(() => router.replace('/(tabs)'), 50) }]
     );
   }
 
