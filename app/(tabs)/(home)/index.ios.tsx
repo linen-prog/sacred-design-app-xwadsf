@@ -600,9 +600,6 @@ export default function HomeScreen() {
       >
         <Text style={styles.eyebrow}>SACRED DESIGN</Text>
 
-        {/* Dynamic greeting */}
-        <Text style={styles.heroTitle}>{greetingLine}</Text>
-
         {/* Blend subtitle — split into two lines */}
         {blendName ? (
           <View style={styles.blendSubtitleContainer}>
@@ -876,14 +873,16 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: TEXT_MUTED,
+    color: "#5C6E4A",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 16,
+    marginTop: 32,
   },
   blendSubtitleContainer: {
     alignItems: "center",
     marginBottom: 0,
+    marginTop: 32,
   },
   blendSubtitleLine1: {
     fontFamily: "Inter_400Regular",
@@ -893,11 +892,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   blendSubtitleLine2: {
-    fontFamily: "Lora_400Regular",
-    fontSize: 18,
-    color: GOLD,
+    fontFamily: "Lora_700Bold",
+    fontSize: 26,
+    color: "#5C6E4A",
     fontStyle: "italic",
     textAlign: "center",
+    textShadowColor: "rgba(255,255,255,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   headerDivider: {
     width: 40,
