@@ -142,7 +142,11 @@ export default function WelcomeScreen() {
               paddingHorizontal: 32,
               width: '100%',
               alignItems: 'center',
-              boxShadow: '0 5px 18px rgba(80, 110, 75, 0.42)',
+              shadowColor: '#5C7A57',
+              shadowOffset: { width: 0, height: 5 },
+              shadowOpacity: 0.42,
+              shadowRadius: 9,
+              elevation: 4,
             })}
             accessibilityRole="button"
             accessibilityLabel="Begin Your Discovery"
