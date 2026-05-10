@@ -96,6 +96,8 @@ function NavigationGuard() {
     prevUserRef.current = currentUserId;
 
     async function determineInitialRoute() {
+      console.log('[LaunchRouter] redirect decision:', { revealViewed: appState.revealViewed, quizCompleted: appState.quizCompleted, pathname });
+
       // If the quiz was just completed in this JS session (preparing.tsx
       // already called markQuizComplete + router.replace('/partial-reveal')), do
       // nothing — the navigation is already in flight.
@@ -295,7 +297,21 @@ function NavigationGuard() {
 
     determineInitialRoute();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, appStateLoading, user, appState, pathname]);
+  }, [
+    authLoading,
+    appStateLoading,
+    user,
+    appState.revealViewed,
+    appState.quizCompleted,
+    appState.postQuizSaveCompleted,
+    appState.revealUnlocked,
+    appState.primaryArchetype,
+    appState.onboardingStarted,
+    appState.firstLaunch,
+    appState.currentOnboardingStep,
+    appState.dailyAlignmentReady,
+    pathname,
+  ]);
 
   return null;
 }
