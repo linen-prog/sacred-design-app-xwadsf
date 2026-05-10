@@ -7,10 +7,13 @@ import {
   StyleSheet,
   Animated,
   Pressable,
+  ImageBackground,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { apiFetch } from "@/lib/auth";
+
+const JOURNEY_BG = require("../../../assets/images/3c13e2d7-0feb-4251-9c16-2d05c7546294.jpeg");
 
 interface ReflectionItem {
   id: string;
@@ -221,8 +224,14 @@ export default function JourneyScreen() {
     : "Your Sacred Design journey";
 
   return (
+    <ImageBackground
+      source={JOURNEY_BG}
+      style={{ flex: 1, backgroundColor: BG }}
+      resizeMode="cover"
+      imageStyle={{ opacity: 0.55 }}
+    >
     <ScrollView
-      style={styles.scroll}
+      style={[styles.scroll, { backgroundColor: 'transparent' }]}
       contentContainerStyle={[
         styles.content,
         { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 120 },
@@ -348,13 +357,13 @@ export default function JourneyScreen() {
         </View>
       )}
     </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: BG,
   },
   content: {
     paddingHorizontal: 24,
@@ -392,13 +401,11 @@ const styles = StyleSheet.create({
     backgroundColor: DIVIDER,
   },
   emptyArea: {
-    backgroundColor: CARD_BG,
+    backgroundColor: "rgba(255,253,247,0.88)",
     borderRadius: 20,
     minHeight: 180,
     alignItems: "center",
     justifyContent: "center",
-    // @ts-expect-error — RN web supports boxShadow
-    boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
   },
   emptyInner: {
     alignItems: "center",
@@ -424,17 +431,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   historyCard: {
-    backgroundColor: CARD_BG,
+    backgroundColor: "rgba(255,253,247,0.88)",
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 18,
-    shadowColor: "#000",
+    shadowColor: "#3D3530",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
     borderWidth: 1,
-    borderColor: DIVIDER,
+    borderColor: "rgba(201,168,76,0.15)",
   },
   historyCardPressed: {
     opacity: 0.75,
@@ -500,17 +507,17 @@ const styles = StyleSheet.create({
     marginTop: 36,
   },
   reflectionCard: {
-    backgroundColor: CARD_BG,
+    backgroundColor: "rgba(255,253,247,0.88)",
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 18,
-    shadowColor: "#000",
+    shadowColor: "#3D3530",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
     borderWidth: 1,
-    borderColor: DIVIDER,
+    borderColor: "rgba(201,168,76,0.15)",
   },
   reflectionCardTop: {
     flexDirection: "row",
