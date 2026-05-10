@@ -7,7 +7,10 @@ import {
   Pressable,
   Alert,
   TouchableOpacity,
+  ImageBackground,
 } from "react-native";
+
+const LIGHT_BG = require("../../../assets/images/3468421c-2e1c-4c11-b86d-e8fa5018ce3c.jpeg");
 import { useRouter } from "expo-router";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 import { ARCHETYPE_CONTENT, ArchetypeName } from "@/constants/ArchetypeContent";
@@ -379,8 +382,9 @@ export default function MyDesignScreen() {
   if (!sacredDesignResult) {
     console.log("[MyDesign] No sacredDesignResult — showing placeholder");
     return (
+      <ImageBackground source={LIGHT_BG} style={{ flex: 1 }} resizeMode="cover" imageStyle={{ opacity: 0.35 }}>
       <ScrollView
-        style={styles.scroll}
+        style={[styles.scroll, { backgroundColor: 'transparent' }]}
         contentContainerStyle={styles.emptyContent}
         showsVerticalScrollIndicator={false}
       >
@@ -404,6 +408,7 @@ export default function MyDesignScreen() {
           })}
         </View>
       </ScrollView>
+      </ImageBackground>
     );
   }
 
@@ -417,7 +422,7 @@ export default function MyDesignScreen() {
   const hasStuckPatterns = content?.stuckPatterns && content.stuckPatterns.length > 0;
 
   return (
-    <View style={{ flex: 1, backgroundColor: BG }}>
+    <ImageBackground source={LIGHT_BG} style={{ flex: 1, backgroundColor: BG }} resizeMode="cover" imageStyle={{ opacity: 0.35 }}>
       {/* Back arrow */}
       <TouchableOpacity
         onPress={() => {
@@ -432,7 +437,7 @@ export default function MyDesignScreen() {
       </TouchableOpacity>
 
       <ScrollView
-        style={styles.scroll}
+        style={[styles.scroll, { backgroundColor: 'transparent' }]}
         contentContainerStyle={styles.resultContent}
         showsVerticalScrollIndicator={false}
       >
@@ -568,14 +573,13 @@ export default function MyDesignScreen() {
         <Text style={styles.retakeButtonText}>Recalculate My Design</Text>
       </TouchableOpacity>
     </ScrollView>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: BG,
   },
   emptyContent: {
     paddingTop: 60,
@@ -602,16 +606,16 @@ const styles = StyleSheet.create({
 
   // Today's Focus card
   focusCard: {
-    backgroundColor: FOCUS_CARD_BG,
+    backgroundColor: "rgba(255,253,248,0.82)",
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 20,
     marginBottom: 32,
     borderLeftWidth: 3,
     borderLeftColor: GOLD,
-    shadowColor: "#000",
+    shadowColor: "#2F3E2F",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.10,
     shadowRadius: 12,
     elevation: 4,
   },
@@ -625,21 +629,21 @@ const styles = StyleSheet.create({
   focusAction: {
     fontFamily: "Lora_400Regular",
     fontSize: 16,
-    color: FOCUS_CARD_TEXT,
+    color: TEXT,
     lineHeight: 25,
     marginBottom: 16,
   },
   focusEmptyText: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: FOCUS_CARD_MUTED,
+    color: TEXT_MUTED,
     lineHeight: 21,
     marginBottom: 14,
   },
   focusLoadingText: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: FOCUS_CARD_MUTED,
+    color: TEXT_MUTED,
     lineHeight: 21,
   },
   focusButton: {
