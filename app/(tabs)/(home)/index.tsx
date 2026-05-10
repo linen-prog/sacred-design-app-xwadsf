@@ -8,6 +8,7 @@ import {
   Pressable,
   ScrollView,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
@@ -16,21 +17,27 @@ import { apiFetch } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
-const BG = "#F5F0EB";
-const TEXT = "#2C3A2C";
-const TEXT_MUTED = "#9A9A8E";
-const CARD_BG = "#FFFFFF";
-const BUTTON_BG = "#6F8A6A";
-const SKELETON_BG = "#E8E3DA";
-const SUCCESS_TINT = "#EAF2EA";
-const SUCCESS_TEXT = "#4A7A4A";
+const BG = "#F5EFE6";
+const TEXT = "#2F4034";
+const TEXT_MUTED = "#8A8070";
+const GOLD = "#C8A96B";
+const GOLD_LIGHT = "rgba(200,169,107,0.15)";
+const CARD_BG = "#FFFDF8";
+const CARD_BORDER = "rgba(200,169,107,0.18)";
+const BUTTON_BG = "#3D5A42";
+const BUTTON_GRADIENT_START = "#4A6B4F";
+const BUTTON_GRADIENT_END = "#2F4034";
+const SKELETON_BG = "#EDE6DA";
+const SUCCESS_TINT = "#EAF0EA";
+const SUCCESS_TEXT = "#3D6B42";
 const BANNER_BG = "#FDF6E3";
-const BANNER_BORDER = "#C9A84C";
+const BANNER_BORDER = "#C8A96B";
 const BANNER_TEXT = "#7A5C1E";
-const UPSELL_BG = "#0A0E1A";
-const UPSELL_GOLD = "#C9A84C";
-const UPSELL_TEXT = "#F5F0E8";
-const UPSELL_MUTED = "rgba(245,240,232,0.65)";
+const UPSELL_BG = "#1A1208";
+const UPSELL_GOLD = "#C8A96B";
+const UPSELL_TEXT = "#F5EFE6";
+const UPSELL_MUTED = "rgba(245,239,230,0.65)";
+const CROSS_COLOR = "rgba(200,169,107,0.25)";
 
 interface DailyAlignment {
   id: string;
@@ -481,6 +488,15 @@ export default function HomeScreen() {
   if (!sacredDesignResult) {
     return (
       <View style={[styles.container, { paddingTop: topPadding }]}>
+        {/* Background glow */}
+        <LinearGradient
+          colors={["rgba(255,240,200,0.35)", "transparent"]}
+          style={styles.bgGlow}
+          pointerEvents="none"
+        />
+        {/* Faint cross background */}
+        <Text style={styles.bgCross} pointerEvents="none">✝</Text>
+
         <Pressable
           onPress={() => {
             console.log("[Home] Settings button pressed");
@@ -490,31 +506,39 @@ export default function HomeScreen() {
         >
           <Text style={styles.settingsIcon}>⚙</Text>
         </Pressable>
-        <Text style={styles.eyebrow}>SACRED DESIGN</Text>
-        <Text style={styles.heroTitle}>Bring Your{"\n"}Design to Life</Text>
-        <Text style={styles.subtitle}>One small step today makes it real.</Text>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Begin Your Journey</Text>
-          <Text style={styles.cardBody}>
-            Discover how you naturally think, feel, and show up—and begin living it.
-          </Text>
-          <AnimatedPressable onPress={handleBeginPress}>
-            <View style={styles.button}>
-              <Text style={styles.buttonText}>Bring Your Design to Life</Text>
-            </View>
-          </AnimatedPressable>
+
+        <View style={styles.contentWrapper}>
+          <Text style={styles.eyebrow}>✝  SACRED DESIGN</Text>
+          <Text style={styles.heroTitle}>Bring Your{"\n"}Design to Life</Text>
+          <Text style={styles.subtitle}>One small step today makes it real.</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Begin Your Journey</Text>
+            <Text style={styles.cardBody}>
+              Discover how you naturally think, feel, and show up—and begin living it.
+            </Text>
+            <AnimatedPressable onPress={handleBeginPress}>
+              <LinearGradient
+                colors={[BUTTON_GRADIENT_START, BUTTON_GRADIENT_END]}
+                style={styles.buttonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.buttonText}>Bring Your Design to Life</Text>
+              </LinearGradient>
+            </AnimatedPressable>
+          </View>
+          <Pressable
+            onPress={() => {
+              console.log("[Home] 'Sign In' link pressed — navigating to auth-screen");
+              router.push("/auth-screen");
+            }}
+            style={{ marginTop: 20, padding: 8 }}
+          >
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: TEXT_MUTED, textAlign: "center" }}>
+              Sign In
+            </Text>
+          </Pressable>
         </View>
-        <Pressable
-          onPress={() => {
-            console.log("[Home] 'Sign In' link pressed — navigating to auth-screen");
-            router.push("/auth-screen");
-          }}
-          style={{ marginTop: 20, padding: 8 }}
-        >
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: TEXT_MUTED, textAlign: "center" }}>
-            Sign In
-          </Text>
-        </Pressable>
       </View>
     );
   }
@@ -530,6 +554,15 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
+      {/* Background glow */}
+      <LinearGradient
+        colors={["rgba(255,240,200,0.35)", "transparent"]}
+        style={styles.bgGlow}
+        pointerEvents="none"
+      />
+      {/* Faint cross background */}
+      <Text style={styles.bgCross} pointerEvents="none">✝</Text>
+
       <Pressable
         onPress={() => {
           console.log("[Home] Settings button pressed");
@@ -539,211 +572,245 @@ export default function HomeScreen() {
       >
         <Text style={styles.settingsIcon}>⚙</Text>
       </Pressable>
-      <Text style={styles.eyebrow}>SACRED DESIGN</Text>
 
-      {/* Dynamic greeting */}
-      <Text style={styles.heroTitle}>{greetingLine}</Text>
-      {blendName ? (
-        <Text style={styles.blendSubtitle}>Your sacred design: {blendName}</Text>
-      ) : (
-        <Text style={styles.subtitle}>Your daily practice awaits.</Text>
-      )}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.eyebrow}>✝  SACRED DESIGN</Text>
 
-      {/* Mood check-in row */}
-      <View style={styles.moodSection}>
-        <View style={styles.moodLabelRow}>
-          <Text style={styles.moodLabel}>How are you feeling?</Text>
-          {moodSaved && !moodSaving && (
-            <Text style={styles.moodSavedText}>✓ Saved</Text>
-          )}
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.moodScrollContent}
-        >
-          {MOOD_OPTIONS.map((option) => {
-            const isSelected = todayMood === option.value;
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => handleMoodSelect(option.value)}
-                style={[
-                  styles.moodPill,
-                  isSelected ? styles.moodPillSelected : styles.moodPillUnselected,
-                ]}
-              >
-                <Text style={styles.moodEmoji}>{option.emoji}</Text>
-                <Text style={[styles.moodPillLabel, isSelected && styles.moodPillLabelSelected]}>
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
+        {/* Dynamic greeting */}
+        <Text style={styles.heroTitle}>{greetingLine}</Text>
 
-      {/* Yesterday's Alignment Check-In */}
-      {yesterdayAlignment && !checkinDismissed && isSignedIn && (
-        <View style={styles.checkinCard}>
-          {checkinSaved ? (
-            <View style={styles.checkinSavedRow}>
-              <Text style={styles.checkinSavedText}>Saved to your journey. 🌿</Text>
-            </View>
-          ) : (
-            <>
-              <Text style={styles.checkinTitle}>How did yesterday's alignment go?</Text>
-              <View style={styles.checkinReminder}>
-                <Text style={styles.checkinReminderLabel}>Yesterday's Alignment</Text>
-                <Text style={styles.checkinReminderAction}>"{yesterdayAlignment.action}"</Text>
-                {yesterdayAlignment.guidance ? (
-                  <Text style={styles.checkinReminderGuidance} numberOfLines={2}>
-                    {getFirstSentence(yesterdayAlignment.guidance)}
-                  </Text>
-                ) : null}
-              </View>
-              <View style={styles.checkinButtons}>
-                {[
-                  { label: "I practiced it", value: "practiced" as const },
-                  { label: "I thought about it", value: "thought_about" as const },
-                  { label: "Not yet", value: "not_yet" as const },
-                ].map((opt) => (
-                  <Pressable
-                    key={opt.value}
-                    onPress={() => handleCheckin(opt.value)}
-                    disabled={checkinSaving}
-                    style={styles.checkinButton}
-                  >
-                    <Text style={styles.checkinButtonText}>{opt.label}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </>
-          )}
-        </View>
-      )}
-
-      {/* Re-engagement banner */}
-      {showBanner && (
-        <Animated.View style={[styles.reengageBanner, { opacity: bannerOpacity }]}>
-          <Text style={styles.reengageText}>{bannerMessage}</Text>
-          <Pressable onPress={handleDismissBanner} style={styles.reengageDismiss}>
-            <Text style={styles.reengageDismissText}>✕</Text>
-          </Pressable>
-        </Animated.View>
-      )}
-
-      {showProgressRow && (
-        <View style={styles.progressRow}>
-          {showStreakPill && (
-            <View style={styles.statPill}>
-              <Text style={styles.statPillText}>{streakLabel}</Text>
-            </View>
-          )}
-          {showDaysPill && (
-            <View style={styles.statPill}>
-              <Text style={styles.statPillText}>{daysLabel}</Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* Day 2+ upsell banner — shown inline, non-blocking */}
-      {showDay2Upsell && (
-        <View style={styles.upsellCard}>
-          <View style={styles.upsellTopRow}>
-            <Text style={styles.upsellHeading}>You're on a streak 🔥</Text>
+        {/* Blend subtitle — split into two lines */}
+        {blendName ? (
+          <View style={styles.blendSubtitleContainer}>
+            <Text style={styles.blendSubtitleLine1}>Your sacred design:</Text>
+            <Text style={styles.blendSubtitleLine2}>{blendName}</Text>
           </View>
-          <Text style={styles.upsellBody}>
-            Unlock your full Sacred Design journey — daily alignments, reflections, and growth tracking.
-          </Text>
-          <Pressable
-            style={styles.upsellButton}
-            onPress={handleUnlockFullAccess}
+        ) : (
+          <Text style={styles.subtitle}>Your daily practice awaits.</Text>
+        )}
+
+        {/* Decorative divider */}
+        <View style={styles.headerDivider} />
+
+        {/* Mood check-in row */}
+        <View style={styles.moodSection}>
+          <View style={styles.moodLabelRow}>
+            <Text style={styles.moodLabel}>HOW ARE YOU FEELING?</Text>
+            {moodSaved && !moodSaving && (
+              <Text style={styles.moodSavedText}>✓ Saved</Text>
+            )}
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.moodScrollContent}
           >
-            <Text style={styles.upsellButtonText}>Unlock Full Access</Text>
-          </Pressable>
+            {MOOD_OPTIONS.map((option) => {
+              const isSelected = todayMood === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => handleMoodSelect(option.value)}
+                  style={[
+                    styles.moodPill,
+                    isSelected ? styles.moodPillSelected : styles.moodPillUnselected,
+                  ]}
+                >
+                  <Text style={styles.moodEmoji}>{option.emoji}</Text>
+                  <Text style={[styles.moodPillLabel, isSelected && styles.moodPillLabelSelected]}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </View>
-      )}
 
-      {loading ? (
-        <>
-          <SkeletonCard />
-          <Text style={styles.generatingHint}>Preparing your alignment…</Text>
-        </>
-      ) : authRequired ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Sign In to Continue</Text>
-          <Text style={styles.cardBody}>
-            Sign in to generate your daily alignment and save your progress.
-          </Text>
-          <AnimatedPressable onPress={() => {
-            console.log("[Home] 'Sign In' CTA pressed — navigating to auth-screen");
-            router.push("/auth-screen");
-          }}>
-            <View style={styles.button}>
-              <Text style={styles.buttonText}>Sign In</Text>
-            </View>
-          </AnimatedPressable>
-        </View>
-      ) : error ? (
-        <View style={styles.card}>
-          <Text style={styles.fallbackText}>{error}</Text>
-          <AnimatedPressable onPress={handleRetry}>
-            <View style={styles.button}>
-              <Text style={styles.buttonText}>Try Again</Text>
-            </View>
-          </AnimatedPressable>
-        </View>
-      ) : alignment ? (
-        <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
-          {/* Top row */}
-          <View style={styles.cardTopRow}>
-            <Text style={styles.cardEyebrow}>TODAY'S ALIGNMENT</Text>
-            <Text style={styles.dayBadge}>{dayLabel}</Text>
+        {/* Yesterday's Alignment Check-In */}
+        {yesterdayAlignment && !checkinDismissed && isSignedIn && (
+          <View style={styles.checkinCard}>
+            {checkinSaved ? (
+              <View style={styles.checkinSavedRow}>
+                <Text style={styles.checkinSavedText}>Saved to your journey. 🌿</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.checkinTitle}>How did yesterday's alignment go?</Text>
+                <View style={styles.checkinReminder}>
+                  <Text style={styles.checkinReminderLabel}>Yesterday's Alignment</Text>
+                  <Text style={styles.checkinReminderAction}>"{yesterdayAlignment.action}"</Text>
+                  {yesterdayAlignment.guidance ? (
+                    <Text style={styles.checkinReminderGuidance} numberOfLines={2}>
+                      {getFirstSentence(yesterdayAlignment.guidance)}
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={styles.checkinButtons}>
+                  {[
+                    { label: "I practiced it", value: "practiced" as const },
+                    { label: "I thought about it", value: "thought_about" as const },
+                    { label: "Not yet", value: "not_yet" as const },
+                  ].map((opt) => (
+                    <Pressable
+                      key={opt.value}
+                      onPress={() => handleCheckin(opt.value)}
+                      disabled={checkinSaving}
+                      style={styles.checkinButton}
+                    >
+                      <Text style={styles.checkinButtonText}>{opt.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )}
           </View>
+        )}
 
-          {/* Action */}
-          <Text style={styles.actionText}>{alignment.action}</Text>
+        {/* Re-engagement banner */}
+        {showBanner && (
+          <Animated.View style={[styles.reengageBanner, { opacity: bannerOpacity }]}>
+            <Text style={styles.reengageText}>{bannerMessage}</Text>
+            <Pressable onPress={handleDismissBanner} style={styles.reengageDismiss}>
+              <Text style={styles.reengageDismissText}>✕</Text>
+            </Pressable>
+          </Animated.View>
+        )}
 
-          {/* Guidance preview */}
-          <Text style={styles.guidancePreview} numberOfLines={2} ellipsizeMode="tail">
-            {guidancePreview}
-          </Text>
+        {showProgressRow && (
+          <View style={styles.progressRow}>
+            {showStreakPill && (
+              <View style={styles.statPill}>
+                <Text style={styles.statPillText}>{streakLabel}</Text>
+              </View>
+            )}
+            {showDaysPill && (
+              <View style={styles.statPill}>
+                <Text style={styles.statPillText}>{daysLabel}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
-          {/* CTA */}
-          <AnimatedPressable onPress={handleRespondPress}>
-            <View style={styles.button}>
-              <Text style={styles.buttonText}>Respond to Today</Text>
+        {/* Day 2+ upsell banner — shown inline, non-blocking */}
+        {showDay2Upsell && (
+          <View style={styles.upsellCard}>
+            <View style={styles.upsellTopRow}>
+              <Text style={styles.upsellHeading}>You're on a streak 🔥</Text>
             </View>
-          </AnimatedPressable>
-        </Animated.View>
-      ) : null}
+            <Text style={styles.upsellBody}>
+              Unlock your full Sacred Design journey — daily alignments, reflections, and growth tracking.
+            </Text>
+            <Pressable
+              style={styles.upsellButton}
+              onPress={handleUnlockFullAccess}
+            >
+              <Text style={styles.upsellButtonText}>Unlock Full Access</Text>
+            </Pressable>
+          </View>
+        )}
 
-      <Pressable onPress={handleRetake} style={{ marginTop: 16, padding: 8 }}>
-        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: TEXT_MUTED, textAlign: "center" }}>
-          Retake Discovery
-        </Text>
-      </Pressable>
-      {!isSignedIn && !authRequired && (
-        <Pressable
-          onPress={() => {
-            console.log("[Home] 'Sign in to save your progress' pressed — navigating to auth-screen");
-            router.push("/auth-screen");
-          }}
-          style={{ marginTop: 8, padding: 8 }}
-        >
-          <Text style={{
-            fontFamily: "Inter_500Medium",
-            fontSize: 13,
-            color: BUTTON_BG,
-            textAlign: "center",
-            textDecorationLine: "underline",
-          }}>
-            Sign in to save your progress
+        {loading ? (
+          <>
+            <SkeletonCard />
+            <Text style={styles.generatingHint}>Preparing your alignment…</Text>
+          </>
+        ) : authRequired ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Sign In to Continue</Text>
+            <Text style={styles.cardBody}>
+              Sign in to generate your daily alignment and save your progress.
+            </Text>
+            <AnimatedPressable onPress={() => {
+              console.log("[Home] 'Sign In' CTA pressed — navigating to auth-screen");
+              router.push("/auth-screen");
+            }}>
+              <LinearGradient
+                colors={[BUTTON_GRADIENT_START, BUTTON_GRADIENT_END]}
+                style={styles.buttonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.buttonText}>Sign In</Text>
+              </LinearGradient>
+            </AnimatedPressable>
+          </View>
+        ) : error ? (
+          <View style={styles.card}>
+            <Text style={styles.fallbackText}>{error}</Text>
+            <AnimatedPressable onPress={handleRetry}>
+              <LinearGradient
+                colors={[BUTTON_GRADIENT_START, BUTTON_GRADIENT_END]}
+                style={styles.buttonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.buttonText}>Try Again</Text>
+              </LinearGradient>
+            </AnimatedPressable>
+          </View>
+        ) : alignment ? (
+          <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
+            {/* Top row */}
+            <View style={styles.cardTopRow}>
+              <Text style={styles.cardEyebrow}>✦  TODAY'S ALIGNMENT</Text>
+              <Text style={styles.dayBadge}>{dayLabel}</Text>
+            </View>
+
+            {/* Action */}
+            <Text style={styles.actionText}>{alignment.action}</Text>
+
+            {/* Gold divider + cross */}
+            <View style={styles.cardDivider} />
+            <Text style={styles.cardCross}>✝</Text>
+
+            {/* Guidance preview */}
+            <Text style={styles.guidancePreview} numberOfLines={2} ellipsizeMode="tail">
+              {guidancePreview}
+            </Text>
+
+            {/* CTA */}
+            <AnimatedPressable onPress={handleRespondPress}>
+              <LinearGradient
+                colors={[BUTTON_GRADIENT_START, BUTTON_GRADIENT_END]}
+                style={[styles.buttonGradient, styles.buttonShadow]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.buttonText}>✝  Respond to Today  →</Text>
+              </LinearGradient>
+            </AnimatedPressable>
+          </Animated.View>
+        ) : null}
+
+        <Pressable onPress={handleRetake} style={{ marginTop: 16, padding: 8 }}>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: TEXT_MUTED, textAlign: "center" }}>
+            Retake Discovery
           </Text>
         </Pressable>
-      )}
+        {!isSignedIn && !authRequired && (
+          <Pressable
+            onPress={() => {
+              console.log("[Home] 'Sign in to save your progress' pressed — navigating to auth-screen");
+              router.push("/auth-screen");
+            }}
+            style={{ marginTop: 8, padding: 8 }}
+          >
+            <Text style={{
+              fontFamily: "Inter_500Medium",
+              fontSize: 13,
+              color: BUTTON_BG,
+              textAlign: "center",
+              textDecorationLine: "underline",
+            }}>
+              Sign in to save your progress
+            </Text>
+          </Pressable>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -753,23 +820,53 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG,
     alignItems: "center",
+  },
+  bgGlow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 280,
+    zIndex: 0,
+  },
+  bgCross: {
+    position: "absolute",
+    top: 60,
+    alignSelf: "center",
+    fontSize: 120,
+    color: CROSS_COLOR,
+    zIndex: 0,
+  },
+  contentWrapper: {
+    zIndex: 1,
+    width: "100%",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  scrollView: {
+    zIndex: 1,
+    width: "100%",
+  },
+  scrollContent: {
+    alignItems: "center",
     paddingHorizontal: 24,
   },
   eyebrow: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Inter_500Medium",
     fontSize: 11,
     letterSpacing: 3.5,
-    color: TEXT_MUTED,
+    color: GOLD,
     textAlign: "center",
     marginBottom: 16,
+    textTransform: "uppercase",
   },
   heroTitle: {
     fontFamily: "Lora_700Bold",
-    fontSize: 34,
+    fontSize: 36,
     color: TEXT,
     textAlign: "center",
-    lineHeight: 44,
-    marginBottom: 8,
+    lineHeight: 46,
+    marginBottom: 6,
   },
   subtitle: {
     fontFamily: "Inter_400Regular",
@@ -779,14 +876,32 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 16,
   },
-  blendSubtitle: {
+  blendSubtitleContainer: {
+    alignItems: "center",
+    marginBottom: 0,
+  },
+  blendSubtitleLine1: {
     fontFamily: "Inter_400Regular",
-    fontSize: 14,
+    fontSize: 13,
     color: TEXT_MUTED,
-    textAlign: "center",
     fontStyle: "italic",
-    lineHeight: 20,
-    marginBottom: 16,
+    textAlign: "center",
+  },
+  blendSubtitleLine2: {
+    fontFamily: "Lora_400Regular",
+    fontSize: 18,
+    color: GOLD,
+    fontStyle: "italic",
+    textAlign: "center",
+  },
+  headerDivider: {
+    width: 40,
+    height: 1,
+    backgroundColor: GOLD,
+    opacity: 0.4,
+    alignSelf: "center",
+    marginTop: 10,
+    marginBottom: 20,
   },
   // Mood section
   moodSection: {
@@ -801,10 +916,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   moodLabel: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+    letterSpacing: 2,
     color: TEXT_MUTED,
-    letterSpacing: 0.3,
+    textAlign: "center",
+    textTransform: "uppercase",
   },
   moodSavedText: {
     fontFamily: "Inter_500Medium",
@@ -812,14 +929,14 @@ const styles = StyleSheet.create({
     color: SUCCESS_TEXT,
   },
   moodScrollContent: {
-    gap: 8,
+    gap: 10,
     paddingRight: 4,
   },
   moodPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 50,
     gap: 5,
   },
@@ -828,16 +945,16 @@ const styles = StyleSheet.create({
   },
   moodPillUnselected: {
     backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: "#D4CFC8",
+    borderWidth: 1.5,
+    borderColor: "rgba(200,169,107,0.3)",
   },
   moodEmoji: {
-    fontSize: 15,
+    fontSize: 16,
   },
   moodPillLabel: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Inter_500Medium",
     fontSize: 13,
-    color: TEXT,
+    color: TEXT_MUTED,
   },
   moodPillLabelSelected: {
     color: "#FFFFFF",
@@ -854,7 +971,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 16,
-    shadowColor: "#C9A84C",
+    shadowColor: BANNER_BORDER,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -891,7 +1008,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "rgba(201,168,76,0.2)",
+    borderColor: "rgba(200,169,107,0.2)",
   },
   upsellTopRow: {
     flexDirection: "row",
@@ -920,20 +1037,23 @@ const styles = StyleSheet.create({
   upsellButtonText: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
-    color: "#0A0E1A",
+    color: UPSELL_BG,
     letterSpacing: 0.2,
   },
   card: {
     width: "100%",
     backgroundColor: CARD_BG,
-    borderRadius: 20,
+    borderRadius: 24,
     paddingHorizontal: 28,
-    paddingVertical: 28,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 16,
-    elevation: 3,
+    paddingTop: 28,
+    paddingBottom: 32,
+    shadowColor: "#2F4034",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 20,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
   },
   cardTopRow: {
     flexDirection: "row",
@@ -944,46 +1064,66 @@ const styles = StyleSheet.create({
   cardEyebrow: {
     fontFamily: "Inter_500Medium",
     fontSize: 10,
-    letterSpacing: 2,
-    color: TEXT_MUTED,
+    letterSpacing: 2.5,
+    color: GOLD,
     textTransform: "uppercase",
   },
   dayBadge: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 12,
-    color: BUTTON_BG,
-    backgroundColor: SUCCESS_TINT,
-    paddingHorizontal: 10,
+    fontSize: 11,
+    color: GOLD,
+    backgroundColor: GOLD_LIGHT,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 20,
     overflow: "hidden",
   },
   actionText: {
     fontFamily: "Lora_400Regular",
-    fontSize: 18,
+    fontSize: 20,
     color: TEXT,
-    lineHeight: 28,
-    marginBottom: 12,
+    lineHeight: 32,
+    marginBottom: 16,
+  },
+  cardDivider: {
+    width: 32,
+    height: 1,
+    backgroundColor: GOLD,
+    opacity: 0.5,
+    marginBottom: 16,
+  },
+  cardCross: {
+    fontSize: 14,
+    color: GOLD,
+    opacity: 0.6,
+    textAlign: "center",
+    marginBottom: 16,
   },
   guidancePreview: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     color: TEXT_MUTED,
-    lineHeight: 21,
-    marginBottom: 24,
+    lineHeight: 22,
+    marginBottom: 28,
   },
-  button: {
-    backgroundColor: BUTTON_BG,
+  buttonGradient: {
     borderRadius: 50,
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: 32,
     alignItems: "center",
   },
+  buttonShadow: {
+    shadowColor: BUTTON_BG,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
   buttonText: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
+    fontSize: 16,
     color: "#FFFFFF",
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   generatingHint: {
     fontFamily: "Inter_400Regular",
@@ -1023,7 +1163,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statPill: {
-    backgroundColor: "rgba(111, 138, 106, 0.10)",
+    backgroundColor: "rgba(61,90,66,0.08)",
     borderRadius: 50,
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -1035,7 +1175,7 @@ const styles = StyleSheet.create({
   },
   settingsButton: {
     position: "absolute",
-    right: 0,
+    right: 24,
     padding: 8,
     zIndex: 10,
   },
@@ -1049,12 +1189,12 @@ const styles = StyleSheet.create({
   },
   checkinCard: {
     width: "100%",
-    backgroundColor: "#F0EDE8",
-    borderRadius: 16,
+    backgroundColor: "#F5F0E8",
+    borderRadius: 18,
     padding: 18,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "#E0D9D0",
+    borderColor: "rgba(200,169,107,0.2)",
   },
   checkinTitle: {
     fontFamily: "Lora_700Bold",
@@ -1101,7 +1241,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "#E0D9D0",
+    borderColor: "rgba(200,169,107,0.2)",
     alignItems: "center",
   },
   checkinButtonText: {
