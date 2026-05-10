@@ -238,8 +238,19 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           // Log in with your app's user ID to sync subscriptions across devices
           await Purchases.logIn(user.id);
         } else {
-          // Anonymous user - only log out once auth has fully resolved
-          await Purchases.logOut();
+          // Anonymous user — log out of any identified session.
+          // RC throws if already anonymous, so swallow that specific error.
+          try {
+            await Purchases.logOut();
+          } catch (logOutError: any) {
+            const msg = String(logOutError?.message ?? '');
+            if (!msg.toLowerCase().includes('anonymous')) {
+              // Re-throw unexpected errors
+              throw logOutError;
+            }
+            // Already anonymous — this is fine, no-op
+            console.log('[RevenueCat] logOut skipped — already anonymous user');
+          }
         }
         await checkSubscription();
       } catch (error) {
