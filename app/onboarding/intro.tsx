@@ -156,7 +156,7 @@ export default function IntroScreen() {
               marginBottom: 12,
             }}
           >
-            Resume Your Journey
+            Resume Your Discovery
           </Text>
 
           {/* Subtext */}
@@ -171,7 +171,7 @@ export default function IntroScreen() {
               maxWidth: 300,
             }}
           >
-            Your progress has been saved. Pick up right where you left off.
+            Your previous progress has been safely saved.
           </Text>
 
           {/* Phase status rows */}
@@ -271,7 +271,7 @@ export default function IntroScreen() {
                 textAlign: 'center',
               }}
             >
-              Continue
+              Resume Your Discovery
             </Text>
           </AnimatedPressable>
 
