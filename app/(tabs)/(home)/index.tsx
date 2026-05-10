@@ -6,7 +6,6 @@ import {
   Animated,
   ImageSourcePropType,
   ImageBackground,
-  Image,
   Pressable,
   ScrollView,
 } from "react-native";
@@ -19,8 +18,7 @@ import { apiFetch } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
-const SUNRISE_BG = require("../../../assets/images/d3098b1f-c5af-4697-be26-2cfc5ed63440.jpeg");
-const CROSS_ICON = require("../../../assets/images/dc8e8a29-6f79-4359-9f8e-113f560ea187.jpeg");
+const SUNRISE_BG = require("../../../assets/images/ced5ab23-291e-4227-8a57-421a80a40d91.jpeg");
 
 const BG = "#F5EFE6";
 const TEXT = "#2A3A2F";
@@ -29,9 +27,9 @@ const GOLD = "#C8A96B";
 const GOLD_LIGHT = "rgba(200,169,107,0.15)";
 const CARD_BG = "#FFFDF8";
 const CARD_BORDER = "rgba(200,169,107,0.18)";
-const BUTTON_BG = "#3D5A42";
-const BUTTON_GRADIENT_START = "#4A6B4F";
-const BUTTON_GRADIENT_END = "#2F4034";
+const BUTTON_BG = "#5C6E4A";
+const BUTTON_GRADIENT_START = "#6B7D58";
+const BUTTON_GRADIENT_END = "#4A5C3A";
 const SKELETON_BG = "#EDE6DA";
 const SUCCESS_TINT = "#EAF0EA";
 const SUCCESS_TEXT = "#3D6B42";
@@ -496,17 +494,17 @@ export default function HomeScreen() {
         source={SUNRISE_BG}
         resizeMode="cover"
         style={[styles.container, { paddingTop: topPadding }]}
-        imageStyle={{ opacity: 0.78 }}
+        imageStyle={{ opacity: 0.92 }}
       >
         {/* Full-screen gradient overlay */}
         <LinearGradient
           colors={[
             "rgba(245,239,230,0.00)",
-            "rgba(245,239,230,0.30)",
-            "rgba(245,239,230,0.72)",
-            "rgba(245,239,230,0.92)",
+            "rgba(245,239,230,0.15)",
+            "rgba(245,239,230,0.60)",
+            "rgba(245,239,230,0.90)",
           ]}
-          locations={[0, 0.28, 0.62, 1]}
+          locations={[0, 0.35, 0.68, 1]}
           style={StyleSheet.absoluteFillObject}
           pointerEvents="none"
         />
@@ -522,23 +520,6 @@ export default function HomeScreen() {
 
         <View style={styles.contentWrapper}>
           <Text style={styles.eyebrow}>SACRED DESIGN</Text>
-          <View style={styles.crossIconWrapper}>
-            <LinearGradient
-              colors={[
-                "rgba(255,215,130,0.38)",
-                "rgba(255,230,160,0.18)",
-                "rgba(255,244,220,0.00)",
-              ]}
-              locations={[0, 0.5, 1]}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
-            <Image
-              source={CROSS_ICON}
-              style={[styles.crossIcon, { blendMode: 'multiply' } as any]}
-              resizeMode="contain"
-            />
-          </View>
           <Text style={styles.heroTitle}>Bring Your{"\n"}Design to Life</Text>
           <Text style={styles.subtitle}>One small step today makes it real.</Text>
           <View style={styles.card}>
@@ -587,17 +568,17 @@ export default function HomeScreen() {
       source={SUNRISE_BG}
       resizeMode="cover"
       style={[styles.container, { paddingTop: topPadding }]}
-      imageStyle={{ opacity: 0.78 }}
+      imageStyle={{ opacity: 0.92 }}
     >
       {/* Full-screen gradient overlay */}
       <LinearGradient
         colors={[
           "rgba(245,239,230,0.00)",
-          "rgba(245,239,230,0.30)",
-          "rgba(245,239,230,0.72)",
-          "rgba(245,239,230,0.92)",
+          "rgba(245,239,230,0.15)",
+          "rgba(245,239,230,0.60)",
+          "rgba(245,239,230,0.90)",
         ]}
-        locations={[0, 0.28, 0.62, 1]}
+        locations={[0, 0.35, 0.68, 1]}
         style={StyleSheet.absoluteFillObject}
         pointerEvents="none"
       />
@@ -617,23 +598,6 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.eyebrow}>SACRED DESIGN</Text>
-        <View style={styles.crossIconWrapper}>
-          <LinearGradient
-            colors={[
-              "rgba(255,215,130,0.38)",
-              "rgba(255,230,160,0.18)",
-              "rgba(255,244,220,0.00)",
-            ]}
-            locations={[0, 0.5, 1]}
-            style={StyleSheet.absoluteFillObject}
-            pointerEvents="none"
-          />
-          <Image
-            source={CROSS_ICON}
-            style={[styles.crossIcon, { blendMode: 'multiply' } as any]}
-            resizeMode="contain"
-          />
-        </View>
 
         {/* Dynamic greeting */}
         <Text style={styles.heroTitle}>{greetingLine}</Text>
@@ -893,10 +857,13 @@ const styles = StyleSheet.create({
     fontFamily: "Lora_700Bold",
     fontSize: 22,
     letterSpacing: 5,
-    color: "#2A3A2F",
+    color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: 16,
     textTransform: "uppercase",
+    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   heroTitle: {
     fontFamily: "Lora_700Bold",
@@ -979,7 +946,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   moodPillSelected: {
-    backgroundColor: BUTTON_BG,
+    backgroundColor: "#5C6E4A",
   },
   moodPillUnselected: {
     backgroundColor: "transparent",
@@ -1144,11 +1111,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonShadow: {
-    shadowColor: BUTTON_BG,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowColor: "#5C6E4A",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 3,
   },
   buttonText: {
     fontFamily: "Inter_600SemiBold",
@@ -1204,30 +1171,7 @@ const styles = StyleSheet.create({
   statPillText: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
-    color: BUTTON_BG,
-  },
-  crossIconWrapper: {
-    alignSelf: "center",
-    marginBottom: 8,
-    width: 200,
-    height: 110,
-    borderRadius: 18,
-    overflow: "hidden",
-    backgroundColor: "rgba(255,244,220,0.28)",
-    borderWidth: 1,
-    borderColor: "rgba(196,154,87,0.22)",
-    shadowColor: "#C49A57",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 3,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  crossIcon: {
-    width: 200,
-    height: 110,
-    opacity: 0.90,
+    color: "#5C6E4A",
   },
   settingsButton: {
     position: "absolute",
