@@ -115,7 +115,7 @@ export default function Phase2Screen() {
     Alert.alert(
       'Progress Saved',
       'Your progress is saved. Come back anytime.',
-      [{ text: 'OK', onPress: () => setTimeout(() => router.replace('/(tabs)'), 50) }]
+      [{ text: 'OK', onPress: () => setTimeout(() => router.replace('/onboarding/welcome'), 50) }]
     );
   }
 
