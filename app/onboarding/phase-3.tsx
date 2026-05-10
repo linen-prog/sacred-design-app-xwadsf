@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated, Alert } from 'react-native';
+import { View, Text, Animated } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase3Answers } from '@/contexts/DiscoveryContext';
@@ -9,6 +9,7 @@ import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { OverallProgressBar } from '@/components/OverallProgressBar';
 import { saveCheckpoint } from '@/utils/quizCheckpoint';
 import { updateAppState } from '@/utils/appState';
+import { saveAndExitOnboarding } from '@/utils/saveAndExit';
 
 const QUESTIONS = [
   { id: 'P3_Q1', text: 'I work hard to keep the atmosphere around me calm and positive.' },
@@ -39,6 +40,7 @@ export default function Phase3Screen() {
     const idx = parseInt(resumeIndex ?? '0', 10);
     return isNaN(idx) ? 0 : idx;
   });
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const questionOpacity = useRef(new Animated.Value(1)).current;
   const screenOpacity = useRef(new Animated.Value(1)).current;
   const screenTranslateY = useRef(new Animated.Value(20)).current;
@@ -104,19 +106,26 @@ export default function Phase3Screen() {
   }
 
   async function handleSaveAndExit() {
-    console.log('[Phase3] Save & Continue Later pressed — currentIndex:', currentIndex, 'answers:', Object.keys(answers).length);
+    if (saveState === 'saving') return;
+    setSaveState('saving');
+    console.log('[SaveExit] tapped');
     try {
-      await saveCheckpoint([1, 2], answers, 3, currentIndex);
-      await updateAppState({ currentOnboardingStep: '/onboarding/phase-3', onboardingStarted: true });
-      console.log('[Phase3] Checkpoint saved successfully');
+      await saveAndExitOnboarding({
+        phase: 3,
+        questionIndex: currentIndex,
+        answers,
+        completedPhases: [1, 2],
+      });
+      setSaveState('saved');
+      console.log('[SaveExit] navigating away');
+      setTimeout(() => {
+        router.replace('/onboarding/welcome');
+      }, 800);
     } catch (e) {
-      console.warn('[Phase3] Failed to save checkpoint:', e);
+      console.error('[SaveExit] failed:', e);
+      setSaveState('error');
+      setTimeout(() => setSaveState('idle'), 3000);
     }
-    Alert.alert(
-      'Progress Saved',
-      'Your progress is saved. Come back anytime.',
-      [{ text: 'OK', onPress: () => setTimeout(() => router.replace('/onboarding/welcome'), 50) }]
-    );
   }
 
   const guidanceText = 'Go with your first instinct.';
@@ -343,7 +352,8 @@ export default function Phase3Screen() {
 
         <AnimatedPressable
           onPress={handleSaveAndExit}
-          style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12, marginTop: 16 }}
+          disabled={saveState === 'saving' || saveState === 'saved'}
+          style={{ alignSelf: 'center', paddingVertical: 12, paddingHorizontal: 16, marginTop: 16 }}
           accessibilityRole="button"
           accessibilityLabel="Save and continue later"
         >
@@ -351,11 +361,21 @@ export default function Phase3Screen() {
             style={{
               fontSize: 13,
               fontFamily: 'Inter_400Regular',
-              color: 'rgba(47,62,47,0.38)',
-              textDecorationLine: 'underline',
+              color: saveState === 'error'
+                ? '#C0392B'
+                : saveState === 'saved'
+                ? '#4A7C59'
+                : 'rgba(47,62,47,0.38)',
+              textDecorationLine: saveState === 'idle' ? 'underline' : 'none',
             }}
           >
-            Save &amp; Continue Later
+            {saveState === 'saving'
+              ? 'Saving\u2026'
+              : saveState === 'saved'
+              ? 'Saved \u2713'
+              : saveState === 'error'
+              ? "Couldn't save. Tap to retry."
+              : 'Save & Continue Later'}
           </Text>
         </AnimatedPressable>
       </Animated.View>
