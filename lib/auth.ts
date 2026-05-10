@@ -77,20 +77,34 @@ export async function clearAuthTokens() {
   }
 }
 
+let _lastSessionFallbackAt = 0;
+let _lastSessionFallbackResult: string | null = null;
+
 export async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
   let token = await getSessionToken();
 
-  // Fallback: if no cached token, try getting it directly from the live session
+  // Fallback: if no cached token, try getting it from the live session.
+  // Rate-limited to once per 30s to prevent hammering /api/auth/get-session.
   if (!token) {
-    try {
-      const { data: session } = await authClient.getSession();
-      if (session?.session?.token) {
-        token = session.session.token;
-        await setBearerToken(token);
-        console.log('[apiFetch] Token restored from live session');
+    const now = Date.now();
+    if (now - _lastSessionFallbackAt > 30_000) {
+      _lastSessionFallbackAt = now;
+      try {
+        const { data: session } = await authClient.getSession();
+        if (session?.session?.token) {
+          token = session.session.token;
+          _lastSessionFallbackResult = token;
+          await setBearerToken(token);
+          console.log('[apiFetch] Token restored from live session');
+        } else {
+          _lastSessionFallbackResult = null;
+        }
+      } catch (e) {
+        console.warn('[apiFetch] Could not restore token from session:', e);
+        _lastSessionFallbackResult = null;
       }
-    } catch (e) {
-      console.warn('[apiFetch] Could not restore token from session:', e);
+    } else if (_lastSessionFallbackResult) {
+      token = _lastSessionFallbackResult;
     }
   }
 
