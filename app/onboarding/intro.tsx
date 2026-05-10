@@ -47,8 +47,11 @@ export default function IntroScreen() {
 
   useEffect(() => {
     loadCheckpoint().then((cp) => {
-      setCheckpoint(cp && cp.completedPhases.length > 0 ? cp : null);
+      const isValid = cp && (cp.completedPhases.length > 0 || (cp.currentPhase > 0 && Object.keys(cp.answers).length > 0));
+      setCheckpoint(isValid ? cp : null);
       setCheckpointLoaded(true);
+      console.log('[Intro] checkpoint found:', cp);
+      console.log('[Intro] button mode:', isValid ? 'resume' : 'begin');
     });
   }, []);
 
@@ -77,6 +80,7 @@ export default function IntroScreen() {
     console.log('[Intro] Resume pressed — completedPhases:', checkpoint.completedPhases, 'currentPhase:', checkpoint.currentPhase, 'resumeIndex:', resumeIndex, 'nextRoute:', nextRoute);
     await updateAppState({ currentOnboardingStep: nextRoute, onboardingStarted: true });
     const routeWithIndex = resumeIndex > 0 ? `${nextRoute}?resumeIndex=${resumeIndex}` : nextRoute;
+    console.log('[Intro] navigating to:', routeWithIndex, 'resumeIndex:', resumeIndex);
     router.push(routeWithIndex as Parameters<typeof router.push>[0]);
   }
 
@@ -107,7 +111,8 @@ export default function IntroScreen() {
   const bottomPadding = insets.bottom + 24;
   const hasCheckpoint = checkpoint !== null;
   const completedPhases = checkpoint?.completedPhases ?? [];
-  const nextPhaseNum = completedPhases.length + 1;
+  const currentPhase = checkpoint?.currentPhase ?? (completedPhases.length + 1);
+  const nextPhaseNum = currentPhase;
 
   // ── RESUME MODE ──────────────────────────────────────────────────────────────
   if (hasCheckpoint) {
