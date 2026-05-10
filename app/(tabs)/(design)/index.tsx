@@ -11,7 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 import { ARCHETYPE_CONTENT, ArchetypeName } from "@/constants/ArchetypeContent";
-import { getSessionToken, API_URL } from "@/lib/auth";
+import { getSessionToken, apiFetch, API_URL } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { useRetakeQuiz } from "@/hooks/useRetakeQuiz";
@@ -231,29 +231,27 @@ export default function MyDesignScreen() {
   const [generating, setGenerating] = useState(false);
 
   const hasDesignResult = !!sacredDesignResult;
+  const isSignedIn = !!(user && (user as any).isAnonymous !== true);
 
   async function loadTodayFocus() {
+    if (!isSignedIn) {
+      console.log("[MyDesign] loadTodayFocus — user not signed in, skipping fetch");
+      setLoadingFocus(false);
+      return;
+    }
     console.log("[MyDesign] GET /api/alignments/today — starting");
     setLoadingFocus(true);
     try {
-      let token = await getSessionToken();
-      if (!token) {
-        // Token may not be written yet — wait briefly and retry once
-        await new Promise(r => setTimeout(r, 1500));
-        token = await getSessionToken();
-      }
-      if (!token) {
-        console.warn('[MyDesign] No token after retry — skipping fetch');
-        setLoadingFocus(false);
-        return;
-      }
       const localDate = getLocalDateString();
       console.log('[MyDesign] GET /api/alignments/today with local_date:', localDate);
-      const res = await fetch(`${API_URL}/api/alignments/today?local_date=${localDate}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`/api/alignments/today?local_date=${localDate}`);
       if (!res.ok) {
-        console.warn('[MyDesign] GET /api/alignments/today failed:', res.status);
+        if (res.status === 401) {
+          console.warn('[MyDesign] GET /api/alignments/today — 401, auth required');
+          // authRequired state is handled by the caller
+        } else {
+          console.warn('[MyDesign] GET /api/alignments/today failed:', res.status);
+        }
         setLoadingFocus(false);
         return;
       }
@@ -289,24 +287,11 @@ export default function MyDesignScreen() {
     console.log("[MyDesign] 'Generate Today's Alignment' pressed");
     setGenerating(true);
     try {
-      let token = await getSessionToken();
-      if (!token) {
-        await new Promise(r => setTimeout(r, 1500));
-        token = await getSessionToken();
-      }
-      if (!token) {
-        console.log('[MyDesign] No session token after retry — routing to auth-screen');
-        setGenerating(false);
-        router.push('/auth-screen' as any);
-        return;
-      }
-
       // Step 1: ensure archetype is in the backend
       if (sacredDesignResult) {
         console.log("[MyDesign] Step 1 — POST /api/archetypes/upsert");
-        await fetch(`${API_URL}/api/archetypes/upsert`, {
+        const upsertRes = await apiFetch('/api/archetypes/upsert', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             primary_archetype: sacredDesignResult.primary_archetype,
             secondary_archetype: sacredDesignResult.secondary_archetype,
@@ -314,16 +299,27 @@ export default function MyDesignScreen() {
             scores: sacredDesignResult.archetypeScores ?? {},
           }),
         });
+        if (upsertRes.status === 401) {
+          console.log('[MyDesign] POST /api/archetypes/upsert — 401, routing to auth-screen');
+          setGenerating(false);
+          router.push('/auth-screen' as any);
+          return;
+        }
       }
 
       // Step 2: generate alignment
       console.log("[MyDesign] Step 2 — POST /api/alignments/generate");
-      const res = await fetch(`${API_URL}/api/alignments/generate`, {
+      const res = await apiFetch('/api/alignments/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ local_date: getLocalDateString() }),
       });
       if (!res.ok) {
+        if (res.status === 401) {
+          console.log('[MyDesign] POST /api/alignments/generate — 401, routing to auth-screen');
+          setGenerating(false);
+          router.push('/auth-screen' as any);
+          return;
+        }
         const errText = await res.text();
         console.warn('[MyDesign] generate failed:', res.status, errText);
         Alert.alert('Could not generate alignment', 'Please try again.');
