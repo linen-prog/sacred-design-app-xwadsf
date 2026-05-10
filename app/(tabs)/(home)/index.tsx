@@ -524,7 +524,7 @@ export default function HomeScreen() {
           <Text style={styles.eyebrow}>SACRED DESIGN</Text>
           <Image
             source={CROSS_ICON}
-            style={styles.crossIcon}
+            style={[styles.crossIcon, { blendMode: 'multiply' } as any]}
             resizeMode="contain"
           />
           <Text style={styles.heroTitle}>Bring Your{"\n"}Design to Life</Text>
@@ -607,7 +607,7 @@ export default function HomeScreen() {
         <Text style={styles.eyebrow}>SACRED DESIGN</Text>
         <Image
           source={CROSS_ICON}
-          style={styles.crossIcon}
+          style={[styles.crossIcon, { blendMode: 'multiply' } as any]}
           resizeMode="contain"
         />
 
@@ -866,12 +866,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   eyebrow: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 11,
-    letterSpacing: 3.5,
-    color: GOLD,
+    fontFamily: "Lora_700Bold",
+    fontSize: 22,
+    letterSpacing: 5,
+    color: "#2A3A2F",
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 12,
     textTransform: "uppercase",
   },
   heroTitle: {
@@ -1183,11 +1183,10 @@ const styles = StyleSheet.create({
     color: BUTTON_BG,
   },
   crossIcon: {
-    width: 72,
-    height: 72,
+    width: 80,
+    height: 80,
     alignSelf: "center",
     marginBottom: 8,
-    opacity: 0.92,
   },
   settingsButton: {
     position: "absolute",
