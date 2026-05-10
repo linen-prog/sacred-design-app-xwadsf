@@ -313,6 +313,8 @@ function RootNavigator() {
   }
 
   return (
+  <>
+    <NavigationGuard />
     <Stack>
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -334,8 +336,8 @@ function RootNavigator() {
           contentStyle: { backgroundColor: 'transparent' },
         }}
       />
-      <NavigationGuard />
     </Stack>
+  </>
   );
 }
 
