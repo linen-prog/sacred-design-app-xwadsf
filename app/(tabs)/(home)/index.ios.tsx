@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Animated,
   ImageSourcePropType,
+  ImageBackground,
   Pressable,
   ScrollView,
 } from "react-native";
@@ -21,8 +22,10 @@ import { apiFetch } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
+const SUNRISE_BG = require("../../../assets/images/d3098b1f-c5af-4697-be26-2cfc5ed63440.jpeg");
+
 const BG = "#F5EFE6";
-const TEXT = "#2F4034";
+const TEXT = "#2A3A2F";
 const TEXT_MUTED = "#8A8070";
 const GOLD = "#C8A96B";
 const GOLD_LIGHT = "rgba(200,169,107,0.15)";
@@ -488,11 +491,22 @@ export default function HomeScreen() {
   // ── State A: quiz not complete ──────────────────────────────────────────────
   if (!sacredDesignResult) {
     return (
-      <View style={[styles.container, { paddingTop: topPadding }]}>
-        {/* Background glow */}
+      <ImageBackground
+        source={SUNRISE_BG}
+        resizeMode="cover"
+        style={[styles.container, { paddingTop: topPadding }]}
+        imageStyle={{ opacity: 0.55 }}
+      >
+        {/* Full-screen gradient overlay */}
         <LinearGradient
-          colors={["rgba(255,240,200,0.35)", "transparent"]}
-          style={styles.bgGlow}
+          colors={[
+            "rgba(245,239,230,0.10)",
+            "rgba(245,239,230,0.45)",
+            "rgba(245,239,230,0.82)",
+            "rgba(245,239,230,0.95)",
+          ]}
+          locations={[0, 0.3, 0.65, 1]}
+          style={StyleSheet.absoluteFillObject}
           pointerEvents="none"
         />
         <Pressable
@@ -537,7 +551,7 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
+      </ImageBackground>
     );
   }
 
@@ -551,11 +565,22 @@ export default function HomeScreen() {
   const daysLabel = progress ? `${progress.day_count} days total` : "";
 
   return (
-    <View style={[styles.container, { paddingTop: topPadding }]}>
-      {/* Background glow */}
+    <ImageBackground
+      source={SUNRISE_BG}
+      resizeMode="cover"
+      style={[styles.container, { paddingTop: topPadding }]}
+      imageStyle={{ opacity: 0.55 }}
+    >
+      {/* Full-screen gradient overlay */}
       <LinearGradient
-        colors={["rgba(255,240,200,0.35)", "transparent"]}
-        style={styles.bgGlow}
+        colors={[
+          "rgba(245,239,230,0.10)",
+          "rgba(245,239,230,0.45)",
+          "rgba(245,239,230,0.82)",
+          "rgba(245,239,230,0.95)",
+        ]}
+        locations={[0, 0.3, 0.65, 1]}
+        style={StyleSheet.absoluteFillObject}
         pointerEvents="none"
       />
       <Pressable
@@ -804,7 +829,7 @@ export default function HomeScreen() {
           </Pressable>
         )}
       </ScrollView>
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -813,14 +838,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG,
     alignItems: "center",
-  },
-  bgGlow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 280,
-    zIndex: 0,
   },
   contentWrapper: {
     zIndex: 1,
@@ -850,7 +867,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
     color: TEXT,
     textAlign: "center",
-    lineHeight: 46,
+    lineHeight: 50,
     marginBottom: 6,
   },
   subtitle: {
@@ -947,7 +964,7 @@ const styles = StyleSheet.create({
   },
   reengageBanner: {
     width: "100%",
-    backgroundColor: BANNER_BG,
+    backgroundColor: "rgba(253,246,227,0.88)",
     borderRadius: 14,
     borderLeftWidth: 3,
     borderLeftColor: BANNER_BORDER,
@@ -981,7 +998,7 @@ const styles = StyleSheet.create({
   },
   upsellCard: {
     width: "100%",
-    backgroundColor: UPSELL_BG,
+    backgroundColor: "rgba(26,18,8,0.88)",
     borderRadius: 18,
     paddingHorizontal: 20,
     paddingVertical: 20,
@@ -1026,18 +1043,18 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    backgroundColor: CARD_BG,
+    backgroundColor: "rgba(255,253,248,0.82)",
     borderRadius: 24,
     paddingHorizontal: 28,
     paddingTop: 28,
     paddingBottom: 32,
     shadowColor: "#2F4034",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.10,
-    shadowRadius: 20,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.13,
+    shadowRadius: 24,
+    elevation: 5,
     borderWidth: 1,
-    borderColor: CARD_BORDER,
+    borderColor: "rgba(200,169,107,0.22)",
   },
   cardTopRow: {
     flexDirection: "row",
@@ -1066,7 +1083,7 @@ const styles = StyleSheet.create({
     fontFamily: "Lora_400Regular",
     fontSize: 20,
     color: TEXT,
-    lineHeight: 32,
+    lineHeight: 36,
     marginBottom: 16,
   },
   cardDivider: {
@@ -1080,7 +1097,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     color: TEXT_MUTED,
-    lineHeight: 22,
+    lineHeight: 24,
     marginBottom: 28,
   },
   buttonGradient: {
@@ -1140,10 +1157,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statPill: {
-    backgroundColor: "rgba(61,90,66,0.08)",
+    backgroundColor: "rgba(61,90,66,0.10)",
     borderRadius: 50,
     paddingVertical: 8,
     paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "rgba(61,90,66,0.15)",
   },
   statPillText: {
     fontFamily: "Inter_500Medium",
@@ -1166,7 +1185,7 @@ const styles = StyleSheet.create({
   },
   checkinCard: {
     width: "100%",
-    backgroundColor: "#F5F0E8",
+    backgroundColor: "rgba(245,240,232,0.80)",
     borderRadius: 18,
     padding: 18,
     marginBottom: 14,
