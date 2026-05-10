@@ -10,6 +10,7 @@ import {
   Animated,
   ImageSourcePropType,
   ImageBackground,
+  Image,
   Pressable,
   ScrollView,
 } from "react-native";
@@ -23,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
 const SUNRISE_BG = require("../../../assets/images/d3098b1f-c5af-4697-be26-2cfc5ed63440.jpeg");
+const CROSS_ICON = require("../../../assets/images/a4de0a35-1abd-4849-ad35-b3ca6d982180.jpeg");
 
 const BG = "#F5EFE6";
 const TEXT = "#2A3A2F";
@@ -495,17 +497,17 @@ export default function HomeScreen() {
         source={SUNRISE_BG}
         resizeMode="cover"
         style={[styles.container, { paddingTop: topPadding }]}
-        imageStyle={{ opacity: 0.55 }}
+        imageStyle={{ opacity: 0.78 }}
       >
         {/* Full-screen gradient overlay */}
         <LinearGradient
           colors={[
-            "rgba(245,239,230,0.10)",
-            "rgba(245,239,230,0.45)",
-            "rgba(245,239,230,0.82)",
-            "rgba(245,239,230,0.95)",
+            "rgba(245,239,230,0.00)",
+            "rgba(245,239,230,0.30)",
+            "rgba(245,239,230,0.72)",
+            "rgba(245,239,230,0.92)",
           ]}
-          locations={[0, 0.3, 0.65, 1]}
+          locations={[0, 0.28, 0.62, 1]}
           style={StyleSheet.absoluteFillObject}
           pointerEvents="none"
         />
@@ -521,6 +523,11 @@ export default function HomeScreen() {
 
         <View style={styles.contentWrapper}>
           <Text style={styles.eyebrow}>SACRED DESIGN</Text>
+          <Image
+            source={CROSS_ICON}
+            style={styles.crossIcon}
+            resizeMode="contain"
+          />
           <Text style={styles.heroTitle}>Bring Your{"\n"}Design to Life</Text>
           <Text style={styles.subtitle}>One small step today makes it real.</Text>
           <View style={styles.card}>
@@ -569,17 +576,17 @@ export default function HomeScreen() {
       source={SUNRISE_BG}
       resizeMode="cover"
       style={[styles.container, { paddingTop: topPadding }]}
-      imageStyle={{ opacity: 0.55 }}
+      imageStyle={{ opacity: 0.78 }}
     >
       {/* Full-screen gradient overlay */}
       <LinearGradient
         colors={[
-          "rgba(245,239,230,0.10)",
-          "rgba(245,239,230,0.45)",
-          "rgba(245,239,230,0.82)",
-          "rgba(245,239,230,0.95)",
+          "rgba(245,239,230,0.00)",
+          "rgba(245,239,230,0.30)",
+          "rgba(245,239,230,0.72)",
+          "rgba(245,239,230,0.92)",
         ]}
-        locations={[0, 0.3, 0.65, 1]}
+        locations={[0, 0.28, 0.62, 1]}
         style={StyleSheet.absoluteFillObject}
         pointerEvents="none"
       />
@@ -599,6 +606,11 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.eyebrow}>SACRED DESIGN</Text>
+        <Image
+          source={CROSS_ICON}
+          style={styles.crossIcon}
+          resizeMode="contain"
+        />
 
         {/* Dynamic greeting */}
         <Text style={styles.heroTitle}>{greetingLine}</Text>
@@ -1168,6 +1180,13 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     fontSize: 13,
     color: BUTTON_BG,
+  },
+  crossIcon: {
+    width: 72,
+    height: 72,
+    alignSelf: "center",
+    marginBottom: 8,
+    opacity: 0.92,
   },
   settingsButton: {
     position: "absolute",
