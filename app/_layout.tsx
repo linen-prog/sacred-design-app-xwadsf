@@ -1,11 +1,10 @@
 import React, { useEffect, useRef } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { useColorScheme } from "react-native";
 import { Stack, useRouter, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useColorScheme } from "react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -57,6 +56,7 @@ function NavigationGuard() {
   const hasNavigated = useRef(false);
   const lastNavigatedAt = useRef<number>(0);
   const prevUserRef = useRef<string | null | undefined>(undefined);
+  const hasClearedFirstLaunchRef = useRef(false);
 
   useEffect(() => {
     // Always wait for appState — it's the primary routing signal.
@@ -123,7 +123,8 @@ function NavigationGuard() {
       }
 
       // Clear firstLaunch flag on first evaluation so PRIORITY 5 doesn't run on every launch
-      if (appState.firstLaunch) {
+      if (appState.firstLaunch && !hasClearedFirstLaunchRef.current) {
+        hasClearedFirstLaunchRef.current = true;
         console.log('[RootNavigator] Clearing firstLaunch flag');
         updateAppState({ firstLaunch: false }, user?.id ?? null).catch(() => {});
       }
@@ -300,7 +301,7 @@ function NavigationGuard() {
   }, [
     authLoading,
     appStateLoading,
-    user,
+    user?.id,
     appState.revealViewed,
     appState.quizCompleted,
     appState.postQuizSaveCompleted,
@@ -310,61 +311,42 @@ function NavigationGuard() {
     appState.firstLaunch,
     appState.currentOnboardingStep,
     appState.dailyAlignmentReady,
-    pathname,
   ]);
 
   return null;
 }
 
 function RootNavigator() {
-  const { isLoading: appStateLoading } = useAppState();
-
-  // Show a loading screen while state is being read
-  if (appStateLoading) {
-    return (
-      <View style={loadingStyles.container}>
-        <ActivityIndicator size="large" color="#C9A84C" />
-      </View>
-    );
-  }
-
   return (
-  <>
-    <NavigationGuard />
-    <Stack>
-      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
-      <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
-      <Stack.Screen name="auth-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="reveal" options={{ headerShown: false }} />
-      <Stack.Screen name="partial-reveal" options={{ headerShown: false }} />
-      <Stack.Screen name="alignment-detail" options={{ headerShown: false }} />
-      <Stack.Screen name="post-quiz-save" options={{ headerShown: false }} />
-      <Stack.Screen name="paywall" options={{ headerShown: false }} />
-      <Stack.Screen name="settings" options={{ headerShown: false }} />
-      <Stack.Screen name="shadow-path" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="completion"
-        options={{
-          presentation: 'modal',
-          headerShown: false,
-          contentStyle: { backgroundColor: 'transparent' },
-        }}
-      />
-    </Stack>
-  </>
+    <>
+      <NavigationGuard />
+      <Stack>
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
+        <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+        <Stack.Screen name="auth-screen" options={{ headerShown: false }} />
+        <Stack.Screen name="reveal" options={{ headerShown: false }} />
+        <Stack.Screen name="partial-reveal" options={{ headerShown: false }} />
+        <Stack.Screen name="alignment-detail" options={{ headerShown: false }} />
+        <Stack.Screen name="post-quiz-save" options={{ headerShown: false }} />
+        <Stack.Screen name="paywall" options={{ headerShown: false }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="shadow-path" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="completion"
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
+      </Stack>
+    </>
   );
 }
 
-const loadingStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A0E1A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+
 
 // Screens where SubscriptionRedirect must never interfere.
 const SUBSCRIPTION_REDIRECT_BLOCKLIST = [
@@ -420,7 +402,7 @@ function SubscriptionRedirect() {
 
     // Subscription status is available but we do NOT auto-redirect to paywall.
     // The paywall is only shown when the user explicitly accesses a premium feature.
-  }, [isSubscribed, loading, user, appState, router, pathname]);
+  }, [isSubscribed, loading, user?.id, pathname]);
 
   return null;
 }
