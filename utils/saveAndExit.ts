@@ -9,7 +9,7 @@ export interface SaveAndExitParams {
   completedPhases: number[];
 }
 
-export async function saveAndExitOnboarding(params: SaveAndExitParams): Promise<void> {
+export async function saveAndExitOnboarding(params: SaveAndExitParams): Promise<{ verified: boolean }> {
   const { phase, questionIndex, answers, completedPhases } = params;
   const payload = { phase, questionIndex, completedPhases, answerCount: Object.keys(answers).length };
   console.log('[SaveExit] tapped');
@@ -18,13 +18,14 @@ export async function saveAndExitOnboarding(params: SaveAndExitParams): Promise<
   await saveCheckpoint(completedPhases, answers, phase, questionIndex);
 
   // Verify the save actually persisted
-  const key = `quiz_checkpoint:anonymous`;
   const allKeys = await AsyncStorage.getAllKeys();
-  const checkpointKey = allKeys.find(k => k.startsWith('quiz_checkpoint:')) ?? key;
+  const checkpointKey = allKeys.find(k => k.startsWith('quiz_checkpoint:')) ?? 'quiz_checkpoint:anonymous';
   const raw = await AsyncStorage.getItem(checkpointKey);
   const verified = raw ? JSON.parse(raw) : null;
   console.log('[SaveExit] verified checkpoint:', verified);
 
   await updateAppState({ currentOnboardingStep: `/onboarding/phase-${phase}`, onboardingStarted: true });
   console.log('[SaveExit] save complete');
+
+  return { verified: verified !== null };
 }

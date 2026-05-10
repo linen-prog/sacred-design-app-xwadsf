@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, Modal } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext, Phase4Answers } from '@/contexts/DiscoveryContext';
@@ -38,6 +38,7 @@ export default function Phase4Screen() {
     return isNaN(idx) ? 0 : idx;
   });
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [showSavedModal, setShowSavedModal] = useState(false);
   const questionOpacity = useRef(new Animated.Value(1)).current;
   const screenOpacity = useRef(new Animated.Value(1)).current;
   const screenTranslateY = useRef(new Animated.Value(20)).current;
@@ -105,17 +106,19 @@ export default function Phase4Screen() {
     setSaveState('saving');
     console.log('[SaveExit] tapped');
     try {
-      await saveAndExitOnboarding({
+      const { verified } = await saveAndExitOnboarding({
         phase: 4,
         questionIndex: currentIndex,
         answers,
         completedPhases: [1, 2, 3],
       });
-      setSaveState('saved');
-      console.log('[SaveExit] navigating away');
-      setTimeout(() => {
-        router.replace('/onboarding/welcome');
-      }, 800);
+      if (verified) {
+        setSaveState('saved');
+        setShowSavedModal(true);
+      } else {
+        setSaveState('error');
+        setTimeout(() => setSaveState('idle'), 3000);
+      }
     } catch (e) {
       console.error('[SaveExit] failed:', e);
       setSaveState('error');
@@ -127,9 +130,127 @@ export default function Phase4Screen() {
   const leftLabel = 'Never like me';
   const rightLabel = 'Always like me';
 
+  const saveButtonColor = saveState === 'error'
+    ? '#C0392B'
+    : saveState === 'saved'
+    ? '#4A7C59'
+    : 'rgba(47,62,47,0.38)';
+  const saveButtonDecoration = saveState === 'idle' ? 'underline' : 'none';
+  const saveButtonText = saveState === 'saving'
+    ? 'Saving\u2026'
+    : saveState === 'saved'
+    ? 'Saved \u2713'
+    : saveState === 'error'
+    ? "Couldn't save. Tap to retry."
+    : 'Save & Continue Later';
+
+  const savedModal = (
+    <Modal
+      visible={showSavedModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => {}}
+    >
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.45)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: 32,
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: '#F6F1E8',
+            borderRadius: 24,
+            paddingVertical: 36,
+            paddingHorizontal: 28,
+            alignItems: 'center',
+            width: '100%',
+            maxWidth: 380,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.12,
+            shadowRadius: 24,
+            elevation: 8,
+          }}
+        >
+          <View
+            style={{
+              width: 40,
+              height: 3,
+              borderRadius: 2,
+              backgroundColor: '#C9A84C',
+              marginBottom: 24,
+            }}
+          />
+          <Text
+            style={{
+              fontFamily: 'Lora_700Bold',
+              fontSize: 22,
+              color: '#2F3E2F',
+              textAlign: 'center',
+              marginBottom: 14,
+              lineHeight: 30,
+            }}
+          >
+            Your progress is saved
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 15,
+              color: 'rgba(47,62,47,0.65)',
+              textAlign: 'center',
+              lineHeight: 24,
+              marginBottom: 32,
+            }}
+          >
+            {"You've completed this part of your discovery. You can come back anytime and continue when you're ready."}
+          </Text>
+          <AnimatedPressable
+            onPress={() => {
+              console.log('[SaveExit] Return Home pressed');
+              setShowSavedModal(false);
+              setTimeout(() => router.replace('/onboarding/welcome'), 50);
+            }}
+            style={{
+              backgroundColor: '#6F8A6A',
+              borderRadius: 14,
+              paddingVertical: 16,
+              paddingHorizontal: 40,
+              alignItems: 'center',
+              width: '100%',
+              shadowColor: '#6F8A6A',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.25,
+              shadowRadius: 10,
+              elevation: 4,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Return Home"
+          >
+            <Text
+              style={{
+                color: '#FFFFFF',
+                fontSize: 16,
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
+              }}
+            >
+              Return Home
+            </Text>
+          </AnimatedPressable>
+        </View>
+      </View>
+    </Modal>
+  );
+
   if (showIntro) {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+        {savedModal}
         <OverallProgressBar phase={4} questionIndex={0} />
         <Animated.View
           style={{
@@ -142,7 +263,6 @@ export default function Phase4Screen() {
             transform: [{ translateY: screenTranslateY }],
           }}
         >
-          {/* Radial glow behind title area */}
           <View
             style={{
               position: 'absolute',
@@ -228,6 +348,7 @@ export default function Phase4Screen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      {savedModal}
       <Animated.View
         style={{
           flex: 1,
@@ -358,21 +479,11 @@ export default function Phase4Screen() {
             style={{
               fontSize: 13,
               fontFamily: 'Inter_400Regular',
-              color: saveState === 'error'
-                ? '#C0392B'
-                : saveState === 'saved'
-                ? '#4A7C59'
-                : 'rgba(47,62,47,0.38)',
-              textDecorationLine: saveState === 'idle' ? 'underline' : 'none',
+              color: saveButtonColor,
+              textDecorationLine: saveButtonDecoration,
             }}
           >
-            {saveState === 'saving'
-              ? 'Saving\u2026'
-              : saveState === 'saved'
-              ? 'Saved \u2713'
-              : saveState === 'error'
-              ? "Couldn't save. Tap to retry."
-              : 'Save & Continue Later'}
+            {saveButtonText}
           </Text>
         </AnimatedPressable>
       </Animated.View>
