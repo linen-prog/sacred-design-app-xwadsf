@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -149,12 +148,8 @@ export default function ProfileScreen() {
         }}
         activeOpacity={0.7}
       >
-        <Ionicons name="settings-outline" size={22} color="rgba(201,168,76,0.8)" />
+        <Ionicons name="settings-outline" size={22} color="#6F8A6A" />
       </TouchableOpacity>
-      <LinearGradient
-        colors={['#0A0E1A', '#1A1030', '#0D1A14']}
-        style={StyleSheet.absoluteFill}
-      />
 
       <ScrollView
         style={styles.scroll}
@@ -165,7 +160,7 @@ export default function ProfileScreen() {
         <View style={styles.identityHeader}>
           {primaryArchetype === null ? (
             <>
-              <ActivityIndicator color="#C9A84C" />
+              <ActivityIndicator color="#6F8A6A" />
               <Text style={styles.loadingText}>Loading your design…</Text>
             </>
           ) : (
@@ -204,7 +199,7 @@ export default function ProfileScreen() {
             <Text style={styles.alignmentCardTitle}>Open today's practice</Text>
             <Text style={styles.alignmentCardSubtitle}>Your daily alignment is ready</Text>
           </View>
-          <Ionicons name="arrow-forward" size={18} color="rgba(201,168,76,0.7)" />
+          <Ionicons name="arrow-forward" size={18} color="#6F8A6A" />
         </TouchableOpacity>
 
         {/* SECTION 4: Settings */}
@@ -221,7 +216,7 @@ export default function ProfileScreen() {
             <Text style={styles.settingsRowLabel}>Notification time</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={styles.settingsRowValue}>Morning</Text>
-              <Ionicons name="chevron-forward" size={14} color="rgba(201,168,76,0.4)" />
+              <Ionicons name="chevron-forward" size={14} color="rgba(111,138,106,0.4)" />
             </View>
           </TouchableOpacity>
           <View style={styles.inCardDivider} />
@@ -319,6 +314,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: '#F5F0EB',
   },
   scroll: {
     flex: 1,
@@ -336,34 +332,34 @@ const styles = StyleSheet.create({
   loadingText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: 'rgba(245,240,232,0.5)',
+    color: '#9A9A8E',
     marginTop: 12,
   },
   eyebrow: {
     fontFamily: 'Inter_500Medium',
     fontSize: 11,
     letterSpacing: 2.5,
-    color: '#C9A84C',
+    color: '#6F8A6A',
     marginBottom: 16,
   },
   primaryArchetypeName: {
     fontFamily: 'Lora_700Bold',
     fontSize: 36,
-    color: '#F5F0E8',
+    color: '#2C3A2C',
     textAlign: 'center',
     letterSpacing: -0.5,
   },
   secondaryArchetypeName: {
     fontFamily: 'Lora_400Regular_Italic',
     fontSize: 18,
-    color: 'rgba(245,240,232,0.6)',
+    color: '#6F8A6A',
     marginTop: 4,
     textAlign: 'center',
   },
   identityStatement: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
-    color: 'rgba(245,240,232,0.75)',
+    color: '#9A9A8E',
     lineHeight: 24,
     textAlign: 'center',
     marginTop: 16,
@@ -374,7 +370,7 @@ const styles = StyleSheet.create({
   goldDivider: {
     width: '40%',
     height: 1,
-    backgroundColor: 'rgba(201,168,76,0.2)',
+    backgroundColor: 'rgba(111,138,106,0.2)',
     marginVertical: 32,
     alignSelf: 'center',
   },
@@ -384,32 +380,37 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     fontSize: 11,
     letterSpacing: 1.8,
-    color: '#C9A84C',
+    color: '#6F8A6A',
     marginBottom: 12,
   },
 
   // Card
   card: {
-    backgroundColor: 'rgba(245,240,232,0.06)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(201,168,76,0.15)',
+    borderColor: 'rgba(111,138,106,0.12)',
     padding: 18,
     marginBottom: 28,
+    shadowColor: '#2C3A2C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardBodyText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
-    color: 'rgba(245,240,232,0.75)',
+    color: '#2C3A2C',
     lineHeight: 24,
   },
 
   // Alignment card
   alignmentCard: {
-    backgroundColor: 'rgba(201,168,76,0.12)',
+    backgroundColor: 'rgba(111,138,106,0.08)',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(201,168,76,0.3)',
+    borderColor: 'rgba(111,138,106,0.2)',
     padding: 20,
     marginBottom: 28,
     flexDirection: 'row',
@@ -423,12 +424,12 @@ const styles = StyleSheet.create({
   alignmentCardTitle: {
     fontFamily: 'Inter_500Medium',
     fontSize: 15,
-    color: '#F5F0E8',
+    color: '#2C3A2C',
   },
   alignmentCardSubtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
-    color: 'rgba(245,240,232,0.55)',
+    color: '#9A9A8E',
     marginTop: 3,
   },
 
@@ -446,16 +447,16 @@ const styles = StyleSheet.create({
   settingsRowLabel: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
-    color: 'rgba(245,240,232,0.75)',
+    color: '#2C3A2C',
   },
   settingsRowValue: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
-    color: 'rgba(201,168,76,0.6)',
+    color: '#6F8A6A',
   },
   inCardDivider: {
     height: 1,
-    backgroundColor: 'rgba(245,240,232,0.07)',
+    backgroundColor: 'rgba(111,138,106,0.12)',
   },
   settingsFeedbackRow: {
     paddingVertical: 14,
@@ -471,13 +472,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     fontSize: 11,
     letterSpacing: 1.8,
-    color: 'rgba(245,240,232,0.3)',
+    color: '#6F8A6A',
     marginBottom: 12,
   },
   accountRow: {
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(245,240,232,0.06)',
+    borderBottomColor: 'rgba(111,138,106,0.12)',
   },
   accountRowLast: {
     borderBottomWidth: 0,
@@ -485,17 +486,17 @@ const styles = StyleSheet.create({
   accountRowTextMuted: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
-    color: 'rgba(245,240,232,0.45)',
+    color: '#9A9A8E',
   },
   accountRowTextClose: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
-    color: 'rgba(201,168,76,0.4)',
+    color: '#C0392B',
   },
   userIdentifierText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
-    color: 'rgba(245,240,232,0.35)',
+    color: '#9A9A8E',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -503,33 +504,33 @@ const styles = StyleSheet.create({
   // Modal
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalCard: {
-    backgroundColor: '#1A1030',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 28,
     width: 300,
     borderWidth: 1,
-    borderColor: 'rgba(201,168,76,0.2)',
+    borderColor: 'rgba(111,138,106,0.15)',
   },
   modalTitle: {
     fontFamily: 'Lora_700Bold',
     fontSize: 20,
-    color: '#F5F0E8',
+    color: '#2C3A2C',
     marginBottom: 12,
   },
   modalBody: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
-    color: 'rgba(245,240,232,0.7)',
+    color: '#9A9A8E',
     lineHeight: 22,
     marginBottom: 24,
   },
   modalConfirmButton: {
-    backgroundColor: '#C9A84C',
+    backgroundColor: '#6F8A6A',
     borderRadius: 12,
     paddingVertical: 14,
     marginTop: 8,
@@ -538,13 +539,13 @@ const styles = StyleSheet.create({
   modalConfirmText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
-    color: '#0A0E1A',
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   modalCancelText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
-    color: 'rgba(245,240,232,0.5)',
+    color: '#9A9A8E',
     paddingVertical: 12,
     textAlign: 'center',
   },
