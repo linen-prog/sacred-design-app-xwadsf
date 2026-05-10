@@ -180,6 +180,7 @@ export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const bannerOpacity = useRef(new Animated.Value(0)).current;
   const moodSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasFetchedAfterSignInRef = useRef(false);
 
   // On mount: if result is missing and user is signed in, try to restore from backend
   useEffect(() => {
@@ -221,7 +222,8 @@ export default function HomeScreen() {
 
   // After sign-in, reload alignment if it wasn't loaded due to 401
   useEffect(() => {
-    if (isSignedIn && sacredDesignResult && !alignment && !loading) {
+    if (isSignedIn && sacredDesignResult && !alignment && !loading && !hasFetchedAfterSignInRef.current) {
+      hasFetchedAfterSignInRef.current = true;
       console.log("[Home] User just signed in — reloading alignment");
       setAuthRequired(false);
       loadTodayAlignment();

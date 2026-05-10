@@ -77,6 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Track whether this is the first fetchUser call — only show loading spinner on initial load
   const isInitialFetchRef = useRef(true);
+  // Track the current user id to avoid creating new object references on every poll
+  const userRef = useRef<string | null>(null);
 
   useEffect(() => {
     fetchUser();
@@ -108,6 +110,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchUser = async () => {
+    if (isFetchingRef.current) {
+      console.log('[AuthContext] fetchUser skipped — already in flight');
+      return;
+    }
+    isFetchingRef.current = true;
     try {
       // Only show the loading spinner on the very first call — interval polls
       // must not cause the whole app to re-render into a loading state.
@@ -118,9 +125,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AuthContext] fetchUser raw session data:', JSON.stringify(session));
       console.log("[AuthContext] fetchUser session:", JSON.stringify(session));
       if (session?.user) {
-        setUser(session.user as User);
-        // Prefer the token directly from the session object (avoids chicken-and-egg
-        // where SecureStore hasn't been written yet on first login).
+        // Only update state if the user identity actually changed
+        if (userRef.current !== session.user.id) {
+          userRef.current = session.user.id;
+          setUser(session.user as User);
+        }
+        // Token storage always runs regardless
         if (session?.session?.token) {
           await setBearerToken(session.session.token);
           console.log("[AuthContext] Stored token from session object");
@@ -135,8 +145,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } else {
-        setUser(null);
-        await clearAuthTokens();
+        if (userRef.current !== null) {
+          userRef.current = null;
+          setUser(null);
+          await clearAuthTokens();
+        }
       }
     } catch (error) {
       console.error("Failed to fetch user:", error);
@@ -144,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       isInitialFetchRef.current = false;
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
