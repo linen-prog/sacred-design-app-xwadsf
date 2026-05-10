@@ -22,7 +22,7 @@ import { ARCHETYPE_CONTENT, ArchetypeName } from '@/constants/ArchetypeContent';
 import { authenticatedDelete } from '@/utils/api';
 import { updateAppState as updateStateUtil } from '@/utils/appState';
 
-const PROFILE_BG = require('../../../assets/images/6091b954-bfb4-49c9-99c8-72885c920f6a.jpeg');
+const PROFILE_BG = require('../../../assets/images/fa6a84f3-c733-4493-bea4-736d42c18ba9.jpeg');
 
 export default function ProfileScreen() {
   const router = useRouter();
