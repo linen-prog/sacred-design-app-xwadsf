@@ -262,18 +262,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`${API_URL}/api/auth/sign-in/social`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: 'apple', idToken: identityToken }),
+        body: JSON.stringify({ provider: 'apple', idToken: { token: identityToken } }),
       });
 
       if (!response.ok) {
-        throw new Error('Apple sign in failed: backend exchange failed ' + response.status);
+        const errText = await response.text().catch(() => '');
+        throw new Error(`Apple sign in failed: backend exchange failed ${response.status} ${errText}`);
       }
 
       const data = await response.json();
-      console.log('[AuthContext] signInWithApple: backend response received');
+      console.log('[AuthContext] signInWithApple: backend response received', JSON.stringify(data));
 
-      if (data?.session?.token) {
-        await setBearerToken(data.session.token);
+      const token = data?.token || data?.session?.token;
+      if (token) {
+        await setBearerToken(token);
         console.log('[AuthContext] signInWithApple: token stored from backend response');
       }
     } catch (e: any) {
