@@ -261,7 +261,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Use native fetch (not authClient) to avoid the expo/fetch polyfill issue on Android
       const response = await fetch(`${API_URL}/api/auth/sign-in/social`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Origin': API_URL,
+        },
         body: JSON.stringify({ provider: 'apple', idToken: { token: identityToken } }),
       });
 
