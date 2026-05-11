@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
-import { authClient, setBearerToken, clearAuthTokens, getSessionToken } from "@/lib/auth";
+import * as AppleAuthentication from "expo-apple-authentication";
+import { authClient, setBearerToken, clearAuthTokens, getSessionToken, API_URL } from "@/lib/auth";
 import { clearAppState } from "@/utils/appState";
 
 interface User {
@@ -14,6 +15,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  authInProgress: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
   signInWithApple: () => Promise<void>;
@@ -71,6 +73,7 @@ function openOAuthPopup(provider: string): Promise<string> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authInProgress, setAuthInProgress] = useState(false);
 
   // Guard against concurrent or rapid-fire fetchUser calls
   const isFetchingRef = useRef(false);
@@ -79,6 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isInitialFetchRef = useRef(true);
   // Track the current user id to avoid creating new object references on every poll
   const userRef = useRef<string | null>(null);
+  // Track whether auth is in progress to prevent NavigationGuard from redirecting mid-flow
+  const authInProgressRef = useRef(false);
 
   useEffect(() => {
     fetchUser();
@@ -145,6 +150,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } else {
+        // Cold-launch fallback: SecureStore may not have fully hydrated yet.
+        // On the very first fetch, try once more after a short delay if we have a stored token.
+        if (isInitialFetchRef.current) {
+          const storedToken = await getSessionToken();
+          if (storedToken) {
+            console.log("[AuthContext] fetchUser: no session on first try — retrying after 300ms (cold launch)");
+            await new Promise(resolve => setTimeout(resolve, 300));
+            const { data: retrySession } = await authClient.getSession();
+            if (retrySession?.user) {
+              console.log("[AuthContext] fetchUser: cold-launch retry succeeded");
+              if (userRef.current !== retrySession.user.id) {
+                userRef.current = retrySession.user.id;
+                setUser(retrySession.user as User);
+              }
+              if (retrySession?.session?.token) {
+                await setBearerToken(retrySession.session.token);
+                console.log("[AuthContext] Stored token from cold-launch retry session");
+              }
+              return;
+            }
+          }
+        }
         if (userRef.current !== null) {
           userRef.current = null;
           setUser(null);
@@ -197,42 +224,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('[AuthContext] signUpWithEmail success');
   };
 
-
   const signInWithApple = async () => {
-    console.log('[AuthContext] signInWithApple started — platform:', Platform.OS);
+    console.log('[AuthContext] signInWithApple started — platform: ios');
     let cancelled = false;
+    authInProgressRef.current = true;
+    setAuthInProgress(true);
+
+    // 10-second timeout for the native Apple auth sheet
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('Apple sign in timed out — please try again'));
+      }, 10000);
+    });
+
     try {
-      const appleOptions: { provider: 'apple'; callbackURL?: string } = { provider: 'apple' };
-      if (Platform.OS === 'web') {
-        appleOptions.callbackURL = `${window.location.origin}/auth-callback`;
-      } else {
-        appleOptions.callbackURL = 'sacreddesign://auth-callback';
+      const credential = await Promise.race([
+        AppleAuthentication.signInAsync({
+          requestedScopes: [
+            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+            AppleAuthentication.AppleAuthenticationScope.EMAIL,
+          ],
+        }),
+        timeoutPromise,
+      ]);
+
+      if (timeoutId) clearTimeout(timeoutId);
+
+      const identityToken = credential.identityToken;
+      if (!identityToken) {
+        throw new Error('Apple sign in failed: no identity token received');
       }
-      console.log('[AuthContext] signInWithApple callbackURL:', appleOptions.callbackURL);
-      const { data, error } = await authClient.signIn.social(appleOptions);
-      console.log('[AuthContext] signInWithApple response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
-      if (error) {
-        console.error('[AuthContext] signInWithApple error code:', error.code, 'message:', error.message);
-        // Don't throw — let fetchUser() run in finally to pick up any session
+
+      console.log('[AuthContext] signInWithApple: identity token received, exchanging with backend');
+
+      // Use native fetch (not authClient) to avoid the expo/fetch polyfill issue on Android
+      const response = await fetch(`${API_URL}/api/auth/sign-in/social`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'apple', idToken: identityToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Apple sign in failed: backend exchange failed ' + response.status);
       }
-      if ((data as any)?.session?.token) {
-        await setBearerToken((data as any).session.token);
-        console.log('[AuthContext] signInWithApple: stored token from response');
+
+      const data = await response.json();
+      console.log('[AuthContext] signInWithApple: backend response received');
+
+      if (data?.session?.token) {
+        await setBearerToken(data.session.token);
+        console.log('[AuthContext] signInWithApple: token stored from backend response');
       }
     } catch (e: any) {
+      if (timeoutId) clearTimeout(timeoutId);
+      const code = e?.code ?? '';
       const msg = (e?.message ?? '').toLowerCase();
-      const isCancel = msg.includes('cancel') || msg.includes('dismiss') || msg.includes('closed');
-      if (!isCancel) {
-        console.error('[AuthContext] signInWithApple threw:', e?.message, e?.code);
-        throw e;
-      } else {
+      const isCancel =
+        code === 'ERR_REQUEST_CANCELED' ||
+        msg.includes('cancel') ||
+        msg.includes('dismiss');
+      if (isCancel) {
         cancelled = true;
         console.log('[AuthContext] signInWithApple cancelled/dismissed by user');
+      } else {
+        console.error('[AuthContext] signInWithApple threw:', e?.message, e?.code);
+        throw e;
       }
     } finally {
+      authInProgressRef.current = false;
+      setAuthInProgress(false);
       if (!cancelled) {
-        // expoClient writes the session cookie to SecureStore asynchronously.
-        // Retry fetchUser up to 4 times with 500ms gaps to avoid a race condition.
+        // Retry fetchUser up to 4 times with 500ms gaps to handle SecureStore hydration race
         let attempts = 0;
         const maxAttempts = 4;
         let sessionFound = false;
@@ -256,6 +319,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     console.log('[AuthContext] signInWithGoogle started — platform:', Platform.OS);
     let cancelled = false;
+    authInProgressRef.current = true;
+    setAuthInProgress(true);
     try {
       const googleOptions: { provider: 'google'; callbackURL?: string } = { provider: 'google' };
       if (Platform.OS === 'web') {
@@ -285,6 +350,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[AuthContext] signInWithGoogle cancelled/dismissed by user');
       }
     } finally {
+      authInProgressRef.current = false;
+      setAuthInProgress(false);
       if (!cancelled) {
         // expoClient writes the session cookie to SecureStore asynchronously.
         // Retry fetchUser up to 4 times with 500ms gaps to avoid a race condition.
@@ -325,6 +392,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
+        authInProgress,
         signInWithEmail,
         signUpWithEmail,
         signInWithApple,

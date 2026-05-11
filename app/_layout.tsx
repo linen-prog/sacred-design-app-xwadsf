@@ -51,7 +51,7 @@ export const unstable_settings = {
 function NavigationGuard() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, authInProgress } = useAuth();
   const { appState, isLoading: appStateLoading } = useAppState();
   const hasNavigated = useRef(false);
   const lastNavigatedAt = useRef<number>(0);
@@ -59,6 +59,12 @@ function NavigationGuard() {
   const hasClearedFirstLaunchRef = useRef(false);
 
   useEffect(() => {
+    // If Apple/Google auth is actively in progress, never redirect mid-flow.
+    if (authInProgress) {
+      console.log('[RootNavigator] Auth in progress — skipping redirect');
+      return;
+    }
+
     // Always wait for appState — it's the primary routing signal.
     if (appStateLoading) {
       console.log('[RootNavigator] Waiting — appStateLoading:', appStateLoading);
@@ -299,6 +305,7 @@ function NavigationGuard() {
     determineInitialRoute();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    authInProgress,
     authLoading,
     appStateLoading,
     user?.id,

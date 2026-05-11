@@ -267,10 +267,27 @@ export default function AuthScreen() {
             console.log('[AuthScreen] Sign in with Apple pressed');
             setAppleLoading(true);
             setError('');
+
+            // 10-second UI timeout — reset loading state and show error if auth hangs
+            let uiTimeoutId: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+              uiTimeoutId = null;
+              setAppleLoading(false);
+              setError('Apple sign in timed out. Please try again.');
+              console.warn('[AuthScreen] Apple sign in UI timeout fired');
+            }, 10000);
+
             try {
               await signInWithApple();
+              if (uiTimeoutId) {
+                clearTimeout(uiTimeoutId);
+                uiTimeoutId = null;
+              }
               navigateAfterAuth(true);
             } catch (e: any) {
+              if (uiTimeoutId) {
+                clearTimeout(uiTimeoutId);
+                uiTimeoutId = null;
+              }
               const msg = e?.message || 'Apple sign in failed. Please try again.';
               const isCancel = msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss') || msg.toLowerCase().includes('closed');
               if (!isCancel) {
@@ -280,6 +297,10 @@ export default function AuthScreen() {
                 console.log('[AuthScreen] Apple sign in cancelled by user');
               }
             } finally {
+              if (uiTimeoutId) {
+                clearTimeout(uiTimeoutId);
+                uiTimeoutId = null;
+              }
               setAppleLoading(false);
             }
           }}
