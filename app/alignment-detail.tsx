@@ -19,8 +19,8 @@ const BG = "#F5F0EB";
 const TEXT = "#2C3A2C";
 const TEXT_MUTED = "#9A9A8E";
 const TEXT_LIGHT = "#B8B0A4";
-const CARD_BG = "#FFFFFF";
-const BUTTON_BG = "#6F8A6A";
+const CARD_BG = 'rgba(255,248,238,0.68)';
+const BUTTON_BG = 'rgba(74,96,67,0.82)';
 const GOLD = "#C9A84C";
 const DIVIDER = "rgba(44,58,44,0.08)";
 const SUCCESS_TINT = "#EAF2EA";
@@ -327,11 +327,11 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: DIVIDER,
+    backgroundColor: 'rgba(220,185,100,0.22)',
     marginBottom: 28,
   },
   section: {
-    marginBottom: 28,
+    marginBottom: 32,
   },
   sectionLabel: {
     fontFamily: "Inter_600SemiBold",
@@ -357,13 +357,14 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   markDoneButton: {
-    borderWidth: 1.5,
-    borderColor: GOLD,
-    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(201,168,76,0.45)',
+    borderRadius: 50,
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
+    paddingHorizontal: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,248,220,0.45)',
   },
   markDoneButtonDone: {
     backgroundColor: "rgba(201,168,76,0.10)",
@@ -403,17 +404,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   textInput: {
-    backgroundColor: INPUT_BG,
-    borderRadius: 12,
+    backgroundColor: 'rgba(245,240,225,0.72)',
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: 'Inter_400Regular',
     fontSize: 15,
     color: TEXT,
     lineHeight: 22,
     minHeight: 120,
     borderWidth: 1,
-    borderColor: "rgba(44,58,44,0.10)",
+    borderColor: 'rgba(220,185,100,0.25)',
     marginBottom: 12,
   },
   validationMsg: {
@@ -426,8 +427,15 @@ const styles = StyleSheet.create({
   completeButton: {
     backgroundColor: BUTTON_BG,
     borderRadius: 50,
-    paddingVertical: 16,
-    alignItems: "center",
+    paddingVertical: 17,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(220,185,100,0.32)',
+    shadowColor: '#4A5C38',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 4,
   },
   completeButtonDisabled: {
     opacity: 0.6,
@@ -439,13 +447,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   blendCard: {
-    backgroundColor: 'rgba(255,253,245,0.75)',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: 'rgba(255,248,230,0.62)',
+    borderRadius: 18,
+    padding: 22,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: 'rgba(200,169,107,0.20)',
-    alignItems: "center",
+    borderColor: 'rgba(220,185,100,0.22)',
+    alignItems: 'center',
+    shadowColor: 'rgba(70,55,40,0.08)',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 18,
+    elevation: 2,
   },
   blendLabel: {
     fontFamily: "Inter_500Medium",
