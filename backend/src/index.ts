@@ -41,6 +41,8 @@ app.withAuth({
     "https://1b8ef625-33f1-4c4f-b692-f737f97ecb03.newly.dev",
     "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev",
     "https://*.newly.dev",
+    "http://localhost:8081",
+    "http://localhost:19006",
   ],
   plugins: [
     anonymous(),
