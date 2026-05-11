@@ -229,13 +229,13 @@ export default function JourneyScreen() {
       source={JOURNEY_BG}
       style={{ flex: 1, backgroundColor: BG }}
       resizeMode="cover"
-      imageStyle={{ opacity: 0.72 }}
+      imageStyle={{ opacity: 0.82 }}
     >
     <LinearGradient
       colors={[
-        "rgba(246,241,232,0.18)",
-        "rgba(246,241,232,0.55)",
-        "rgba(246,241,232,0.72)",
+        "rgba(246,241,232,0.08)",
+        "rgba(246,241,232,0.32)",
+        "rgba(246,241,232,0.52)",
       ]}
       locations={[0, 0.45, 1]}
       style={StyleSheet.absoluteFillObject}
@@ -412,13 +412,18 @@ const styles = StyleSheet.create({
     backgroundColor: DIVIDER,
   },
   emptyArea: {
-    backgroundColor: "rgba(255,252,242,0.48)",
+    backgroundColor: "rgba(255,250,238,0.72)",
     borderRadius: 20,
     minHeight: 180,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(220,185,100,0.18)",
+    borderColor: "rgba(220,185,100,0.32)",
+    shadowColor: "#7A5C10",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.13,
+    shadowRadius: 18,
+    elevation: 2,
   },
   emptyInner: {
     alignItems: "center",
@@ -444,17 +449,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   historyCard: {
-    backgroundColor: "rgba(255,252,242,0.52)",
+    backgroundColor: "rgba(255,250,238,0.72)",
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 18,
     shadowColor: "#7A5C10",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
+    shadowOpacity: 0.13,
+    shadowRadius: 18,
     elevation: 2,
     borderWidth: 1,
-    borderColor: "rgba(220,185,100,0.22)",
+    borderColor: "rgba(220,185,100,0.32)",
   },
   historyCardPressed: {
     opacity: 0.75,
@@ -520,17 +525,17 @@ const styles = StyleSheet.create({
     marginTop: 36,
   },
   reflectionCard: {
-    backgroundColor: "rgba(255,252,242,0.52)",
+    backgroundColor: "rgba(255,250,238,0.72)",
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 18,
     shadowColor: "#7A5C10",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
+    shadowOpacity: 0.13,
+    shadowRadius: 18,
     elevation: 2,
     borderWidth: 1,
-    borderColor: "rgba(220,185,100,0.22)",
+    borderColor: "rgba(220,185,100,0.32)",
   },
   reflectionCardTop: {
     flexDirection: "row",
