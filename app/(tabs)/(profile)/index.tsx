@@ -12,6 +12,7 @@ import {
   Alert,
   ImageBackground,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -145,8 +146,18 @@ export default function ProfileScreen() {
       source={PROFILE_BG}
       style={{ flex: 1, backgroundColor: '#F5F0EB' }}
       resizeMode="cover"
-      imageStyle={{ opacity: 0.45 }}
+      imageStyle={{ opacity: 0.68 }}
     >
+      <LinearGradient
+        colors={[
+          "rgba(246,241,232,0.08)",
+          "rgba(246,241,232,0.48)",
+          "rgba(246,241,232,0.70)",
+        ]}
+        locations={[0, 0.40, 1]}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       {/* Settings button — top right */}
       <TouchableOpacity
@@ -396,17 +407,17 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(255,250,238,0.52)',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(111,138,106,0.12)',
+    borderColor: 'rgba(220,185,100,0.22)',
     padding: 18,
     marginBottom: 28,
-    shadowColor: '#2C3A2C',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowColor: '#7A5C10',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 16,
+    elevation: 3,
   },
   cardBodyText: {
     fontFamily: 'Inter_400Regular',
@@ -417,15 +428,20 @@ const styles = StyleSheet.create({
 
   // Alignment card
   alignmentCard: {
-    backgroundColor: 'rgba(111,138,106,0.10)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(255,250,238,0.52)',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(111,138,106,0.2)',
+    borderColor: 'rgba(220,185,100,0.22)',
     padding: 20,
     marginBottom: 28,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    shadowColor: '#7A5C10',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 16,
+    elevation: 3,
   },
   alignmentCardLeft: {
     flex: 1,
@@ -466,7 +482,7 @@ const styles = StyleSheet.create({
   },
   inCardDivider: {
     height: 1,
-    backgroundColor: 'rgba(111,138,106,0.12)',
+    backgroundColor: 'rgba(220,185,100,0.18)',
   },
   settingsFeedbackRow: {
     paddingVertical: 14,
@@ -519,12 +535,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,250,238,0.92)',
     borderRadius: 20,
     padding: 28,
     width: 300,
     borderWidth: 1,
-    borderColor: 'rgba(111,138,106,0.15)',
+    borderColor: 'rgba(220,185,100,0.25)',
+    shadowColor: '#7A5C10',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    elevation: 6,
   },
   modalTitle: {
     fontFamily: 'Lora_700Bold',
@@ -540,11 +561,18 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   modalConfirmButton: {
-    backgroundColor: '#6F8A6A',
-    borderRadius: 12,
+    backgroundColor: 'rgba(74,96,67,0.82)',
+    borderRadius: 50,
     paddingVertical: 14,
     marginTop: 8,
     marginBottom: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(220,185,100,0.30)',
+    shadowColor: '#4A5C38',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.20,
+    shadowRadius: 10,
+    elevation: 3,
   },
   modalConfirmText: {
     fontFamily: 'Inter_600SemiBold',
