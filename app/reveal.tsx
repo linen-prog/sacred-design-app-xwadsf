@@ -7,7 +7,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  ImageBackground,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,6 +20,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { completeOnboarding } from '@/utils/onboardingStorage';
 import { useAppState } from '@/contexts/AppStateContext';
 import { ArchetypeName, ARCHETYPE_CONTENT } from '@/constants/ArchetypeContent';
+
+const REVEAL_BG = require('../assets/images/3e2dad8c-e399-45fa-b232-efb5c39444a6.jpeg');
 
 const REVEAL_COLORS = {
   background: '#F6F1E8',
@@ -283,7 +287,22 @@ export default function RevealScreen() {
   const secondaryLabel = secondary ? `Secondary Design · ${secondary}` : '';
 
   return (
-    <View style={styles.container}>
+    <ImageBackground
+      source={REVEAL_BG}
+      style={styles.container}
+      resizeMode="cover"
+      imageStyle={{ opacity: 0.60 }}
+    >
+      <LinearGradient
+        colors={[
+          "rgba(246,241,232,0.10)",
+          "rgba(246,241,232,0.45)",
+          "rgba(246,241,232,0.88)",
+        ]}
+        locations={[0, 0.4, 1]}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -378,6 +397,7 @@ export default function RevealScreen() {
       </ScrollView>
 
       {/* Sign-in prompt overlay */}
+
       {showSignInPrompt && (
         <Animated.View
           style={[
@@ -412,7 +432,7 @@ export default function RevealScreen() {
           </TouchableOpacity>
         </Animated.View>
       )}
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -423,7 +443,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
-    backgroundColor: REVEAL_COLORS.background,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingHorizontal: 24,
@@ -480,7 +500,7 @@ const styles = StyleSheet.create({
   },
   narrativeCard: {
     marginBottom: 28,
-    backgroundColor: REVEAL_COLORS.surface,
+    backgroundColor: 'rgba(255,255,255,0.82)',
     borderRadius: 18,
     padding: 24,
     borderWidth: 1,
@@ -536,7 +556,7 @@ const styles = StyleSheet.create({
   },
   stuckCard: {
     marginBottom: 10,
-    backgroundColor: REVEAL_COLORS.surface,
+    backgroundColor: 'rgba(255,255,255,0.82)',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: REVEAL_COLORS.border,
@@ -629,7 +649,7 @@ const styles = StyleSheet.create({
   },
   fallbackContainer: {
     flex: 1,
-    backgroundColor: REVEAL_COLORS.background,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
