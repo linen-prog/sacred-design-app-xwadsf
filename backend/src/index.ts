@@ -66,9 +66,8 @@ app.withAuth({
       redirectURI: "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev/api/auth/callback/google",
     },
     apple: {
-      clientId: process.env.APPLE_CLIENT_ID!,
+      clientId: 'com.sacreddesign.app',
       clientSecret: process.env.APPLE_CLIENT_SECRET!,
-      redirectURI: "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev/api/auth/callback/apple",
     },
   },
 });
