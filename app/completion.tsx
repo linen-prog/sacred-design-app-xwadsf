@@ -1,10 +1,12 @@
 import React, { useContext, useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet } from 'react-native';
+import { View, Text, Animated, StyleSheet, ImageBackground } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { DiscoveryContext } from '@/contexts/DiscoveryContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+
+const COMPLETION_BG = require('../assets/images/27a782a0-e03d-4fe1-8cc7-0609fb7761ec.jpeg');
 
 const DAY_MESSAGES = [
   'Each time you do this, it becomes easier.',
@@ -113,11 +115,14 @@ export default function CompletionScreen() {
   };
 
   return (
-    <View
+    <ImageBackground
+      source={COMPLETION_BG}
       style={[
         styles.container,
         { paddingTop: insets.top, paddingBottom: insets.bottom + 24 },
       ]}
+      resizeMode="cover"
+      imageStyle={{ opacity: 0.72 }}
     >
       {/* Glow circle */}
       <Animated.View
@@ -166,14 +171,14 @@ export default function CompletionScreen() {
           </AnimatedPressable>
         )}
       </Animated.View>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: 'rgba(246,241,232,0.88)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
@@ -187,10 +192,11 @@ const styles = StyleSheet.create({
     opacity: 0.35,
   },
   content: {
+    flex: 1,
     alignItems: 'center',
-    gap: 20,
-    zIndex: 1,
-    width: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 36,
+    backgroundColor: 'transparent',
   },
   primaryMessage: {
     fontFamily: 'Lora_700Bold',
