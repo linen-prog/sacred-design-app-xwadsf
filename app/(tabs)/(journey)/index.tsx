@@ -9,6 +9,7 @@ import {
   Pressable,
   ImageBackground,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { apiFetch } from "@/lib/auth";
@@ -228,8 +229,18 @@ export default function JourneyScreen() {
       source={JOURNEY_BG}
       style={{ flex: 1, backgroundColor: BG }}
       resizeMode="cover"
-      imageStyle={{ opacity: 0.55 }}
+      imageStyle={{ opacity: 0.72 }}
     >
+    <LinearGradient
+      colors={[
+        "rgba(246,241,232,0.18)",
+        "rgba(246,241,232,0.55)",
+        "rgba(246,241,232,0.72)",
+      ]}
+      locations={[0, 0.45, 1]}
+      style={StyleSheet.absoluteFillObject}
+      pointerEvents="none"
+    />
     <ScrollView
       style={[styles.scroll, { backgroundColor: 'transparent' }]}
       contentContainerStyle={[
@@ -401,11 +412,13 @@ const styles = StyleSheet.create({
     backgroundColor: DIVIDER,
   },
   emptyArea: {
-    backgroundColor: "rgba(255,253,247,0.88)",
+    backgroundColor: "rgba(255,252,242,0.48)",
     borderRadius: 20,
     minHeight: 180,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(220,185,100,0.18)",
   },
   emptyInner: {
     alignItems: "center",
@@ -431,17 +444,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   historyCard: {
-    backgroundColor: "rgba(255,253,247,0.88)",
+    backgroundColor: "rgba(255,252,242,0.52)",
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 18,
-    shadowColor: "#3D3530",
+    shadowColor: "#7A5C10",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
     elevation: 2,
     borderWidth: 1,
-    borderColor: "rgba(201,168,76,0.15)",
+    borderColor: "rgba(220,185,100,0.22)",
   },
   historyCardPressed: {
     opacity: 0.75,
@@ -507,17 +520,17 @@ const styles = StyleSheet.create({
     marginTop: 36,
   },
   reflectionCard: {
-    backgroundColor: "rgba(255,253,247,0.88)",
+    backgroundColor: "rgba(255,252,242,0.52)",
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 18,
-    shadowColor: "#3D3530",
+    shadowColor: "#7A5C10",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
     elevation: 2,
     borderWidth: 1,
-    borderColor: "rgba(201,168,76,0.15)",
+    borderColor: "rgba(220,185,100,0.22)",
   },
   reflectionCardTop: {
     flexDirection: "row",
