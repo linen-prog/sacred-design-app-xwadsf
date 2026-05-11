@@ -68,7 +68,7 @@ export default function FloatingTabBar({
               <MaterialIcons
                 name={tab.icon}
                 size={24}
-                color={isActive ? '#6F8A6A' : 'rgba(47,62,47,0.35)'}
+                color={isActive ? '#5C6E4A' : 'rgba(92,110,74,0.40)'}
               />
               <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
                 {tab.label}
@@ -92,14 +92,14 @@ const styles = StyleSheet.create({
   },
   container: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.97)',
+    backgroundColor: 'rgba(245,238,220,0.82)',
     borderWidth: 1,
-    borderColor: 'rgba(111, 138, 106, 0.15)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: 'rgba(200,169,107,0.22)',
+    shadowColor: '#8B6914',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.10,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowRadius: 20,
+    elevation: 6,
     paddingVertical: 8,
     paddingHorizontal: 4,
   },
@@ -113,11 +113,11 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 10,
     fontFamily: 'Inter_400Regular',
-    color: 'rgba(47,62,47,0.35)',
+    color: 'rgba(92,110,74,0.45)',
     marginTop: 2,
   },
   tabLabelActive: {
-    color: '#6F8A6A',
+    color: '#5C6E4A',
     fontFamily: 'Inter_600SemiBold',
   },
 });

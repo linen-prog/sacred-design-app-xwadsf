@@ -168,6 +168,65 @@ function getFirstSentence(text: string): string {
   return match ? match[0].trim() : text.slice(0, 120);
 }
 
+function FloatingParticles() {
+  const particles = useRef(
+    Array.from({ length: 6 }, (_, i) => ({
+      anim: new Animated.Value(0),
+      x: 10 + i * 16,
+      size: 2 + (i % 3),
+      delay: i * 900,
+      duration: 7000 + i * 1200,
+    }))
+  ).current;
+
+  useEffect(() => {
+    particles.forEach((p) => {
+      const loop = () => {
+        p.anim.setValue(0);
+        Animated.timing(p.anim, {
+          toValue: 1,
+          duration: p.duration,
+          delay: p.delay,
+          useNativeDriver: true,
+        }).start(loop);
+      };
+      loop();
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      {particles.map((p, i) => (
+        <Animated.View
+          key={i}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: `${p.x}%` as any,
+            width: p.size,
+            height: p.size,
+            borderRadius: p.size / 2,
+            backgroundColor: "rgba(255,215,100,0.45)",
+            opacity: p.anim.interpolate({
+              inputRange: [0, 0.15, 0.85, 1],
+              outputRange: [0, 0.6, 0.6, 0],
+            }),
+            transform: [
+              {
+                translateY: p.anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -320],
+                }),
+              },
+            ],
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const renderCount = useRef(0);
   renderCount.current += 1;
@@ -501,14 +560,15 @@ export default function HomeScreen() {
         <LinearGradient
           colors={[
             "rgba(245,239,230,0.00)",
-            "rgba(245,239,230,0.15)",
-            "rgba(245,239,230,0.60)",
-            "rgba(245,239,230,0.90)",
+            "rgba(245,239,230,0.00)",
+            "rgba(245,239,230,0.50)",
+            "rgba(245,239,230,0.88)",
           ]}
-          locations={[0, 0.35, 0.68, 1]}
+          locations={[0, 0.40, 0.68, 1]}
           style={StyleSheet.absoluteFillObject}
           pointerEvents="none"
         />
+        <FloatingParticles />
         <Pressable
           onPress={() => {
             console.log("[Home] Settings button pressed");
@@ -575,14 +635,15 @@ export default function HomeScreen() {
       <LinearGradient
         colors={[
           "rgba(245,239,230,0.00)",
-          "rgba(245,239,230,0.15)",
-          "rgba(245,239,230,0.60)",
-          "rgba(245,239,230,0.90)",
+          "rgba(245,239,230,0.00)",
+          "rgba(245,239,230,0.50)",
+          "rgba(245,239,230,0.88)",
         ]}
-        locations={[0, 0.35, 0.68, 1]}
+        locations={[0, 0.40, 0.68, 1]}
         style={StyleSheet.absoluteFillObject}
         pointerEvents="none"
       />
+      <FloatingParticles />
       <Pressable
         onPress={() => {
           console.log("[Home] Settings button pressed");
@@ -849,18 +910,19 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: "center",
     paddingHorizontal: 24,
+    paddingTop: 16,
   },
   eyebrow: {
     fontFamily: "Lora_700Bold",
     fontSize: 22,
-    letterSpacing: 5,
+    letterSpacing: 6,
     color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 24,
     textTransform: "uppercase",
-    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowColor: "rgba(0,0,0,0.40)",
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
+    textShadowRadius: 8,
   },
   heroTitle: {
     fontFamily: "Lora_700Bold",
@@ -881,39 +943,42 @@ const styles = StyleSheet.create({
   },
   blendSubtitleContainer: {
     alignItems: "center",
-    marginBottom: 0,
-    marginTop: 32,
+    marginBottom: 8,
+    marginTop: 40,
   },
   blendSubtitleLine1: {
     fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: TEXT_MUTED,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.75)",
     fontStyle: "italic",
     textAlign: "center",
+    letterSpacing: 1,
+    marginBottom: 6,
   },
   blendSubtitleLine2: {
     fontFamily: "Lora_700Bold",
-    fontSize: 26,
-    color: "#5C6E4A",
+    fontSize: 30,
+    color: "#FFFFFF",
     fontStyle: "italic",
     textAlign: "center",
-    textShadowColor: "rgba(255,255,255,0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    textShadowColor: "rgba(180,130,40,0.55)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 18,
+    lineHeight: 38,
+    marginBottom: 4,
   },
   headerDivider: {
-    width: 40,
+    width: 60,
     height: 1,
-    backgroundColor: GOLD,
-    opacity: 0.4,
+    backgroundColor: "rgba(255,220,120,0.55)",
     alignSelf: "center",
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: 18,
+    marginBottom: 28,
   },
   // Mood section
   moodSection: {
     width: "100%",
-    marginBottom: 20,
+    marginBottom: 24,
   },
   moodLabelRow: {
     flexDirection: "row",
@@ -923,10 +988,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   moodLabel: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 11,
-    letterSpacing: 2,
-    color: TEXT_MUTED,
+    fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    letterSpacing: 2.5,
+    color: "rgba(255,255,255,0.55)",
     textAlign: "center",
     textTransform: "uppercase",
   },
@@ -942,26 +1007,28 @@ const styles = StyleSheet.create({
   moodPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 15,
     borderRadius: 50,
     gap: 5,
   },
   moodPillSelected: {
-    backgroundColor: "#5C6E4A",
+    backgroundColor: "rgba(92,110,74,0.75)",
+    borderWidth: 1,
+    borderColor: "rgba(255,220,140,0.35)",
   },
   moodPillUnselected: {
-    backgroundColor: "transparent",
-    borderWidth: 1.5,
-    borderColor: "rgba(200,169,107,0.3)",
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,220,140,0.25)",
   },
   moodEmoji: {
     fontSize: 16,
   },
   moodPillLabel: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_400Regular",
     fontSize: 13,
-    color: TEXT_MUTED,
+    color: "rgba(255,255,255,0.70)",
   },
   moodPillLabelSelected: {
     color: "#FFFFFF",
@@ -969,20 +1036,15 @@ const styles = StyleSheet.create({
   },
   reengageBanner: {
     width: "100%",
-    backgroundColor: "rgba(253,246,227,0.88)",
+    backgroundColor: "rgba(253,246,227,0.65)",
     borderRadius: 14,
-    borderLeftWidth: 3,
-    borderLeftColor: BANNER_BORDER,
+    borderLeftWidth: 2,
+    borderLeftColor: "rgba(200,169,107,0.50)",
     paddingHorizontal: 16,
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 16,
-    shadowColor: BANNER_BORDER,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
   },
   reengageText: {
     flex: 1,
@@ -1048,18 +1110,18 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    backgroundColor: "rgba(255,253,248,0.82)",
-    borderRadius: 24,
-    paddingHorizontal: 28,
-    paddingTop: 28,
-    paddingBottom: 32,
-    shadowColor: "#2F4034",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.13,
-    shadowRadius: 24,
-    elevation: 5,
+    backgroundColor: "rgba(255,250,240,0.55)",
+    borderRadius: 28,
+    paddingHorizontal: 26,
+    paddingTop: 26,
+    paddingBottom: 30,
+    shadowColor: "#8B6914",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: "rgba(200,169,107,0.22)",
+    borderColor: "rgba(220,185,100,0.28)",
   },
   cardTopRow: {
     flexDirection: "row",
@@ -1068,10 +1130,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardEyebrow: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_400Regular",
     fontSize: 10,
     letterSpacing: 2.5,
-    color: GOLD,
+    color: "rgba(180,140,60,0.90)",
     textTransform: "uppercase",
   },
   dayBadge: {
@@ -1086,10 +1148,10 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontFamily: "Lora_400Regular",
-    fontSize: 20,
-    color: TEXT,
-    lineHeight: 36,
-    marginBottom: 16,
+    fontSize: 17,
+    color: "#2A3520",
+    lineHeight: 28,
+    marginBottom: 20,
   },
   cardDivider: {
     width: 32,
@@ -1101,28 +1163,31 @@ const styles = StyleSheet.create({
   guidancePreview: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: TEXT_MUTED,
-    lineHeight: 24,
-    marginBottom: 28,
+    color: "rgba(42,53,32,0.72)",
+    lineHeight: 22,
+    marginBottom: 20,
+    fontStyle: "italic",
   },
   buttonGradient: {
     borderRadius: 50,
-    paddingVertical: 18,
-    paddingHorizontal: 32,
+    paddingVertical: 17,
     alignItems: "center",
+    justifyContent: "center",
   },
   buttonShadow: {
     shadowColor: "#5C6E4A",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 4,
+    borderRadius: 50,
+    width: "100%",
   },
   buttonText: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 16,
+    fontSize: 15,
     color: "#FFFFFF",
-    letterSpacing: 0.3,
+    letterSpacing: 0.8,
   },
   generatingHint: {
     fontFamily: "Inter_400Regular",
@@ -1162,17 +1227,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statPill: {
-    backgroundColor: "rgba(61,90,66,0.10)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     borderRadius: 50,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "rgba(61,90,66,0.15)",
+    borderColor: "rgba(220,185,100,0.30)",
   },
   statPillText: {
     fontFamily: "Inter_500Medium",
-    fontSize: 13,
-    color: "#5C6E4A",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.85)",
   },
   settingsButton: {
     position: "absolute",
@@ -1190,12 +1255,12 @@ const styles = StyleSheet.create({
   },
   checkinCard: {
     width: "100%",
-    backgroundColor: "rgba(245,240,232,0.80)",
+    backgroundColor: "rgba(245,240,225,0.60)",
     borderRadius: 18,
     padding: 18,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(200,169,107,0.2)",
+    borderColor: "rgba(200,169,107,0.22)",
   },
   checkinTitle: {
     fontFamily: "Lora_700Bold",
