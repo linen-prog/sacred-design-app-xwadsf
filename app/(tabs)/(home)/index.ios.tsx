@@ -671,43 +671,6 @@ export default function HomeScreen() {
           <Text style={styles.subtitle}>Your daily practice awaits.</Text>
         )}
 
-        {/* Decorative divider */}
-        <View style={styles.headerDivider} />
-
-        {/* Mood check-in row */}
-        <View style={styles.moodSection}>
-          <View style={styles.moodLabelRow}>
-            <Text style={styles.moodLabel}>HOW ARE YOU FEELING?</Text>
-            {moodSaved && !moodSaving && (
-              <Text style={styles.moodSavedText}>✓ Saved</Text>
-            )}
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.moodScrollContent}
-          >
-            {MOOD_OPTIONS.map((option) => {
-              const isSelected = todayMood === option.value;
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => handleMoodSelect(option.value)}
-                  style={[
-                    styles.moodPill,
-                    isSelected ? styles.moodPillSelected : styles.moodPillUnselected,
-                  ]}
-                >
-                  <Text style={styles.moodEmoji}>{option.emoji}</Text>
-                  <Text style={[styles.moodPillLabel, isSelected && styles.moodPillLabelSelected]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-
         {/* Yesterday's Alignment Check-In */}
         {yesterdayAlignment && !checkinDismissed && isSignedIn && (
           <View style={styles.checkinCard}>
@@ -918,7 +881,7 @@ const styles = StyleSheet.create({
     letterSpacing: 6,
     color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 0,
     textTransform: "uppercase",
     textShadowColor: "rgba(0,0,0,0.40)",
     textShadowOffset: { width: 0, height: 1 },
@@ -935,16 +898,16 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: "#5C6E4A",
+    color: "rgba(255,255,255,0.80)",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 16,
-    marginTop: 32,
+    marginTop: 200,
   },
   blendSubtitleContainer: {
     alignItems: "center",
     marginBottom: 8,
-    marginTop: 40,
+    marginTop: 200,
   },
   blendSubtitleLine1: {
     fontFamily: "Inter_400Regular",
