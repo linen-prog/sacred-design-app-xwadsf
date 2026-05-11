@@ -7,6 +7,7 @@ import {
   TextInput,
   Animated,
   KeyboardAvoidingView,
+  ImageBackground,
   Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -24,7 +25,8 @@ const GOLD = "#C9A84C";
 const DIVIDER = "rgba(44,58,44,0.08)";
 const SUCCESS_TINT = "#EAF2EA";
 const SUCCESS_TEXT = "#4A7A4A";
-const INPUT_BG = "#F5F0EB";
+const INPUT_BG = "rgba(245,240,235,0.80)";
+const DETAIL_BG = require('../assets/images/36fb7a5a-a52b-4d25-929f-7bb738c59117.jpeg');
 const DANGER = "#C0392B";
 
 export default function AlignmentDetailScreen() {
@@ -158,8 +160,14 @@ export default function AlignmentDetailScreen() {
     : styles.markDoneText;
 
   return (
-    <KeyboardAvoidingView
+    <ImageBackground
+      source={DETAIL_BG}
       style={{ flex: 1, backgroundColor: BG }}
+      resizeMode="cover"
+      imageStyle={{ opacity: 0.65 }}
+    >
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: 'transparent' }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
@@ -274,13 +282,14 @@ export default function AlignmentDetailScreen() {
         </Animated.View>
       )}
     </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: 'transparent',
   },
   content: {
     paddingHorizontal: 24,
@@ -430,14 +439,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   blendCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    alignItems: "center",
+    backgroundColor: 'rgba(255,253,245,0.75)',
+    borderRadius: 16,
+    padding: 20,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: "rgba(44,58,44,0.06)",
+    borderColor: 'rgba(200,169,107,0.20)',
+    alignItems: "center",
   },
   blendLabel: {
     fontFamily: "Inter_500Medium",
