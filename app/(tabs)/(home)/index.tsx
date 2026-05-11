@@ -28,8 +28,8 @@ const GOLD_LIGHT = "rgba(200,169,107,0.15)";
 const CARD_BG = "#FFFDF8";
 const CARD_BORDER = "rgba(200,169,107,0.18)";
 const BUTTON_BG = "#5C6E4A";
-const BUTTON_GRADIENT_START = "#6B7D58";
-const BUTTON_GRADIENT_END = "#4A5C3A";
+const BUTTON_GRADIENT_START = "#5A6B48";
+const BUTTON_GRADIENT_END = "#3A4A2C";
 const SKELETON_BG = "#EDE6DA";
 const SUCCESS_TINT = "#EAF0EA";
 const SUCCESS_TEXT = "#3D6B42";
@@ -553,17 +553,18 @@ export default function HomeScreen() {
         source={SUNRISE_BG}
         resizeMode="cover"
         style={[styles.container, { paddingTop: topPadding }]}
-        imageStyle={{ opacity: 0.92 }}
+        imageStyle={{ opacity: 0.82 }}
       >
         {/* Full-screen gradient overlay */}
         <LinearGradient
           colors={[
             "rgba(245,239,230,0.00)",
             "rgba(245,239,230,0.00)",
-            "rgba(245,239,230,0.50)",
+            "rgba(245,239,230,0.38)",
+            "rgba(245,239,230,0.55)",
             "rgba(245,239,230,0.88)",
           ]}
-          locations={[0, 0.40, 0.68, 1]}
+          locations={[0, 0.30, 0.55, 0.72, 1]}
           style={StyleSheet.absoluteFillObject}
           pointerEvents="none"
         />
@@ -628,17 +629,18 @@ export default function HomeScreen() {
       source={SUNRISE_BG}
       resizeMode="cover"
       style={[styles.container, { paddingTop: topPadding }]}
-      imageStyle={{ opacity: 0.92 }}
+      imageStyle={{ opacity: 0.82 }}
     >
       {/* Full-screen gradient overlay */}
       <LinearGradient
         colors={[
           "rgba(245,239,230,0.00)",
           "rgba(245,239,230,0.00)",
-          "rgba(245,239,230,0.50)",
+          "rgba(245,239,230,0.38)",
+          "rgba(245,239,230,0.55)",
           "rgba(245,239,230,0.88)",
         ]}
-        locations={[0, 0.40, 0.68, 1]}
+        locations={[0, 0.30, 0.55, 0.72, 1]}
         style={StyleSheet.absoluteFillObject}
         pointerEvents="none"
       />
@@ -658,6 +660,19 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Atmospheric lower glow */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            bottom: 80,
+            left: -40,
+            right: -40,
+            height: 300,
+            borderRadius: 200,
+            backgroundColor: "rgba(200,160,60,0.07)",
+          }}
+        />
         <Text style={styles.eyebrow}>SACRED DESIGN</Text>
 
         {/* Blend subtitle — split into two lines */}
@@ -797,7 +812,7 @@ export default function HomeScreen() {
             {/* Top row */}
             <View style={styles.cardTopRow}>
               <Text style={styles.cardEyebrow}>✦  TODAY'S ALIGNMENT</Text>
-              <Text style={styles.dayBadge}>{dayLabel}</Text>
+              {dayLabel ? <Text style={styles.dayBadge}>{dayLabel}</Text> : null}
             </View>
 
             {/* Action */}
@@ -1074,18 +1089,19 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    backgroundColor: "rgba(255,250,240,0.55)",
+    backgroundColor: "rgba(255,250,235,0.48)",
     borderRadius: 28,
-    paddingHorizontal: 26,
-    paddingTop: 26,
-    paddingBottom: 30,
-    shadowColor: "#8B6914",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 28,
-    elevation: 4,
+    paddingHorizontal: 28,
+    paddingTop: 30,
+    paddingBottom: 32,
+    shadowColor: "#7A5C10",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 32,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "rgba(220,185,100,0.28)",
+    borderColor: "rgba(220,185,100,0.25)",
+    marginBottom: 8,
   },
   cardTopRow: {
     flexDirection: "row",
@@ -1096,8 +1112,8 @@ const styles = StyleSheet.create({
   cardEyebrow: {
     fontFamily: "Inter_400Regular",
     fontSize: 10,
-    letterSpacing: 2.5,
-    color: "rgba(180,140,60,0.90)",
+    letterSpacing: 3,
+    color: "rgba(160,120,40,0.85)",
     textTransform: "uppercase",
   },
   dayBadge: {
@@ -1112,46 +1128,47 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontFamily: "Lora_400Regular",
-    fontSize: 17,
+    fontSize: 18,
     color: "#2A3520",
-    lineHeight: 28,
-    marginBottom: 20,
+    lineHeight: 30,
+    marginBottom: 22,
   },
   cardDivider: {
-    width: 32,
     height: 1,
-    backgroundColor: GOLD,
-    opacity: 0.5,
-    marginBottom: 16,
+    backgroundColor: "rgba(220,185,100,0.30)",
+    marginBottom: 18,
   },
   guidancePreview: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: "rgba(42,53,32,0.72)",
-    lineHeight: 22,
-    marginBottom: 20,
+    color: "rgba(42,53,32,0.65)",
+    lineHeight: 23,
+    marginBottom: 24,
     fontStyle: "italic",
+    letterSpacing: 0.1,
   },
   buttonGradient: {
     borderRadius: 50,
-    paddingVertical: 17,
+    paddingVertical: 18,
     alignItems: "center",
     justifyContent: "center",
   },
   buttonShadow: {
-    shadowColor: "#5C6E4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 4,
+    shadowColor: "#4A5C38",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.32,
+    shadowRadius: 16,
+    elevation: 5,
     borderRadius: 50,
     width: "100%",
+    borderWidth: 1,
+    borderColor: "rgba(220,185,100,0.35)",
   },
   buttonText: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 15,
     color: "#FFFFFF",
-    letterSpacing: 0.8,
+    letterSpacing: 1,
   },
   generatingHint: {
     fontFamily: "Inter_400Regular",
@@ -1187,16 +1204,16 @@ const styles = StyleSheet.create({
   progressRow: {
     flexDirection: "row",
     gap: 10,
-    justifyContent: "center",
     marginBottom: 20,
+    justifyContent: "center",
   },
   statPill: {
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.14)",
     borderRadius: 50,
     paddingVertical: 7,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "rgba(220,185,100,0.30)",
+    borderColor: "rgba(220,185,100,0.28)",
   },
   statPillText: {
     fontFamily: "Inter_500Medium",
@@ -1219,18 +1236,19 @@ const styles = StyleSheet.create({
   },
   checkinCard: {
     width: "100%",
-    backgroundColor: "rgba(245,240,225,0.60)",
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 14,
+    backgroundColor: "rgba(245,238,215,0.45)",
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: "rgba(200,169,107,0.22)",
+    borderColor: "rgba(220,185,100,0.22)",
   },
   checkinTitle: {
-    fontFamily: "Lora_700Bold",
+    fontFamily: "Lora_400Regular",
     fontSize: 15,
-    color: TEXT,
+    color: "rgba(42,53,32,0.90)",
     marginBottom: 12,
+    lineHeight: 22,
   },
   checkinReminder: {
     backgroundColor: "#FAFAF7",
@@ -1263,21 +1281,30 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   checkinButtons: {
+    flexDirection: "row",
     gap: 8,
+    marginTop: 14,
   },
   checkinButton: {
-    backgroundColor: CARD_BG,
-    borderRadius: 10,
-    paddingVertical: 11,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: "rgba(200,169,107,0.2)",
+    flex: 1,
+    backgroundColor: "rgba(255,250,235,0.45)",
+    borderRadius: 14,
+    paddingVertical: 13,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(220,185,100,0.30)",
+    shadowColor: "#8B6914",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   checkinButtonText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 14,
-    color: TEXT,
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: "rgba(42,53,32,0.85)",
+    textAlign: "center",
+    letterSpacing: 0.2,
   },
   checkinSavedRow: {
     alignItems: "center",
