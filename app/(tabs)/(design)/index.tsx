@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ImageBackground,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 const LIGHT_BG = require("../../../assets/images/3468421c-2e1c-4c11-b86d-e8fa5018ce3c.jpeg");
 import { useRouter } from "expo-router";
@@ -382,7 +383,17 @@ export default function MyDesignScreen() {
   if (!sacredDesignResult) {
     console.log("[MyDesign] No sacredDesignResult — showing placeholder");
     return (
-      <ImageBackground source={LIGHT_BG} style={{ flex: 1 }} resizeMode="cover" imageStyle={{ opacity: 0.35 }}>
+      <ImageBackground source={LIGHT_BG} style={{ flex: 1 }} resizeMode="cover" imageStyle={{ opacity: 0.68 }}>
+      <LinearGradient
+        colors={[
+          "rgba(246,241,232,0.10)",
+          "rgba(246,241,232,0.52)",
+          "rgba(246,241,232,0.72)",
+        ]}
+        locations={[0, 0.40, 1]}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
       <ScrollView
         style={[styles.scroll, { backgroundColor: 'transparent' }]}
         contentContainerStyle={styles.emptyContent}
@@ -422,7 +433,17 @@ export default function MyDesignScreen() {
   const hasStuckPatterns = content?.stuckPatterns && content.stuckPatterns.length > 0;
 
   return (
-    <ImageBackground source={LIGHT_BG} style={{ flex: 1, backgroundColor: BG }} resizeMode="cover" imageStyle={{ opacity: 0.35 }}>
+    <ImageBackground source={LIGHT_BG} style={{ flex: 1, backgroundColor: BG }} resizeMode="cover" imageStyle={{ opacity: 0.68 }}>
+      <LinearGradient
+        colors={[
+          "rgba(246,241,232,0.10)",
+          "rgba(246,241,232,0.52)",
+          "rgba(246,241,232,0.72)",
+        ]}
+        locations={[0, 0.40, 1]}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
       {/* Back arrow */}
       <TouchableOpacity
         onPress={() => {
@@ -606,18 +627,18 @@ const styles = StyleSheet.create({
 
   // Today's Focus card
   focusCard: {
-    backgroundColor: "rgba(255,253,248,0.82)",
+    backgroundColor: "rgba(255,252,238,0.55)",
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 20,
     marginBottom: 32,
-    borderLeftWidth: 3,
-    borderLeftColor: GOLD,
-    shadowColor: "#2F3E2F",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 4,
+    borderLeftWidth: 2,
+    borderLeftColor: "rgba(201,168,76,0.60)",
+    shadowColor: "#7A5C10",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 3,
   },
   focusLabel: {
     fontFamily: "Inter_600SemiBold",
@@ -670,15 +691,17 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,252,238,0.52)",
     borderRadius: 20,
     marginTop: 32,
     paddingHorizontal: 20,
-    shadowColor: "#000",
+    shadowColor: "#7A5C10",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.06,
     shadowRadius: 12,
-    elevation: 3,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "rgba(220,185,100,0.20)",
   },
   cardRow: {
     flexDirection: "row",
@@ -726,7 +749,7 @@ const styles = StyleSheet.create({
   divider: {
     marginVertical: 28,
     height: 1,
-    backgroundColor: DIVIDER,
+    backgroundColor: "rgba(220,185,100,0.20)",
   },
   sectionLabel: {
     fontFamily: "Inter_600SemiBold",
@@ -768,7 +791,7 @@ const styles = StyleSheet.create({
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: DIVIDER,
+    backgroundColor: "rgba(220,185,100,0.20)",
     marginVertical: 32,
   },
   secondaryEyebrow: {
@@ -804,14 +827,14 @@ const styles = StyleSheet.create({
   },
   stuckCard: {
     marginBottom: 10,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,252,238,0.52)",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(111,138,106,0.15)",
-    shadowColor: "#2F3E2F",
+    borderColor: "rgba(220,185,100,0.22)",
+    shadowColor: "#7A5C10",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 1,
   },
   stuckCardInner: {
@@ -879,13 +902,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   bottomCTA: {
-    backgroundColor: "#1A2035",
-    borderRadius: 14,
-    paddingVertical: 18,
+    backgroundColor: "rgba(22,28,50,0.82)",
+    borderRadius: 18,
+    paddingVertical: 20,
     paddingHorizontal: 24,
     alignItems: "center",
     borderLeftWidth: 3,
-    borderLeftColor: "#C9A84C",
+    borderLeftColor: "rgba(201,168,76,0.70)",
+    shadowColor: "#0A0E1A",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 5,
   },
   bottomCTAText: {
     fontFamily: "Inter_600SemiBold",
