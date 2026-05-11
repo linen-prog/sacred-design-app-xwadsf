@@ -126,6 +126,24 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
+function ContemplativePhrase({ text }: { text: string }) {
+  return (
+    <View style={styles.phraseContainer}>
+      <Text style={styles.phraseText}>{text}</Text>
+    </View>
+  );
+}
+
+function SymbolicDivider() {
+  return (
+    <View style={styles.symbolicDivider}>
+      <View style={styles.symbolicLine} />
+      <Text style={styles.symbolicGlyph}>✦</Text>
+      <View style={styles.symbolicLine} />
+    </View>
+  );
+}
+
 export default function JourneyScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -220,9 +238,6 @@ export default function JourneyScreen() {
   }
 
   const totalDays = history.length;
-  const subtitleText = totalDays > 0
-    ? `Day ${history[history.length - 1]?.day_number ?? totalDays} of your Sacred Design`
-    : "Your Sacred Design journey";
 
   return (
     <ImageBackground
@@ -231,186 +246,252 @@ export default function JourneyScreen() {
       resizeMode="cover"
       imageStyle={{ opacity: 0.82 }}
     >
-    <LinearGradient
-      colors={[
-        "rgba(246,241,232,0.08)",
-        "rgba(246,241,232,0.32)",
-        "rgba(246,241,232,0.52)",
-      ]}
-      locations={[0, 0.45, 1]}
-      style={StyleSheet.absoluteFillObject}
-      pointerEvents="none"
-    />
-    <ScrollView
-      style={[styles.scroll, { backgroundColor: 'transparent' }]}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 120 },
-      ]}
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={styles.title}>Journey</Text>
-      <Text style={styles.subtitle}>{subtitleText}</Text>
-
-      {/* ── Section 1: Past Alignments ── */}
-      <SectionHeader title="Past Alignments" />
-
-      {loading ? (
-        <View style={{ gap: 12 }}>
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
+      <LinearGradient
+        colors={[
+          "rgba(246,241,232,0.08)",
+          "rgba(246,241,232,0.32)",
+          "rgba(246,241,232,0.52)",
+        ]}
+        locations={[0, 0.45, 1]}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: "transparent" }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 120 },
+        ]}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.headerBlock}>
+          <Text style={styles.eyebrow}>SACRED PATH</Text>
+          <Text style={styles.title}>Your Journey</Text>
+          <Text style={styles.subtitle}>
+            {totalDays > 0
+              ? `Day ${history[history.length - 1]?.day_number ?? totalDays} of becoming more fully yourself.`
+              : "Notice what has been unfolding."}
+          </Text>
+          <View style={styles.headerDivider} />
         </View>
-      ) : error ? (
-        <Pressable
-          onPress={() => {
-            console.log("[Journey] Error state retry pressed");
-            loadHistory();
-          }}
-        >
+
+        {/* ── Section 1: Moments of Alignment ── */}
+        <ContemplativePhrase text="Awareness often grows quietly." />
+        <SectionHeader title="Moments of Alignment" />
+
+        {loading ? (
+          <View style={{ gap: 12 }}>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </View>
+        ) : error ? (
+          <Pressable
+            onPress={() => {
+              console.log("[Journey] Error state retry pressed");
+              loadHistory();
+            }}
+          >
+            <View style={styles.emptyArea}>
+              <View style={styles.emptyInner}>
+                <Text style={styles.emptyIcon}>⚠</Text>
+                <Text style={styles.emptyText}>Couldn't load your journey</Text>
+                <Text style={styles.emptyHint}>{error}</Text>
+              </View>
+            </View>
+          </Pressable>
+        ) : history.length === 0 ? (
           <View style={styles.emptyArea}>
             <View style={styles.emptyInner}>
-              <Text style={styles.emptyIcon}>⚠</Text>
-              <Text style={styles.emptyText}>Couldn't load your journey</Text>
-              <Text style={styles.emptyHint}>{error}</Text>
+              <Text style={styles.emptyIcon}>🔥</Text>
+              <Text style={styles.emptyText}>Your path begins with the first step.</Text>
+              <Text style={styles.emptyHint}>
+                Complete today's alignment on the Home tab to begin your sacred archive.
+              </Text>
             </View>
           </View>
-        </Pressable>
-      ) : history.length === 0 ? (
-        <View style={styles.emptyArea}>
-          <View style={styles.emptyInner}>
-            <Text style={styles.emptyIcon}>◌</Text>
-            <Text style={styles.emptyText}>No entries yet</Text>
-            <Text style={styles.emptyHint}>
-              Your first alignment will appear here after you complete today's practice on the Home tab.
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <View style={{ gap: 12 }}>
-          {history.map((item, index) => {
-            const dateStr = formatDate(item.generated_at);
-            const dayLevelLabel = `Day ${item.day_number}`;
-            const actionTruncated = truncateAction(item.action);
-            const hasReflection = item.hasReflection === true;
-            return (
-              <AnimatedCard key={item.id} index={index}>
-                <Pressable
-                  onPress={() => handleCardPress(item)}
-                  style={({ pressed }) => [
-                    styles.historyCard,
-                    pressed && styles.historyCardPressed,
-                  ]}
-                >
-                  <View style={styles.historyCardTop}>
-                    <Text style={styles.historyMeta}>{dayLevelLabel}</Text>
-                    <View style={styles.historyCardTopRight}>
-                      {hasReflection && (
-                        <View style={styles.reflectedBadge}>
-                          <Text style={styles.reflectedBadgeText}>✓ Reflected</Text>
-                        </View>
-                      )}
-                      <Text style={styles.historyDate}>{dateStr}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.historyAction}>
-                    {actionTruncated}
-                  </Text>
-                  <View style={styles.historyCardFooter}>
-                    <Text style={styles.historyBlend}>{item.blend_name}</Text>
-                    <Text style={styles.historyChevron}>›</Text>
-                  </View>
-                </Pressable>
-              </AnimatedCard>
-            );
-          })}
-        </View>
-      )}
-
-      {/* ── Section 2: Your Reflections ── */}
-      {!reflectionsLoading && reflections.length > 0 && (
-        <View style={styles.reflectionsSection}>
-          <SectionHeader title="Your Reflections" />
+        ) : (
           <View style={{ gap: 12 }}>
-            {reflections.map((item) => {
-              const dateStr = formatDate(item.completed_at);
-              const dayLabel = `Day ${item.day_number}`;
-              const actionTruncated = item.action.length > 60 ? item.action.slice(0, 60).trimEnd() + "…" : item.action;
-              const isExpanded = expandedReflections.has(item.id);
+            {history.map((item, index) => {
+              const dateStr = formatDate(item.generated_at);
+              const dayLevelLabel = item.day_number != null ? `Day ${item.day_number}` : "Sacred Day";
+              const actionTruncated = truncateAction(item.action);
+              const hasReflection = item.hasReflection === true;
+              const showDivider = index % 3 === 2 && index < history.length - 1;
               return (
-                <AnimatedCard key={item.id} index={0}>
-                  <Pressable
-                    onPress={() => toggleReflectionExpand(item.id)}
-                    style={styles.reflectionCard}
-                  >
-                    <View style={styles.reflectionCardTop}>
-                      <Text style={styles.reflectionDayLabel}>{dayLabel}</Text>
-                      <Text style={styles.reflectionDate}>{dateStr}</Text>
-                    </View>
-                    <Text style={styles.reflectionAction}>{actionTruncated}</Text>
-                    <Text
-                      style={styles.reflectionText}
-                      numberOfLines={isExpanded ? undefined : 3}
+                <React.Fragment key={item.id}>
+                  <AnimatedCard index={index}>
+                    <Pressable
+                      onPress={() => handleCardPress(item)}
+                      style={({ pressed }) => [
+                        styles.historyCard,
+                        pressed && styles.historyCardPressed,
+                      ]}
                     >
-                      {item.reflection_text}
-                    </Text>
-                    {item.reflection_text && item.reflection_text.length > 120 && (
-                      <Text style={styles.expandToggle}>
-                        {isExpanded ? "Show less ↑" : "Read more ↓"}
+                      <View style={styles.historyCardTop}>
+                        <View style={styles.archetypeAccent}>
+                          <Text style={styles.flameSymbol}>🔥</Text>
+                          <Text style={styles.historyMeta}>{dayLevelLabel}</Text>
+                        </View>
+                        <View style={styles.historyCardTopRight}>
+                          {hasReflection && (
+                            <View style={styles.reflectedBadge}>
+                              <Text style={styles.reflectedBadgeText}>✦ Reflected</Text>
+                            </View>
+                          )}
+                          <Text style={styles.historyDate}>{dateStr}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.historyAction}>
+                        {actionTruncated}
                       </Text>
-                    )}
-                  </Pressable>
-                </AnimatedCard>
+                      <View style={styles.historyCardFooter}>
+                        <Text style={styles.historyBlend}>{item.blend_name}</Text>
+                        <Text style={styles.historyChevron}>›</Text>
+                      </View>
+                    </Pressable>
+                  </AnimatedCard>
+                  {showDivider && <SymbolicDivider />}
+                </React.Fragment>
               );
             })}
           </View>
-        </View>
-      )}
-    </ScrollView>
+        )}
+
+        {/* ── Section 2: Echoes Along the Path ── */}
+        {!reflectionsLoading && reflections.length > 0 && (
+          <View style={styles.reflectionsSection}>
+            <ContemplativePhrase text="The patterns you notice begin to loosen their grip." />
+            <SectionHeader title="Echoes Along the Path" />
+            <View style={{ gap: 12 }}>
+              {reflections.map((item) => {
+                const dateStr = formatDate(item.completed_at);
+                const dayLabel = item.day_number != null ? `Day ${item.day_number}` : "Sacred Day";
+                const actionTruncated = item.action.length > 60 ? item.action.slice(0, 60).trimEnd() + "…" : item.action;
+                const isExpanded = expandedReflections.has(item.id);
+                return (
+                  <AnimatedCard key={item.id} index={0}>
+                    <Pressable
+                      onPress={() => toggleReflectionExpand(item.id)}
+                      style={styles.reflectionCard}
+                    >
+                      <View style={styles.reflectionCardTop}>
+                        <Text style={styles.reflectionDayLabel}>{dayLabel}</Text>
+                        <Text style={styles.reflectionDate}>{dateStr}</Text>
+                      </View>
+                      <Text style={styles.reflectionAction}>{actionTruncated}</Text>
+                      <Text
+                        style={styles.reflectionText}
+                        numberOfLines={isExpanded ? undefined : 3}
+                      >
+                        {item.reflection_text}
+                      </Text>
+                      {item.reflection_text && item.reflection_text.length > 120 && (
+                        <Text style={styles.expandToggle}>
+                          {isExpanded ? "Show less ↑" : "Read more ↓"}
+                        </Text>
+                      )}
+                    </Pressable>
+                  </AnimatedCard>
+                );
+              })}
+            </View>
+          </View>
+        )}
+      </ScrollView>
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 24 },
+
+  headerBlock: {
+    marginBottom: 8,
+    paddingTop: 8,
   },
-  content: {
-    paddingHorizontal: 24,
+  eyebrow: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+    color: "#C9A84C",
+    letterSpacing: 2.5,
+    marginBottom: 8,
   },
   title: {
     fontFamily: "Lora_400Regular",
-    fontSize: 32,
-    color: TEXT,
-    marginBottom: 10,
-    letterSpacing: -0.4,
+    fontSize: 34,
+    color: "#3D3530",
+    letterSpacing: -0.5,
+    marginBottom: 8,
   },
   subtitle: {
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: TEXT_MUTED,
-    lineHeight: 22,
+    color: "#8A8070",
+    lineHeight: 23,
+    marginBottom: 20,
+    fontStyle: "italic",
+  },
+  headerDivider: {
+    height: 1,
+    backgroundColor: "rgba(201,168,76,0.18)",
     marginBottom: 28,
   },
+
+  phraseContainer: {
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  phraseText: {
+    fontFamily: "Lora_400Regular",
+    fontSize: 15,
+    color: "#8A8070",
+    fontStyle: "italic",
+    textAlign: "center",
+    lineHeight: 24,
+    letterSpacing: 0.2,
+  },
+
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 18,
     gap: 12,
   },
   sectionHeaderText: {
     fontFamily: "Lora_400Regular",
-    fontSize: 20,
-    color: TEXT,
-    letterSpacing: -0.3,
+    fontSize: 18,
+    color: "#3D3530",
+    letterSpacing: -0.2,
     flexShrink: 0,
   },
   sectionHeaderLine: {
     flex: 1,
     height: 1,
-    backgroundColor: DIVIDER,
+    backgroundColor: "rgba(61,53,48,0.08)",
   },
+
+  symbolicDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 6,
+    gap: 10,
+  },
+  symbolicLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(201,168,76,0.15)",
+  },
+  symbolicGlyph: {
+    fontSize: 10,
+    color: "#C9A84C",
+    opacity: 0.6,
+  },
+
   emptyArea: {
     backgroundColor: "rgba(255,250,238,0.72)",
     borderRadius: 20,
@@ -420,9 +501,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(220,185,100,0.32)",
     shadowColor: "#7A5C10",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.13,
-    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 20,
     elevation: 2,
   },
   emptyInner: {
@@ -432,43 +513,50 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emptyIcon: {
-    fontSize: 36,
-    color: TEXT_LIGHT,
+    fontSize: 32,
     marginBottom: 4,
   },
   emptyText: {
     fontFamily: "Lora_400Regular",
     fontSize: 17,
-    color: TEXT_MUTED,
+    color: "#8A8070",
+    textAlign: "center",
   },
   emptyHint: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: TEXT_LIGHT,
+    color: "#A8B5A2",
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 21,
   },
+
   historyCard: {
-    backgroundColor: "rgba(255,250,238,0.72)",
-    borderRadius: 16,
+    backgroundColor: "rgba(255,250,238,0.78)",
+    borderRadius: 18,
     paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingVertical: 20,
     shadowColor: "#7A5C10",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.13,
-    shadowRadius: 18,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 22,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "rgba(220,185,100,0.32)",
+    borderColor: "rgba(220,185,100,0.28)",
   },
-  historyCardPressed: {
-    opacity: 0.75,
-  },
+  historyCardPressed: { opacity: 0.78 },
   historyCardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+  archetypeAccent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  flameSymbol: {
+    fontSize: 13,
   },
   historyCardTopRight: {
     flexDirection: "row",
@@ -478,16 +566,16 @@ const styles = StyleSheet.create({
   historyMeta: {
     fontFamily: "Inter_500Medium",
     fontSize: 12,
-    color: ACCENT,
+    color: "#6F8A6A",
     letterSpacing: 0.3,
   },
   historyDate: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: TEXT_MUTED,
+    color: "#8A8070",
   },
   reflectedBadge: {
-    backgroundColor: "rgba(201,168,76,0.12)",
+    backgroundColor: "rgba(201,168,76,0.14)",
     borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -495,15 +583,15 @@ const styles = StyleSheet.create({
   reflectedBadgeText: {
     fontFamily: "Inter_500Medium",
     fontSize: 11,
-    color: GOLD,
-    letterSpacing: 0.2,
+    color: "#C9A84C",
+    letterSpacing: 0.3,
   },
   historyAction: {
     fontFamily: "Lora_400Regular",
     fontSize: 15,
-    color: TEXT,
-    lineHeight: 23,
-    marginBottom: 12,
+    color: "#3D3530",
+    lineHeight: 24,
+    marginBottom: 14,
   },
   historyCardFooter: {
     flexDirection: "row",
@@ -513,29 +601,28 @@ const styles = StyleSheet.create({
   historyBlend: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: TEXT_MUTED,
+    color: "#8A8070",
     fontStyle: "italic",
   },
   historyChevron: {
     fontSize: 18,
-    color: TEXT_MUTED,
+    color: "#8A8070",
     lineHeight: 22,
   },
-  reflectionsSection: {
-    marginTop: 36,
-  },
+
+  reflectionsSection: { marginTop: 40 },
   reflectionCard: {
-    backgroundColor: "rgba(255,250,238,0.72)",
-    borderRadius: 16,
+    backgroundColor: "rgba(255,250,238,0.78)",
+    borderRadius: 18,
     paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingVertical: 20,
     shadowColor: "#7A5C10",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.13,
-    shadowRadius: 18,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 22,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "rgba(220,185,100,0.32)",
+    borderColor: "rgba(220,185,100,0.28)",
   },
   reflectionCardTop: {
     flexDirection: "row",
@@ -546,31 +633,32 @@ const styles = StyleSheet.create({
   reflectionDayLabel: {
     fontFamily: "Inter_500Medium",
     fontSize: 12,
-    color: ACCENT,
+    color: "#6F8A6A",
     letterSpacing: 0.3,
   },
   reflectionDate: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: TEXT_MUTED,
+    color: "#8A8070",
   },
   reflectionAction: {
     fontFamily: "Lora_400Regular",
     fontSize: 14,
-    color: TEXT,
-    lineHeight: 21,
-    marginBottom: 8,
+    color: "#3D3530",
+    lineHeight: 22,
+    marginBottom: 10,
   },
   reflectionText: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: TEXT_MUTED,
-    lineHeight: 21,
+    color: "#8A8070",
+    lineHeight: 22,
   },
   expandToggle: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: ACCENT,
-    marginTop: 6,
+    color: "#6F8A6A",
+    marginTop: 8,
+    letterSpacing: 0.2,
   },
 });
