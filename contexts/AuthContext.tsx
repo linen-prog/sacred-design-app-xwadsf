@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
 import * as AppleAuthentication from "expo-apple-authentication";
+import Constants from "expo-constants";
 import { authClient, setBearerToken, clearAuthTokens, getSessionToken, API_URL } from "@/lib/auth";
 import { clearAppState } from "@/utils/appState";
 
@@ -229,6 +230,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     authInProgressRef.current = true;
     setAuthInProgress(true);
+
+    if (!Constants.isDevice) {
+      // Simulator fallback — native Apple auth not available
+      console.log('[AuthContext] signInWithApple: simulator detected, using web OAuth fallback');
+      try {
+        await authClient.signIn.social({ provider: 'apple', callbackURL: '/' });
+        await fetchUser();
+      } finally {
+        authInProgressRef.current = false;
+        setAuthInProgress(false);
+      }
+      return;
+    }
 
     // 10-second timeout for the native Apple auth sheet
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
