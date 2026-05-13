@@ -424,7 +424,7 @@ export default function PaywallScreen() {
                 <Text style={styles.legalLinkSeparator}> · </Text>
                 <TouchableOpacity onPress={() => {
                   console.log('[Paywall] Terms of Use tapped');
-                  Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/');
+                  Linking.openURL('https://sacreddesign-app.com/terms');
                 }} activeOpacity={0.7}>
                   <Text style={styles.legalLinkText}>Terms of Use</Text>
                 </TouchableOpacity>
