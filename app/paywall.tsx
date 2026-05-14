@@ -23,7 +23,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { PurchasesPackage } from "react-native-purchases";
+import Purchases, { PurchasesPackage } from "react-native-purchases";
 
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAppState } from "@/contexts/AppStateContext";
@@ -81,7 +81,6 @@ export default function PaywallScreen() {
     isWeb,
     purchasePackage,
     restorePurchases,
-    mockNativePurchase,
     checkSubscription,
   } = useSubscription();
 
@@ -107,12 +106,24 @@ export default function PaywallScreen() {
     : "Continue your daily practice with full access.";
   const badgeText = "SACRED DESIGN FULL ACCESS";
 
+  const ENTITLEMENT_ID = "pro";
+
   async function navigateAfterPurchase() {
     console.log("[Paywall] navigateAfterPurchase — verifying entitlement and updating state");
     setVerifying(true);
     try {
       // Force re-check entitlement from RevenueCat to confirm purchase is active
       await checkSubscription(true);
+      // Directly verify entitlement is active via CustomerInfo (state updates are async)
+      const customerInfo = await Purchases.getCustomerInfo();
+      if (!customerInfo.entitlements.active[ENTITLEMENT_ID]) {
+        console.warn("[Paywall] Entitlement not active after purchase verification");
+        Alert.alert(
+          "Purchase not confirmed yet.",
+          "Please wait a moment and try restoring purchases."
+        );
+        return;
+      }
       // Update app state flags
       await updateAppState({
         subscriptionActive: true,
@@ -124,8 +135,10 @@ export default function PaywallScreen() {
       router.replace("/reveal");
     } catch (err) {
       console.warn("[Paywall] navigateAfterPurchase error:", err);
-      // Still navigate — purchase was confirmed by purchasePackage returning true
-      router.replace("/reveal");
+      Alert.alert(
+        "Purchase verification failed.",
+        "Please restore purchases or contact support."
+      );
     } finally {
       setVerifying(false);
     }
@@ -350,18 +363,6 @@ export default function PaywallScreen() {
               <Text style={[styles.noPackagesText, { marginTop: 8, opacity: 0.7 }]}>
                 Use a development build or production build to test purchases.
               </Text>
-              {__DEV__ && (
-                <TouchableOpacity
-                  style={styles.devMockButton}
-                  onPress={async () => {
-                    console.log("[Paywall] Dev: Simulate Purchase pressed");
-                    await mockNativePurchase();
-                    navigateAfterPurchase();
-                  }}
-                >
-                  <Text style={styles.devMockButtonText}>Dev: Simulate Purchase</Text>
-                </TouchableOpacity>
-              )}
             </View>
           )}
         </ScrollView>
@@ -661,22 +662,6 @@ const styles = StyleSheet.create({
   noPackagesText: {
     fontSize: 15,
     color: COLORS.whiteMuted,
-    textAlign: "center",
-    fontFamily: "Inter_400Regular",
-  },
-  devMockButton: {
-    marginTop: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(201,168,76,0.4)",
-    borderStyle: "dashed",
-    alignItems: "center",
-  },
-  devMockButtonText: {
-    color: COLORS.gold,
-    fontSize: 13,
     textAlign: "center",
     fontFamily: "Inter_400Regular",
   },
