@@ -91,17 +91,17 @@ function NavigationGuard() {
     const prevUser = prevUserRef.current;
     const currentUserId = user?.id ?? null;
     if (prevUser !== undefined && prevUser !== currentUserId) {
-      console.log('[RootNavigator] Auth state changed — resetting navigation guard');
-      // Debounce the reset to avoid firing before the navigator settles after sign-out
-      setTimeout(() => {
-        hasNavigated.current = false;
-      }, 300);
+      console.log('[RootNavigator] Auth state changed — resetting navigation guard (prev:', prevUser ?? 'none', '→ next:', currentUserId ?? 'none', ')');
+      // Reset immediately (no setTimeout) so the next effect run with updated appState
+      // (after migrateAnonymousState + reload) picks up the correct state.
+      hasNavigated.current = false;
       prevUserRef.current = currentUserId;
-      return; // Don't navigate in the same tick as the auth change
+      return; // Don't navigate in the same tick as the auth change — wait for appState reload
     }
     prevUserRef.current = currentUserId;
 
     async function determineInitialRoute() {
+      console.log('[NavigationGuard] determineInitialRoute — user:', user?.id ?? 'none', 'appState.quizCompleted:', appState.quizCompleted, 'appState.onboardingStarted:', appState.onboardingStarted, 'appState.revealViewed:', appState.revealViewed, 'pathname:', pathname);
       console.log('[LaunchRouter] redirect decision:', { revealViewed: appState.revealViewed, quizCompleted: appState.quizCompleted, pathname });
 
       // If the quiz was just completed in this JS session (preparing.tsx
@@ -261,6 +261,7 @@ function NavigationGuard() {
 
       // PRIORITY 5: First launch or onboarding not started → welcome
       if (appState.firstLaunch || !appState.onboardingStarted) {
+        console.log('[NavigationGuard] PRIORITY 5 fired — routing to welcome. Reason: onboardingStarted=false, quizCompleted=false, user=', user?.id ?? 'none');
         // Fall back to legacy AsyncStorage flags for users who had the old version
         try {
           const [hasCompletedQuiz, hasSeenOnboarding] = await Promise.all([

@@ -4,7 +4,7 @@ import * as Linking from "expo-linking";
 import * as AppleAuthentication from "expo-apple-authentication";
 import Constants from "expo-constants";
 import { authClient, setBearerToken, clearAuthTokens, getSessionToken, API_URL } from "@/lib/auth";
-import { clearAppState } from "@/utils/appState";
+import { clearAppState, migrateAnonymousState } from "@/utils/appState";
 
 interface User {
   id: string;
@@ -133,6 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         // Only update state if the user identity actually changed
         if (userRef.current !== session.user.id) {
+          console.log('[AuthContext] fetchUser: migrating anonymous state for user:', session.user.id);
+          await migrateAnonymousState(session.user.id);
           userRef.current = session.user.id;
           setUser(session.user as User);
         }
@@ -270,31 +272,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Apple sign in failed: no identity token received');
       }
 
-      console.log('[AuthContext] signInWithApple: identity token received, exchanging with backend');
+      console.log('[AuthContext] signInWithApple: calling authClient.signIn.social with idToken');
 
-      // Use native fetch (not authClient) to avoid the expo/fetch polyfill issue on Android
-      const response = await fetch(`${API_URL}/api/auth/sign-in/social`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Origin': API_URL,
+      const { data, error } = await authClient.signIn.social({
+        provider: 'apple',
+        idToken: {
+          token: identityToken,
         },
-        body: JSON.stringify({ provider: 'apple', idToken: { token: identityToken } }),
-      });
+      } as any);
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(`Apple sign in failed: backend exchange failed ${response.status} ${errText}`);
+      console.log('[AuthContext] signInWithApple: response data:', JSON.stringify(data));
+
+      if (error) {
+        throw new Error(error.message || 'Apple sign in failed');
       }
 
-      const data = await response.json();
-      console.log('[AuthContext] signInWithApple: backend response received', JSON.stringify(data));
-
-      const token = data?.token || data?.session?.token;
+      const token = (data as any)?.session?.token || (data as any)?.token;
       if (token) {
         await setBearerToken(token);
-        console.log('[AuthContext] signInWithApple: token stored from backend response');
       }
+      console.log('[AuthContext] signInWithApple: token stored:', !!token);
     } catch (e: any) {
       if (timeoutId) clearTimeout(timeoutId);
       const code = e?.code ?? '';
@@ -314,20 +311,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authInProgressRef.current = false;
       setAuthInProgress(false);
       if (!cancelled) {
-        // Retry fetchUser up to 4 times with 500ms gaps to handle SecureStore hydration race
+        // Retry fetchUser up to 6 times with 800ms gaps to handle SecureStore hydration race
         let attempts = 0;
-        const maxAttempts = 4;
+        const maxAttempts = 6;
         let sessionFound = false;
         while (attempts < maxAttempts) {
           await fetchUser();
           const { data: session } = await authClient.getSession();
+          console.log('[AuthContext] signInWithApple retry', attempts + 1, '— session:', session?.user?.id ?? 'null');
           if (session?.user) {
             sessionFound = true;
             break;
           }
           attempts++;
           if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 800));
           }
         }
         console.log('[AuthContext] signInWithApple: session found after retry:', sessionFound);
@@ -373,20 +371,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthInProgress(false);
       if (!cancelled) {
         // expoClient writes the session cookie to SecureStore asynchronously.
-        // Retry fetchUser up to 4 times with 500ms gaps to avoid a race condition.
+        // Retry fetchUser up to 6 times with 800ms gaps to avoid a race condition.
         let attempts = 0;
-        const maxAttempts = 4;
+        const maxAttempts = 6;
         let sessionFound = false;
         while (attempts < maxAttempts) {
           await fetchUser();
           const { data: session } = await authClient.getSession();
+          console.log('[AuthContext] signInWithGoogle retry', attempts + 1, '— session:', session?.user?.id ?? 'null');
           if (session?.user) {
             sessionFound = true;
             break;
           }
           attempts++;
           if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 800));
           }
         }
         console.log('[AuthContext] signInWithGoogle: session found after retry:', sessionFound);

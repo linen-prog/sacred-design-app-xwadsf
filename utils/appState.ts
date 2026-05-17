@@ -115,6 +115,28 @@ export async function retakeQuiz(userId: string | null = null): Promise<AppState
   return next;
 }
 
+export async function migrateAnonymousState(userId: string): Promise<void> {
+  const userKey = getStateKey(userId);
+  const anonKey = getStateKey(null);
+  try {
+    const [userRaw, anonRaw] = await Promise.all([
+      AsyncStorage.getItem(userKey),
+      AsyncStorage.getItem(anonKey),
+    ]);
+    // Only migrate if user has no state yet and anonymous state exists
+    if (!userRaw && anonRaw) {
+      console.log('[AppState] Migrating anonymous state to user:', userId);
+      await AsyncStorage.setItem(userKey, anonRaw);
+      // Bust memory cache so next load picks up the migrated state
+      _memoryCache = null;
+      _currentUserId = null;
+      console.log('[AppState] Migration complete');
+    }
+  } catch (e) {
+    console.warn('[AppState] Migration failed:', e);
+  }
+}
+
 export async function clearAppState(userId: string | null = null): Promise<void> {
   console.log('[AppState] Clearing in-memory state on sign out');
   _memoryCache = null;
