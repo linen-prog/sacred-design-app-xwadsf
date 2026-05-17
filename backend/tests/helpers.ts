@@ -107,8 +107,8 @@ export async function expectStatus(res: Response, ...expected: number[]): Promis
  * Delete the test user (cleanup).
  */
 export async function deleteTestUser(token: string): Promise<void> {
-  await authenticatedApi("/api/auth/delete-user", token, {
-    method: "POST",
+  await authenticatedApi("/api/account", token, {
+    method: "DELETE",
   });
 }
 

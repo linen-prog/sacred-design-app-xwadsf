@@ -20,41 +20,54 @@ export const app = await createApplication(schema);
 // Export App type for use in route files
 export type App = typeof app;
 
-// Generate Apple client secret JWT (lazy evaluation with fallback)
+// Generate Apple client secret JWT at startup
 function generateAppleClientSecret(): string {
-  // Try to use static secret first (for testing/development)
-  if (process.env.APPLE_CLIENT_SECRET) {
-    return process.env.APPLE_CLIENT_SECRET;
-  }
-
-  // Try to generate JWT from private key (for production)
   const privateKey = process.env.APPLE_PRIVATE_KEY;
+
+  // Log first 20 characters of private key to confirm it's set
   if (privateKey) {
-    try {
-      const now = Math.floor(Date.now() / 1000);
-      const expiresAt = now + (180 * 24 * 60 * 60); // 180 days from now
-
-      const payload = {
-        iss: 'ZSU6WP9K6J',
-        aud: 'https://appleid.apple.com',
-        sub: 'com.sacreddesign.app',
-        iat: now,
-        exp: expiresAt,
-      };
-
-      return jwt.sign(payload, privateKey, {
-        algorithm: 'ES256',
-        keyid: '2B969AJ4AZ',
-      });
-    } catch (error) {
-      // If JWT signing fails, log and use a placeholder
-      console.warn('Failed to generate Apple JWT, using placeholder:', error instanceof Error ? error.message : String(error));
-      return 'apple_client_secret_placeholder';
-    }
+    const preview = privateKey.substring(0, 20);
+    app.logger.info({ keyPreview: preview }, 'Apple private key is configured');
+  } else {
+    app.logger.warn('APPLE_PRIVATE_KEY environment variable is not set');
   }
 
-  // Fallback for testing/development when neither is configured
-  return 'apple_client_secret_placeholder';
+  if (!privateKey) {
+    throw new Error('APPLE_PRIVATE_KEY environment variable is required for Apple OAuth');
+  }
+
+  try {
+    // Convert escaped newlines to actual newlines
+    let formattedKey = privateKey.replace(/\\n/g, '\n');
+
+    // If the key doesn't start with -----BEGIN, it's likely base64-encoded DER format
+    // Wrap it in PEM format headers for EC PRIVATE KEY
+    if (!formattedKey.includes('-----BEGIN')) {
+      formattedKey = `-----BEGIN EC PRIVATE KEY-----\n${formattedKey}\n-----END EC PRIVATE KEY-----`;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const expiresAt = now + (180 * 24 * 60 * 60); // 180 days from now
+
+    const payload = {
+      iss: 'ZSU6WP9K6J',
+      aud: 'https://appleid.apple.com',
+      sub: 'com.sacreddesign.app',
+      iat: now,
+      exp: expiresAt,
+    };
+
+    const token = jwt.sign(payload, formattedKey, {
+      algorithm: 'ES256',
+      keyid: '2B969AJ4AZ',
+    });
+
+    app.logger.info('Apple client secret JWT generated successfully');
+    return token;
+  } catch (error) {
+    app.logger.error({ err: error }, 'Failed to generate Apple client secret JWT');
+    throw error;
+  }
 }
 
 // Enable authentication with email/password, Google OAuth, Apple OAuth, and anonymous sign-in
@@ -72,13 +85,18 @@ const authBeforeHook = createAuthMiddleware(async (ctx) => {
   }
 });
 
+// Generate Apple client secret at startup
+const appleClientSecret = generateAppleClientSecret();
+
 app.withAuth({
   trustedOrigins: [
     "sacreddesign://",
     "sacreddesign://auth-callback",
+    "exp://",
     "https://1b8ef625-33f1-4c4f-b692-f737f97ecb03.newly.dev",
     "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev",
     "https://*.newly.dev",
+    "http://localhost:3001",
     "http://localhost:8081",
     "http://localhost:19006",
   ],
@@ -106,8 +124,8 @@ app.withAuth({
       redirectURI: "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev/api/auth/callback/google",
     },
     apple: {
-      clientId: 'com.sacreddesign.app',
-      clientSecret: generateAppleClientSecret(),
+      clientId: process.env.APPLE_CLIENT_ID || 'com.sacreddesign.app',
+      clientSecret: appleClientSecret,
     },
   },
 });
