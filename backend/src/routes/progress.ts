@@ -38,7 +38,16 @@ export function calculateNewStreak(lastActiveDate: string | null | undefined, cu
 }
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
+  // Helper function to get session from request headers
+  const getSessionFromRequest = async (request: any) => {
+    const headers = new Headers();
+    Object.entries(request.headers).forEach(([key, value]: [string, any]) => {
+      if (value) {
+        headers.append(key, Array.isArray(value) ? value[0] : value);
+      }
+    });
+    return app.auth.api.getSession({ headers });
+  };
 
   // GET /api/progress
   fastify.get('/api/progress', {
@@ -71,8 +80,10 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
 
@@ -146,8 +157,10 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
 

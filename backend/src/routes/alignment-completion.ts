@@ -28,7 +28,16 @@ const FALLBACK_ALIGNMENT = {
 };
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
+  // Helper function to get session from request headers
+  const getSessionFromRequest = async (request: any) => {
+    const headers = new Headers();
+    Object.entries(request.headers).forEach(([key, value]: [string, any]) => {
+      if (value) {
+        headers.append(key, Array.isArray(value) ? value[0] : value);
+      }
+    });
+    return app.auth.api.getSession({ headers });
+  };
 
   // POST /api/alignments/generate
   fastify.post('/api/alignments/generate', {
@@ -81,8 +90,10 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
 
@@ -273,8 +284,10 @@ Return ONLY valid JSON with these exact keys:
     request: FastifyRequest<{ Querystring: { local_date?: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
     const { local_date } = request.query;
@@ -446,8 +459,10 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Params: { id: string }; Body: CompleteAlignmentBody }>,
     reply: FastifyReply
   ): Promise<{ success: boolean } | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
     const { id } = request.params;
@@ -574,8 +589,10 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Params: { id: string }; Body: ReflectionBody }>,
     reply: FastifyReply
   ): Promise<{ success: boolean; reflection: any } | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
     const { id } = request.params;
@@ -701,8 +718,10 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any[] | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
 
@@ -842,8 +861,10 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Querystring: { local_date: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
     const { local_date } = request.query;
@@ -932,8 +953,10 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Body: { alignment_id: string; response: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
     const { alignment_id, response } = request.body;

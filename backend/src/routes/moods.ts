@@ -10,7 +10,16 @@ interface CreateMoodBody {
 }
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
+  // Helper function to get session from request headers
+  const getSessionFromRequest = async (request: any) => {
+    const headers = new Headers();
+    Object.entries(request.headers).forEach(([key, value]: [string, any]) => {
+      if (value) {
+        headers.append(key, Array.isArray(value) ? value[0] : value);
+      }
+    });
+    return app.auth.api.getSession({ headers });
+  };
 
   // POST /api/moods
   fastify.post('/api/moods', {
@@ -60,8 +69,10 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: CreateMoodBody }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
     const { mood, note, date } = request.body;
@@ -148,8 +159,10 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Querystring: { limit?: number } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
     const limit = Math.min(request.query.limit || 30, 100);
@@ -233,8 +246,10 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Querystring: { date: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
     const { date } = request.query;

@@ -1,7 +1,8 @@
 import { createApplication, resend } from "@specific-dev/framework";
 import { anonymous } from "better-auth/plugins";
 import { createAuthMiddleware } from "@specific-dev/framework";
-import jwt from 'jsonwebtoken';
+import * as jose from 'jose';
+import { createPrivateKey } from 'crypto';
 import * as appSchema from './db/schema/schema.js';
 import * as authSchema from './db/schema/auth-schema.js';
 import { register as registerDailyAlignmentRoutes } from './routes/daily-alignment.js';
@@ -20,8 +21,8 @@ export const app = await createApplication(schema);
 // Export App type for use in route files
 export type App = typeof app;
 
-// Generate Apple client secret JWT at startup
-function generateAppleClientSecret(): string {
+// Generate Apple client secret JWT at startup using jose
+async function generateAppleClientSecretJWT(): Promise<string> {
   const privateKey = process.env.APPLE_PRIVATE_KEY;
 
   // Log first 20 characters of private key to confirm it's set
@@ -41,28 +42,27 @@ function generateAppleClientSecret(): string {
     let formattedKey = privateKey.replace(/\\n/g, '\n');
 
     // If the key doesn't start with -----BEGIN, it's likely base64-encoded DER format
-    // Wrap it in PEM format headers for EC PRIVATE KEY
+    // Wrap it in PEM format headers for PKCS#8 format
     if (!formattedKey.includes('-----BEGIN')) {
-      formattedKey = `-----BEGIN EC PRIVATE KEY-----\n${formattedKey}\n-----END EC PRIVATE KEY-----`;
+      formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----`;
     }
 
-    const now = Math.floor(Date.now() / 1000);
-    const expiresAt = now + (180 * 24 * 60 * 60); // 180 days from now
+    // Use Node's crypto to import the private key (handles both PKCS#8 and SEC1 formats)
+    const privateKeyObj = createPrivateKey(formattedKey);
 
     const payload = {
       iss: 'ZSU6WP9K6J',
       aud: 'https://appleid.apple.com',
       sub: 'com.sacreddesign.app',
-      iat: now,
-      exp: expiresAt,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + (180 * 24 * 60 * 60), // 180 days
     };
 
-    const token = jwt.sign(payload, formattedKey, {
-      algorithm: 'ES256',
-      keyid: '2B969AJ4AZ',
-    });
+    const token = await new jose.SignJWT(payload)
+      .setProtectedHeader({ alg: 'ES256', kid: '2B969AJ4AZ' })
+      .sign(privateKeyObj);
 
-    app.logger.info('Apple client secret JWT generated successfully');
+    app.logger.info('Apple client secret JWT generated successfully with jose');
     return token;
   } catch (error) {
     app.logger.error({ err: error }, 'Failed to generate Apple client secret JWT');
@@ -70,8 +70,10 @@ function generateAppleClientSecret(): string {
   }
 }
 
+// Generate Apple JWT at startup
+const appleClientSecret = await generateAppleClientSecretJWT();
+
 // Enable authentication with email/password, Google OAuth, Apple OAuth, and anonymous sign-in
-// baseURL is configured via BETTER_AUTH_URL environment variable (managed automatically by Specular)
 const authBeforeHook = createAuthMiddleware(async (ctx) => {
   // Log oauth callback requests to help debug redirect issues
   if (ctx.path?.includes('/callback/')) {
@@ -84,9 +86,6 @@ const authBeforeHook = createAuthMiddleware(async (ctx) => {
     });
   }
 });
-
-// Generate Apple client secret at startup
-const appleClientSecret = generateAppleClientSecret();
 
 app.withAuth({
   trustedOrigins: [
@@ -124,11 +123,14 @@ app.withAuth({
       redirectURI: "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev/api/auth/callback/google",
     },
     apple: {
-      clientId: process.env.APPLE_CLIENT_ID || 'com.sacreddesign.app',
+      clientId: 'com.sacreddesign.app',
       clientSecret: appleClientSecret,
     },
   },
 });
+
+// Log auth configuration on startup
+app.logger.info('Better Auth initialized with providers: email, google, apple');
 
 // Register routes - add your route modules here
 // IMPORTANT: Always use registration functions to avoid circular dependency issues

@@ -108,9 +108,17 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: CreateAlignmentBody }>,
     reply: FastifyReply
   ): Promise<AlignmentResponse | void> => {
-    const requireAuth = app.requireAuth();
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const headers = new Headers();
+    Object.entries(request.headers).forEach(([key, value]) => {
+      if (value) {
+        headers.append(key, Array.isArray(value) ? value[0] : value);
+      }
+    });
+
+    const session = await app.auth.api.getSession({ headers });
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
     const today = getTodayDate();
@@ -349,9 +357,17 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<TodayResponse | void> => {
-    const requireAuth = app.requireAuth();
-    const session = await requireAuth(request, reply);
-    if (!session) return;
+    const headers = new Headers();
+    Object.entries(request.headers).forEach(([key, value]) => {
+      if (value) {
+        headers.append(key, Array.isArray(value) ? value[0] : value);
+      }
+    });
+
+    const session = await app.auth.api.getSession({ headers });
+    if (!session) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     const userId = session.user.id;
     const today = getTodayDate();
