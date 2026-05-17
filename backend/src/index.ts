@@ -121,6 +121,7 @@ app.withAuth({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       redirectURI: "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev/api/auth/callback/google",
+      ...(process.env.GOOGLE_IOS_CLIENT_ID && { iosClientId: process.env.GOOGLE_IOS_CLIENT_ID }),
     },
     apple: {
       clientId: 'com.sacreddesign.app',

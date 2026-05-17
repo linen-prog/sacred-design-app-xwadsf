@@ -25,11 +25,17 @@ export async function api(
   path: string,
   options?: RequestInit
 ): Promise<Response> {
-  return fetch(`${BASE_URL}${path}`, sanitizeOptions(options));
+  const sanitized = sanitizeOptions(options);
+  return fetch(`${BASE_URL}${path}`, {
+    ...sanitized,
+    credentials: 'include',
+  });
 }
 
 /**
  * Make an authenticated request to the API under test.
+ * Authentication is handled via session cookies set by the sign-up endpoint.
+ * The token parameter is not used for auth, only for test identification/cleanup.
  */
 export async function authenticatedApi(
   path: string,
@@ -37,12 +43,14 @@ export async function authenticatedApi(
   options?: RequestInit
 ): Promise<Response> {
   const sanitized = sanitizeOptions(options);
+
   return fetch(`${BASE_URL}${path}`, {
     ...sanitized,
-    headers: {
-      ...sanitized?.headers,
-      Authorization: `Bearer ${token}`,
-    },
+    // credentials: 'include' is essential:
+    // - Sends any stored session cookies with this request
+    // - Stores any new cookies from the response
+    credentials: 'include',
+    headers: sanitized?.headers,
   });
 }
 
@@ -61,6 +69,7 @@ export interface TestUser {
 
 /**
  * Sign up a test user and return the token and user object.
+ * Session is maintained via cookies with credentials: 'include'.
  */
 export async function signUpTestUser(): Promise<TestUser> {
   const id = crypto.randomUUID();
@@ -79,14 +88,41 @@ export async function signUpTestUser(): Promise<TestUser> {
     throw new Error(`Failed to sign up test user (${res.status}): ${body}`);
   }
 
-  const data = (await res.json()) as TestUser;
+  const data = (await res.json()) as any;
+
+  // Extract user object - should be at data.user or at root of data
+  const user = data.user || data;
+
+  if (!user.id) {
+    throw new Error(
+      `Failed to extract user ID from sign-up response: ${JSON.stringify(data)}`
+    );
+  }
+
+  // Better Auth uses session cookies for authentication
+  // The session cookie is automatically handled by credentials: 'include'
+  // Use user ID as token identifier for cleanup (deleteTestUser)
+  const token = user.id;
+
+  const testUser: TestUser = {
+    token,
+    user: {
+      id: user.id || "",
+      name: user.name || data.name || "Test User",
+      email: user.email || data.email || "",
+      emailVerified: user.emailVerified ?? data.emailVerified ?? false,
+      image: user.image || data.image || null,
+      createdAt: user.createdAt || data.createdAt || new Date().toISOString(),
+      updatedAt: user.updatedAt || data.updatedAt || new Date().toISOString(),
+    },
+  };
 
   // Auto-register cleanup so the test file doesn't need to
   afterAll(async () => {
-    await deleteTestUser(data.token);
+    await deleteTestUser(testUser.token);
   });
 
-  return data;
+  return testUser;
 }
 
 /**
