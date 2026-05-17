@@ -267,8 +267,8 @@ export default function PaywallScreen() {
   const subscribeButtonLabel = selectedPackage
     ? selectedPackage.product.priceString
       ? `Subscribe for ${selectedPackage.product.priceString}/month`
-      : "Subscribe for $4.99/month"
-    : "Subscribe for $4.99/month";
+      : "Subscribe for $2.99/month"
+    : "Subscribe for $2.99/month";
 
   return (
     <View style={styles.container}>
@@ -388,7 +388,7 @@ export default function PaywallScreen() {
               <Text style={styles.pricingLine}>
                 {selectedPackage?.product.priceString
                   ? `${selectedPackage.product.priceString}/month • Auto-renews. Cancel anytime.`
-                  : "$4.99/month • Auto-renews. Cancel anytime."}
+                  : "$2.99/month • Auto-renews. Cancel anytime."}
               </Text>
               <TouchableOpacity
                 style={[

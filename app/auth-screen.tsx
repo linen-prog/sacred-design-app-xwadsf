@@ -70,16 +70,28 @@ export default function AuthScreen() {
       router.replace('/partial-reveal');
       return;
     }
-    const intended = appState.intendedRouteAfterAuth;
-    if (intended) {
-      console.log("[AuthScreen] Navigating to intended route after auth:", intended);
-      updateAppState({ intendedRouteAfterAuth: null });
-      router.replace(intended as any);
-    } else {
-      console.log("[AuthScreen] No intended route — navigating to /(tabs)");
-      router.replace("/(tabs)");
-    }
+  // Route based on actual app state — never route to /(tabs) if quiz not done
+  if (appState.revealViewed) {
+    console.log("[AuthScreen] revealViewed — routing to /(tabs)");
+    router.replace('/(tabs)' as any);
+  } else if (appState.revealUnlocked) {
+    console.log("[AuthScreen] revealUnlocked — routing to /reveal");
+    router.replace('/reveal');
+  } else if (appState.quizCompleted && appState.postQuizSaveCompleted) {
+    console.log("[AuthScreen] quiz done + save done — routing to /partial-reveal");
+    router.replace('/partial-reveal');
+  } else if (appState.quizCompleted) {
+    console.log("[AuthScreen] quiz done — routing to /post-quiz-save");
+    router.replace('/post-quiz-save');
+  } else if (appState.onboardingStarted) {
+    const step = appState.currentOnboardingStep || '/onboarding/welcome';
+    console.log("[AuthScreen] onboarding in progress — routing to:", step);
+    router.replace(step as any);
+  } else {
+    console.log("[AuthScreen] new user — routing to /onboarding/welcome");
+    router.replace('/onboarding/welcome');
   }
+}
 
   async function handleSubmit() {
     setError('');
