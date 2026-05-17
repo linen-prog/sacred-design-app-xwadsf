@@ -21,6 +21,7 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
+              "sacreddesign",
               "com.googleusercontent.apps.545249303685-jpvlf0hi314t5maq7vbhot0k3sqici6k"
             ]
           }
