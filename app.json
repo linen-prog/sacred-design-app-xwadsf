@@ -17,7 +17,14 @@
       "bundleIdentifier": "com.sacreddesign.app",
       "icon": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.545249303685-jpvlf0hi314t5maq7vbhot0k3sqici6k"
+            ]
+          }
+        ]
       },
       "buildNumber": "28"
     },
@@ -50,6 +57,7 @@
       "revenueCatApiKeyAndroid": "goog_LLywlqycGjXElYzZdgACkeSlgzX",
       "revenueCatEntitlementId": "pro",
       "nativelyProjectId": "1b8ef625-33f1-4c4f-b692-f737f97ecb03",
+      "googleIosClientId": "545249303685-jpvlf0hi314t5maq7vbhot0k3sqici6k.apps.googleusercontent.com",
       "revenueCatTestApiKeyIos": "test_LNJxHHxvRGtloeqZlXHBIvXTMEu",
       "revenueCatTestApiKeyAndroid": "test_LNJxHHxvRGtloeqZlXHBIvXTMEu"
     }
