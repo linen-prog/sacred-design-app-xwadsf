@@ -22,7 +22,6 @@ const TEXT = "#F5F0E8";
 const TEXT_MUTED = "#8B7355";
 const ACCENT = "#C9A84C";
 const BORDER = "rgba(201,168,76,0.18)";
-const DIVIDER_COLOR = "rgba(201,168,76,0.15)";
 const DANGER = "#C0392B";
 const INPUT_BG = "#1A2035";
 
@@ -31,7 +30,7 @@ type Mode = "signin" | "signup";
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { signInWithEmail, signUpWithEmail, fetchUser, signInWithApple, signInWithGoogle } = useAuth();
+  const { signInWithEmail, signUpWithEmail, fetchUser } = useAuth();
   const { appState, updateAppState } = useAppState();
 
   const { from } = useLocalSearchParams<{ from?: string }>();
@@ -43,13 +42,10 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [appleLoading, setAppleLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
   const isSignUp = mode === "signup";
-  const anyLoading = loading || appleLoading || googleLoading;
-  const submitDisabled = anyLoading || !email.trim() || !password.trim() || (isSignUp && !name.trim());
+  const submitDisabled = loading || !email.trim() || !password.trim() || (isSignUp && !name.trim());
   const submitLabel = isSignUp ? "Create Account" : "Sign In";
 
   function handleModeSwitch(next: Mode) {
@@ -265,104 +261,6 @@ export default function AuthScreen() {
           )}
         </Pressable>
 
-        {/* Social login */}
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Sign in with Apple — must appear first (App Store requirement) */}
-        <Pressable
-          style={[styles.appleButton, anyLoading && styles.buttonDisabled]}
-          onPress={async () => {
-            console.log('[AuthScreen] Sign in with Apple pressed');
-            setAppleLoading(true);
-            setError('');
-
-            // 10-second UI timeout — reset loading state and show error if auth hangs
-            let uiTimeoutId: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-              uiTimeoutId = null;
-              setAppleLoading(false);
-              setError('Apple sign in timed out. Please try again.');
-              console.warn('[AuthScreen] Apple sign in UI timeout fired');
-            }, 10000);
-
-            try {
-              await signInWithApple();
-              if (uiTimeoutId) {
-                clearTimeout(uiTimeoutId);
-                uiTimeoutId = null;
-              }
-              navigateAfterAuth(true);
-            } catch (e: any) {
-              if (uiTimeoutId) {
-                clearTimeout(uiTimeoutId);
-                uiTimeoutId = null;
-              }
-              const msg = e?.message || 'Apple sign in failed. Please try again.';
-              const isCancel = msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss') || msg.toLowerCase().includes('closed');
-              if (!isCancel) {
-                console.error('[AuthScreen] Apple sign in error:', msg);
-                setError(msg);
-              } else {
-                console.log('[AuthScreen] Apple sign in cancelled by user');
-              }
-            } finally {
-              if (uiTimeoutId) {
-                clearTimeout(uiTimeoutId);
-                uiTimeoutId = null;
-              }
-              setAppleLoading(false);
-            }
-          }}
-          disabled={anyLoading}
-        >
-          {appleLoading ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          ) : (
-            <>
-              <MaterialCommunityIcons name="apple" size={20} color="#FFFFFF" style={styles.socialIcon} />
-              <Text style={styles.appleButtonText}>Sign in with Apple</Text>
-            </>
-          )}
-        </Pressable>
-
-        {/* Sign in with Google */}
-        <Pressable
-          style={[styles.googleButton, anyLoading && styles.buttonDisabled]}
-          onPress={async () => {
-            console.log('[AuthScreen] Sign in with Google pressed');
-            setGoogleLoading(true);
-            setError('');
-            try {
-              await signInWithGoogle();
-              navigateAfterAuth(true);
-            } catch (e: any) {
-              const msg = e?.message || 'Google sign in failed. Please try again.';
-              const isCancel = msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss') || msg.toLowerCase().includes('closed');
-              if (!isCancel) {
-                console.error('[AuthScreen] Google sign in error:', msg);
-                setError(msg);
-              } else {
-                console.log('[AuthScreen] Google sign in cancelled by user');
-              }
-            } finally {
-              setGoogleLoading(false);
-            }
-          }}
-          disabled={anyLoading}
-        >
-          {googleLoading ? (
-            <ActivityIndicator color="#333333" size="small" />
-          ) : (
-            <>
-              <MaterialCommunityIcons name="google" size={20} color="#4285F4" style={styles.socialIcon} />
-              <Text style={styles.googleButtonText}>Sign in with Google</Text>
-            </>
-          )}
-        </Pressable>
-
         {/* Mode toggle link */}
         <Pressable
           style={styles.toggleLink}
@@ -512,69 +410,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#0A0E1A",
     letterSpacing: 0.2,
-  },
-  devNote: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: TEXT_MUTED,
-    textAlign: "center",
-    marginTop: 16,
-    marginBottom: 8,
-    opacity: 0.6,
-  },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 20,
-    gap: 10,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: DIVIDER_COLOR,
-  },
-  dividerText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: TEXT_MUTED,
-    letterSpacing: 0.3,
-  },
-  appleButton: {
-    backgroundColor: "#000000",
-    borderRadius: 12,
-    paddingVertical: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  appleButtonText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
-    color: "#FFFFFF",
-    letterSpacing: 0.2,
-  },
-  googleButton: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    paddingVertical: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.10)",
-  },
-  googleButtonText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
-    color: "#333333",
-    letterSpacing: 0.2,
-  },
-  socialIcon: {
-    marginRight: 10,
   },
   toggleLink: {
     marginTop: 24,

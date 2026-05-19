@@ -1,9 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
-import { Platform } from "react-native";
 import * as Linking from "expo-linking";
-import * as AppleAuthentication from "expo-apple-authentication";
-import Constants from "expo-constants";
-import { authClient, setBearerToken, clearAuthTokens, getSessionToken, API_URL } from "@/lib/auth";
+import { authClient, setBearerToken, clearAuthTokens, getSessionToken } from "@/lib/auth";
 import { clearAppState, migrateAnonymousState } from "@/utils/appState";
 
 interface User {
@@ -19,57 +16,11 @@ interface AuthContextType {
   authInProgress: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
-  signInWithApple: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   fetchUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-function openOAuthPopup(provider: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const popupUrl = `${window.location.origin}/auth-popup?provider=${provider}`;
-    const width = 500;
-    const height = 600;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    const popup = window.open(
-      popupUrl,
-      "oauth-popup",
-      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
-    );
-
-    if (!popup) {
-      reject(new Error("Failed to open popup. Please allow popups."));
-      return;
-    }
-
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type === "oauth-success" && event.data?.token) {
-        window.removeEventListener("message", handleMessage);
-        clearInterval(checkClosed);
-        resolve(event.data.token);
-      } else if (event.data?.type === "oauth-error") {
-        window.removeEventListener("message", handleMessage);
-        clearInterval(checkClosed);
-        reject(new Error(event.data.error || "OAuth failed"));
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-
-    const checkClosed = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(checkClosed);
-        window.removeEventListener("message", handleMessage);
-        reject(new Error("Authentication cancelled"));
-      }
-    }, 500);
-  });
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -227,172 +178,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('[AuthContext] signUpWithEmail success');
   };
 
-  const signInWithApple = async () => {
-    console.log('[AuthContext] signInWithApple started — platform: ios');
-    let cancelled = false;
-    authInProgressRef.current = true;
-    setAuthInProgress(true);
-
-    if (!Constants.isDevice) {
-      // Simulator fallback — native Apple auth not available
-      console.log('[AuthContext] signInWithApple: simulator detected, using web OAuth fallback');
-      try {
-        await authClient.signIn.social({ provider: 'apple', callbackURL: '/' });
-        await fetchUser();
-      } finally {
-        authInProgressRef.current = false;
-        setAuthInProgress(false);
-      }
-      return;
-    }
-
-    // 10-second timeout for the native Apple auth sheet
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(() => {
-        reject(new Error('Apple sign in timed out — please try again'));
-      }, 10000);
-    });
-
-    try {
-      const credential = await Promise.race([
-        AppleAuthentication.signInAsync({
-          requestedScopes: [
-            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-            AppleAuthentication.AppleAuthenticationScope.EMAIL,
-          ],
-        }),
-        timeoutPromise,
-      ]);
-
-      if (timeoutId) clearTimeout(timeoutId);
-
-      const identityToken = credential.identityToken;
-      if (!identityToken) {
-        throw new Error('Apple sign in failed: no identity token received');
-      }
-
-      console.log('[AuthContext] signInWithApple: calling authClient.signIn.social with idToken');
-
-      const { data, error } = await authClient.signIn.social({
-        provider: 'apple',
-        idToken: {
-          token: identityToken,
-        },
-      } as any);
-
-      console.log('[AuthContext] signInWithApple: response data:', JSON.stringify(data));
-
-      if (error) {
-        throw new Error(error.message || 'Apple sign in failed');
-      }
-
-      const token = (data as any)?.session?.token || (data as any)?.token;
-      if (token) {
-        await setBearerToken(token);
-      }
-      console.log('[AuthContext] signInWithApple: token stored:', !!token);
-    } catch (e: any) {
-      if (timeoutId) clearTimeout(timeoutId);
-      const code = e?.code ?? '';
-      const msg = (e?.message ?? '').toLowerCase();
-      const isCancel =
-        code === 'ERR_REQUEST_CANCELED' ||
-        msg.includes('cancel') ||
-        msg.includes('dismiss');
-      if (isCancel) {
-        cancelled = true;
-        console.log('[AuthContext] signInWithApple cancelled/dismissed by user');
-      } else {
-        console.error('[AuthContext] signInWithApple threw:', e?.message, e?.code);
-        throw e;
-      }
-    } finally {
-      authInProgressRef.current = false;
-      setAuthInProgress(false);
-      if (!cancelled) {
-        // Retry fetchUser up to 6 times with 800ms gaps to handle SecureStore hydration race
-        let attempts = 0;
-        const maxAttempts = 6;
-        let sessionFound = false;
-        while (attempts < maxAttempts) {
-          await fetchUser();
-          const { data: session } = await authClient.getSession();
-          console.log('[AuthContext] signInWithApple retry', attempts + 1, '— session:', session?.user?.id ?? 'null');
-          if (session?.user) {
-            sessionFound = true;
-            break;
-          }
-          attempts++;
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 800));
-          }
-        }
-        console.log('[AuthContext] signInWithApple: session found after retry:', sessionFound);
-      }
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    console.log('[AuthContext] signInWithGoogle started — platform:', Platform.OS);
-    let cancelled = false;
-    authInProgressRef.current = true;
-    setAuthInProgress(true);
-    try {
-      const googleOptions: { provider: 'google'; callbackURL?: string } = { provider: 'google' };
-      if (Platform.OS === 'web') {
-        googleOptions.callbackURL = `${window.location.origin}/auth-callback`;
-      } else {
-        googleOptions.callbackURL = 'sacreddesign://auth-callback';
-      }
-      console.log('[AuthContext] signInWithGoogle callbackURL:', googleOptions.callbackURL);
-      const { data, error } = await authClient.signIn.social(googleOptions);
-      console.log('[AuthContext] signInWithGoogle response — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
-      if (error) {
-        console.error('[AuthContext] signInWithGoogle error code:', error.code, 'message:', error.message);
-        // Don't throw — let fetchUser() run in finally to pick up any session
-      }
-      if ((data as any)?.session?.token) {
-        await setBearerToken((data as any).session.token);
-        console.log('[AuthContext] signInWithGoogle: stored token from response');
-      }
-    } catch (e: any) {
-      const msg = (e?.message ?? '').toLowerCase();
-      const isCancel = msg.includes('cancel') || msg.includes('dismiss') || msg.includes('closed');
-      if (!isCancel) {
-        console.error('[AuthContext] signInWithGoogle threw:', e?.message, e?.code);
-        throw e;
-      } else {
-        cancelled = true;
-        console.log('[AuthContext] signInWithGoogle cancelled/dismissed by user');
-      }
-    } finally {
-      authInProgressRef.current = false;
-      setAuthInProgress(false);
-      if (!cancelled) {
-        // expoClient writes the session cookie to SecureStore asynchronously.
-        // Retry fetchUser up to 6 times with 800ms gaps to avoid a race condition.
-        let attempts = 0;
-        const maxAttempts = 6;
-        let sessionFound = false;
-        while (attempts < maxAttempts) {
-          await fetchUser();
-          const { data: session } = await authClient.getSession();
-          console.log('[AuthContext] signInWithGoogle retry', attempts + 1, '— session:', session?.user?.id ?? 'null');
-          if (session?.user) {
-            sessionFound = true;
-            break;
-          }
-          attempts++;
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 800));
-          }
-        }
-        console.log('[AuthContext] signInWithGoogle: session found after retry:', sessionFound);
-      }
-    }
-  };
-
   const signOut = async () => {
     try {
       await authClient.signOut();
@@ -413,8 +198,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authInProgress,
         signInWithEmail,
         signUpWithEmail,
-        signInWithApple,
-        signInWithGoogle,
         signOut,
         fetchUser,
       }}
