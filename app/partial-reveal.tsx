@@ -295,7 +295,7 @@ export default function PartialRevealScreen() {
             >
               <Text style={styles.ctaLabel}>Unlock Your Full Design</Text>
             </TouchableOpacity>
-            <Text style={styles.trialNote}>$2.99/month • Auto-renews. Cancel anytime.</Text>
+            <Text style={styles.trialNote}>$4.99/month • Auto-renews. Cancel anytime.</Text>
           </View>
 
         </ScrollView>
