@@ -76,6 +76,7 @@ export default function PaywallScreen() {
 
   const {
     packages,
+    offerings,
     loading,
     isSubscribed,
     isWeb,
@@ -95,6 +96,16 @@ export default function PaywallScreen() {
       setSelectedPackage(packages[0]);
     }
   }, [packages, selectedPackage]);
+
+  // Debug: log RevenueCat offering/package/price data whenever selectedPackage changes
+  React.useEffect(() => {
+    console.log("RevenueCat offerings:", JSON.stringify(offerings, null, 2));
+    console.log("Selected package:", selectedPackage?.identifier);
+    console.log("Product identifier:", selectedPackage?.product?.identifier);
+    console.log("Price string:", selectedPackage?.product?.priceString);
+    console.log("Price number:", selectedPackage?.product?.price);
+    console.log("Currency code:", selectedPackage?.product?.currencyCode);
+  }, [selectedPackage, offerings]);
 
   // Derive copy from source param
   const isQuizComplete = source === "quiz_complete";
