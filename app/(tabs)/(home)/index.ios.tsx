@@ -12,6 +12,7 @@ import {
   ImageBackground,
   Pressable,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -45,6 +46,21 @@ const UPSELL_GOLD = "#C8A96B";
 const UPSELL_TEXT = "#F5EFE6";
 const UPSELL_MUTED = "rgba(245,239,230,0.65)";
 
+const FALLBACK_ALIGNMENT = {
+  id: 'fallback',
+  user_id: '',
+  day_number: 1,
+  level: 1,
+  action: 'Pause and breathe with intention.',
+  guidance: 'Take three slow, deep breaths. With each exhale, release what you are carrying. Your sacred design is already within you — today is simply an invitation to remember it.',
+  somatic_cue: 'Place one hand on your heart. Feel its rhythm. Let that rhythm remind you that you are held.',
+  scripture: 'Be still, and know that I am God. — Psalm 46:10',
+  reflection_prompt: 'What is one small thing you can release today to make space for what matters most?',
+  primary_archetype: '',
+  secondary_archetype: '',
+  blend_name: '',
+  generated_at: new Date().toISOString(),
+};
 
 interface DailyAlignment {
   id: string;
@@ -450,32 +466,52 @@ export default function HomeScreen() {
     setAuthRequired(false);
     fadeAnim.setValue(0);
     const localDate = new Date().toISOString().split("T")[0];
-    console.log("[Home] GET /api/alignments/today?local_date=" + localDate);
+    console.log('[Alignment] request start — local_date:', localDate);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 15000);
     try {
-      const res = await apiFetch(`/api/alignments/today?local_date=${localDate}`);
+      const res = await apiFetch(`/api/alignments/today?local_date=${localDate}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      console.log('[Alignment] response received — status:', res.status);
       if (!res.ok) {
         const errText = await res.text();
         console.warn("[Home] GET /api/alignments/today failed:", res.status, errText);
         if (res.status === 401) {
           setAuthRequired(true);
         } else {
-          setError("Couldn't load today's alignment.");
+          console.log('[Alignment] FALLBACK activated — reason: non-200 status ' + res.status);
+          setAlignment(FALLBACK_ALIGNMENT as DailyAlignment);
+          setError('');
+          Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
         }
         return;
       }
       const data: { alignment: DailyAlignment | null; reason?: string } = await res.json();
-      console.log("[Home] alignment:", data.alignment?.id ?? "null", "reason:", data.reason ?? "none");
+      console.log('[Alignment] parsed alignment id:', data.alignment?.id ?? 'null', 'reason:', data.reason ?? 'none');
       if (data.alignment) {
         setAlignment(data.alignment);
         Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
       } else if (data.reason === "no_archetype") {
         setError("Complete your Sacred Design quiz to generate your alignment.");
       } else {
-        setError("Couldn't generate today's alignment.");
+        console.log('[Alignment] FALLBACK activated — reason: null alignment from server');
+        setAlignment(FALLBACK_ALIGNMENT as DailyAlignment);
+        setError('');
+        Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
       }
-    } catch (e) {
-      console.warn("[Home] loadTodayAlignment error:", e);
-      setError("Couldn't load today's alignment.");
+    } catch (e: unknown) {
+      clearTimeout(timeoutId);
+      const isAbort = e instanceof Error && e.name === 'AbortError';
+      if (isAbort) {
+        console.log('[Alignment] TIMEOUT — activating fallback');
+      } else {
+        console.log('[Alignment] ERROR — activating fallback:', e);
+      }
+      setAlignment(FALLBACK_ALIGNMENT as DailyAlignment);
+      setError('');
+      Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
     } finally {
       setLoading(false);
     }
@@ -503,13 +539,14 @@ export default function HomeScreen() {
     router.push({
       pathname: "/alignment-detail",
       params: {
-        alignmentId: alignment.id,
-        action: alignment.action,
-        guidance: alignment.guidance,
-        somatic_cue: alignment.somatic_cue,
-        scripture: alignment.scripture,
-        reflection_prompt: alignment.reflection_prompt,
-        day_number: String(alignment.day_number),
+        alignmentId: alignment.id ?? '',
+        action: alignment.action ?? '',
+        guidance: alignment.guidance ?? '',
+        somatic_cue: alignment.somatic_cue ?? '',
+        scripture: alignment.scripture ?? '',
+        reflection_prompt: alignment.reflection_prompt ?? '',
+        day_number: String(alignment.day_number ?? 1),
+        blend_name: alignment.blend_name ?? sacredDesignResult?.blend_name ?? '',
       },
     });
   }
@@ -617,6 +654,7 @@ export default function HomeScreen() {
   }
 
   // ── State B: quiz complete ──────────────────────────────────────────────────
+  console.log('[Alignment] rendering — loading:', loading, 'error:', !!error, 'alignment:', alignment?.id ?? 'null', 'authRequired:', authRequired);
   const guidancePreview = alignment ? getFirstSentence(alignment.guidance) : "";
   const dayLabel = alignment ? `Day ${alignment.day_number}` : "";
   const showStreakPill = progress !== null && progress.streak > 0;
@@ -838,7 +876,19 @@ export default function HomeScreen() {
               </LinearGradient>
             </AnimatedPressable>
           </Animated.View>
-        ) : null}
+        ) : (
+          // Safety net: should never reach here, but render fallback to avoid blank screen
+          <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
+            <View style={styles.cardTopRow}>
+              <Text style={styles.cardEyebrow}>✦  TODAY'S ALIGNMENT</Text>
+            </View>
+            <Text style={styles.actionText}>{FALLBACK_ALIGNMENT.action}</Text>
+            <View style={styles.cardDivider} />
+            <Text style={styles.guidancePreview} numberOfLines={2} ellipsizeMode="tail">
+              {FALLBACK_ALIGNMENT.guidance.split('.')[0] + '.'}
+            </Text>
+          </Animated.View>
+        )}
 
         <Pressable onPress={handleRetake} style={{ marginTop: 16, padding: 8 }}>
           <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: TEXT_MUTED, textAlign: "center" }}>
@@ -917,12 +967,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 16,
-    marginTop: 200,
+    marginTop: Math.min(200, Dimensions.get('window').height * 0.22),
   },
   blendSubtitleContainer: {
     alignItems: "center",
     marginBottom: 8,
-    marginTop: 200,
+    marginTop: Math.min(200, Dimensions.get('window').height * 0.22),
   },
   blendSubtitleLine1: {
     fontFamily: "Inter_400Regular",
