@@ -110,8 +110,8 @@ export default function CompletionScreen() {
   };
 
   const handleReflect = () => {
-    console.log('[CompletionScreen] "Reflect on this moment" pressed');
-    router.replace('/(tabs)');
+    console.log('[CompletionScreen] "Reflect on this moment" pressed — navigating to home');
+    router.replace('/(tabs)/(home)' as any);
   };
 
   return (

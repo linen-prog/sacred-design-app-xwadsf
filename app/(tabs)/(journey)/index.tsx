@@ -164,8 +164,11 @@ export default function JourneyScreen() {
   async function loadReflections() {
     setReflectionsLoading(true);
     console.log("[Journey] GET /api/reflections");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
     try {
-      const res = await apiFetch("/api/reflections");
+      const res = await apiFetch("/api/reflections", { signal: controller.signal });
+      clearTimeout(timeoutId);
       if (!res.ok) {
         const errText = await res.text();
         console.warn("[Journey] /api/reflections failed:", res.status, errText);
@@ -175,7 +178,12 @@ export default function JourneyScreen() {
       const data: ReflectionItem[] = Array.isArray(reflJson) ? reflJson : (reflJson.reflections ?? reflJson.data ?? []);
       console.log("[Journey] Reflections loaded:", data.length, "entries");
       setReflections(data);
-    } catch (e) {
+    } catch (e: any) {
+      clearTimeout(timeoutId);
+      if (e?.name === 'AbortError') {
+        console.warn("[Journey] loadReflections TIMEOUT");
+        return;
+      }
       console.warn("[Journey] loadReflections error:", e);
     } finally {
       setReflectionsLoading(false);
@@ -186,8 +194,11 @@ export default function JourneyScreen() {
     setLoading(true);
     setError("");
     console.log("[Journey] GET /api/alignments/history");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
     try {
-      const res = await apiFetch("/api/alignments/history");
+      const res = await apiFetch("/api/alignments/history", { signal: controller.signal });
+      clearTimeout(timeoutId);
       if (!res.ok) {
         const errText = await res.text();
         console.warn("[Journey] /api/alignments/history failed:", res.status, errText);
@@ -199,7 +210,13 @@ export default function JourneyScreen() {
       console.log("[Journey] History loaded:", data.length, "entries");
       const sorted = [...data].sort((a, b) => b.day_number - a.day_number);
       setHistory(sorted);
-    } catch (e) {
+    } catch (e: any) {
+      clearTimeout(timeoutId);
+      if (e?.name === 'AbortError') {
+        console.warn("[Journey] loadHistory TIMEOUT");
+        setError("Couldn't load your journey. Check your connection.");
+        return;
+      }
       console.warn("[Journey] loadHistory error:", e);
       setError("Couldn't load your journey. Check your connection.");
     } finally {
@@ -264,6 +281,7 @@ export default function JourneyScreen() {
         ]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headerBlock}>
           <Text style={styles.eyebrow}>SACRED PATH</Text>
@@ -368,7 +386,7 @@ export default function JourneyScreen() {
               {reflections.map((item) => {
                 const dateStr = formatDate(item.completed_at);
                 const dayLabel = item.day_number != null ? `Day ${item.day_number}` : "Sacred Day";
-                const actionTruncated = item.action.length > 60 ? item.action.slice(0, 60).trimEnd() + "…" : item.action;
+                const actionTruncated = (item.action ?? '').length > 60 ? (item.action ?? '').slice(0, 60).trimEnd() + "…" : (item.action ?? '');
                 const isExpanded = expandedReflections.has(item.id);
                 return (
                   <AnimatedCard key={item.id} index={0}>

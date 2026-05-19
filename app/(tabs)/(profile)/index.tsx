@@ -159,23 +159,25 @@ export default function ProfileScreen() {
         pointerEvents="none"
       />
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      {/* Settings button — top right */}
-      <TouchableOpacity
-        style={styles.settingsButton}
-        onPress={() => {
-          console.log('[Profile] Settings button pressed');
-          router.push('/settings' as any);
-        }}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="settings-outline" size={22} color="#6F8A6A" />
-      </TouchableOpacity>
-
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
+        <View style={styles.topRow}>
+          <TouchableOpacity
+            onPress={() => {
+              console.log('[Profile] Settings button pressed');
+              router.push('/settings' as any);
+            }}
+            activeOpacity={0.7}
+            style={styles.settingsIconButton}
+          >
+            <Ionicons name="settings-outline" size={22} color="#6F8A6A" />
+          </TouchableOpacity>
+        </View>
+
         {/* SECTION 1: Identity Header */}
         <View style={styles.identityHeader}>
           {primaryArchetype === null ? (
@@ -235,7 +237,7 @@ export default function ProfileScreen() {
           >
             <Text style={styles.settingsRowLabel}>Notification time</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.settingsRowValue}>Morning</Text>
+              <Text style={styles.settingsRowValue}>Manage</Text>
               <Ionicons name="chevron-forward" size={14} color="rgba(111,138,106,0.4)" />
             </View>
           </TouchableOpacity>
@@ -243,7 +245,8 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.settingsFeedbackRow}
             onPress={() => {
-              console.log('[Profile] Send feedback pressed');
+              console.log('[Profile] Send feedback pressed — opening mail');
+              Linking.openURL('mailto:hello@sacreddesign.app?subject=Feedback');
             }}
             activeOpacity={0.7}
           >
@@ -343,6 +346,16 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 28,
     paddingBottom: 60,
+  },
+
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingTop: 8,
+    marginBottom: 0,
+  },
+  settingsIconButton: {
+    padding: 8,
   },
 
   // Identity Header
@@ -587,11 +600,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     textAlign: 'center',
   },
-  settingsButton: {
-    position: 'absolute',
-    top: 56,
-    right: 24,
-    zIndex: 10,
-    padding: 8,
-  },
+
 });
