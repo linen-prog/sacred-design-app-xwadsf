@@ -115,23 +115,10 @@ export function register(app: App, fastify: any) {
       }
     });
 
-    app.logger.debug({
-      authHeader: request.headers.authorization ? `Bearer ${request.headers.authorization.substring(7, 27)}...` : 'none',
-      hasCookie: !!request.headers.cookie
-    }, 'Attempting to get session');
-
     const session = await app.auth.api.getSession({ headers });
-
     if (!session) {
-      app.logger.warn({
-        authHeader: request.headers.authorization ? 'present' : 'missing',
-        hasCookie: !!request.headers.cookie,
-        headersCount: Object.keys(request.headers).length
-      }, 'Session validation failed');
       return reply.status(401).send({ error: 'Unauthorized' });
     }
-
-    app.logger.debug({ userId: session.user.id }, 'Session validated successfully');
 
     const userId = session.user.id;
     const today = getTodayDate();

@@ -34,8 +34,7 @@ export async function api(
 
 /**
  * Make an authenticated request to the API under test.
- * Authentication is handled via session cookies set by the sign-up endpoint.
- * The token parameter is not used for auth, only for test identification/cleanup.
+ * Sends Bearer token if available AND maintains session cookies via credentials: 'include'.
  */
 export async function authenticatedApi(
   path: string,
@@ -43,14 +42,20 @@ export async function authenticatedApi(
   options?: RequestInit
 ): Promise<Response> {
   const sanitized = sanitizeOptions(options);
+  const headers: any = {
+    ...sanitized?.headers,
+  };
+
+  // Send Bearer token if provided - helps with various authentication methods
+  if (token && token.length > 0) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   return fetch(`${BASE_URL}${path}`, {
     ...sanitized,
-    // credentials: 'include' is essential:
-    // - Sends any stored session cookies with this request
-    // - Stores any new cookies from the response
+    // credentials: 'include' is essential - handles session cookies automatically
     credentials: 'include',
-    headers: sanitized?.headers,
+    headers,
   });
 }
 
@@ -69,7 +74,6 @@ export interface TestUser {
 
 /**
  * Sign up a test user and return the token and user object.
- * Session is maintained via cookies with credentials: 'include'.
  */
 export async function signUpTestUser(): Promise<TestUser> {
   const id = crypto.randomUUID();
@@ -99,10 +103,30 @@ export async function signUpTestUser(): Promise<TestUser> {
     );
   }
 
-  // Better Auth uses session cookies for authentication
-  // The session cookie is automatically handled by credentials: 'include'
-  // Use user ID as token identifier for cleanup (deleteTestUser)
-  const token = user.id;
+  // Try to extract a session token from the response
+  // Better Auth might return: { user, session: { token: "..." } }
+  // Or it might use cookies + session ID
+  let token = "";
+
+  if (data.session?.token) {
+    token = data.session.token;
+  } else if (data.sessionToken) {
+    token = data.sessionToken;
+  } else if (data.token) {
+    token = data.token;
+  } else if (data.session?.id) {
+    token = data.session.id;
+  } else {
+    // Fallback: use user ID as token
+    // Authentication will rely on session cookies + credentials: 'include'
+    token = user.id;
+  }
+
+  if (!token) {
+    throw new Error(
+      `Failed to extract session from sign-up response: ${JSON.stringify(data)}`
+    );
+  }
 
   const testUser: TestUser = {
     token,

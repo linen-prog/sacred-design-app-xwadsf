@@ -53,27 +53,38 @@ export function register(app: App, fastify: any) {
     app.logger.info({ userId }, 'Deleting user account');
 
     try {
-      // Delete in FK-safe order using raw SQL
-      // 1. alignment_reflections
+      // Delete in FK-safe order using raw SQL (respecting foreign key constraints)
+      // 1. alignment_reflections (references user via user_id and daily_alignments via alignment_id)
       await app.db.execute(sql`DELETE FROM alignment_reflections WHERE user_id = ${userId}`);
+      app.logger.debug({ userId }, 'Deleted alignment_reflections');
 
-      // 2. daily_alignments
+      // 2. daily_alignments (references user)
       await app.db.execute(sql`DELETE FROM daily_alignments WHERE user_id = ${userId}`);
+      app.logger.debug({ userId }, 'Deleted daily_alignments');
 
-      // 3. user_archetypes
-      await app.db.execute(sql`DELETE FROM user_archetypes WHERE user_id = ${userId}`);
+      // 3. mood_entries (references user)
+      await app.db.execute(sql`DELETE FROM mood_entries WHERE user_id = ${userId}`);
+      app.logger.debug({ userId }, 'Deleted mood_entries');
 
-      // 4. user_progress
+      // 4. user_progress (references user)
       await app.db.execute(sql`DELETE FROM user_progress WHERE user_id = ${userId}`);
+      app.logger.debug({ userId }, 'Deleted user_progress');
 
-      // 5. account
+      // 5. user_archetypes (references user)
+      await app.db.execute(sql`DELETE FROM user_archetypes WHERE user_id = ${userId}`);
+      app.logger.debug({ userId }, 'Deleted user_archetypes');
+
+      // 6. account (Better Auth table, references user)
       await app.db.execute(sql`DELETE FROM account WHERE user_id = ${userId}`);
+      app.logger.debug({ userId }, 'Deleted account');
 
-      // 6. session
+      // 7. session (Better Auth table, references user)
       await app.db.execute(sql`DELETE FROM "session" WHERE user_id = ${userId}`);
+      app.logger.debug({ userId }, 'Deleted session');
 
-      // 7. user
+      // 8. user (Better Auth user record)
       await app.db.execute(sql`DELETE FROM "user" WHERE id = ${userId}`);
+      app.logger.debug({ userId }, 'Deleted user');
 
       app.logger.info({ userId }, 'Account deleted successfully');
 

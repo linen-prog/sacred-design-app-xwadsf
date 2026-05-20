@@ -261,6 +261,15 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 400);
     });
 
+    test("POST /api/alignments/{id}/complete returns 400 with completed: false (invalid enum value)", async () => {
+      const res = await authenticatedApi(`/api/alignments/${alignmentId}/complete`, authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: false }),
+      });
+      await expectStatus(res, 400);
+    });
+
     test("POST /api/alignments/{id}/complete returns 404 with nonexistent UUID", async () => {
       const res = await authenticatedApi("/api/alignments/00000000-0000-0000-0000-000000000000/complete", authToken, {
         method: "POST",

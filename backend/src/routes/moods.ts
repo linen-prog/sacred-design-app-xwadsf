@@ -18,25 +18,7 @@ export function register(app: App, fastify: any) {
         headers.append(key, Array.isArray(value) ? value[0] : value);
       }
     });
-
-    const authHeader = request.headers.authorization;
-    app.logger.debug({
-      authHeader: authHeader ? `Bearer ${authHeader.substring(7, 27)}...` : 'none',
-      hasCookie: !!request.headers.cookie
-    }, 'Session extraction: checking auth headers');
-
-    const session = await app.auth.api.getSession({ headers });
-
-    if (!session) {
-      app.logger.warn({
-        authHeader: authHeader ? 'present' : 'missing',
-        hasCookie: !!request.headers.cookie
-      }, 'Session extraction: failed');
-    } else {
-      app.logger.debug({ userId: session.user.id }, 'Session extraction: success');
-    }
-
-    return session;
+    return app.auth.api.getSession({ headers });
   };
 
   // POST /api/moods
