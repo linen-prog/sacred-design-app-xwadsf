@@ -9,6 +9,9 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import Purchases from 'react-native-purchases';
 import { useAuth } from "@/contexts/AuthContext";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
 import { authenticatedDelete } from '@/utils/api';
@@ -115,40 +118,63 @@ export default function SettingsScreen() {
   }
 
   async function handleDeleteAccountConfirm() {
-    console.log("[Settings] Delete Account confirmed — sending DELETE /api/account");
+    console.log("[Settings] Delete Account confirmed — calling DELETE /api/account");
     setIsDeleting(true);
     try {
-      console.log("[Settings] Calling authenticatedDelete('/api/account')");
       await authenticatedDelete('/api/account');
-      console.log("[Settings] DELETE /api/account succeeded — clearing state and signing out");
-      try {
-        await updateAppState({
-          revealViewed: false,
-          revealUnlocked: false,
-          quizCompleted: false,
-          postQuizSaveCompleted: false,
-          guestMode: false,
-          currentOnboardingStep: '/onboarding/welcome',
-        });
-      } catch (e) {
-        console.warn('[Settings] Failed to reset appState on account deletion:', e);
-      }
+      console.log("[Settings] DELETE /api/account succeeded — running local cleanup");
+
+      // 1. Reset app state
+      await updateAppState({
+        revealViewed: false,
+        revealUnlocked: false,
+        quizCompleted: false,
+        postQuizSaveCompleted: false,
+        guestMode: false,
+        currentOnboardingStep: '/onboarding/welcome',
+        subscriptionActive: false,
+        onboardingStarted: false,
+      });
+
+      // 2. Sign out from Better Auth
       await signOut();
-      Alert.alert('Account Deleted', 'Your account has been permanently deleted.');
-      router.replace("/onboarding/welcome");
-    } catch (e: any) {
-      console.error("[Settings] DELETE /api/account failed:", e?.message, e?.status, JSON.stringify(e));
-      setIsDeleting(false);
-      const msg = (e?.message ?? '').toLowerCase();
-      if (msg.includes('token') || msg.includes('sign in') || msg.includes('authentication')) {
-        Alert.alert(
-          "Session Expired",
-          "Your session has expired. Please sign out and sign back in, then try deleting your account again.",
-          [{ text: "OK" }]
-        );
-      } else {
-        Alert.alert("Error", "Failed to delete account. Please try again.");
+
+      // 3. Clear ALL AsyncStorage keys
+      await AsyncStorage.clear();
+
+      // 4. Clear RevenueCat user
+      try {
+        await Purchases.logOut();
+        console.log('[Settings] RevenueCat logged out');
+      } catch (rcErr: any) {
+        console.warn('[Settings] RC logOut:', rcErr?.message);
       }
+
+      // 5. Clear SecureStore keys
+      const secureKeys = ['better_auth_token', 'session_token', 'auth_token', 'bearer_token'];
+      for (const key of secureKeys) {
+        await SecureStore.deleteItemAsync(key).catch(() => {});
+      }
+
+      console.log("[Settings] Local cleanup complete — showing success modal");
+
+      Alert.alert(
+        'Account Deleted',
+        'Your account and all data have been permanently deleted.',
+        [
+          {
+            text: 'Start Fresh',
+            onPress: () => router.replace('/onboarding/welcome'),
+          },
+        ]
+      );
+    } catch (e: any) {
+      console.log(`[Settings] DELETE /api/account failed: ${e?.message}`);
+      setIsDeleting(false);
+      Alert.alert(
+        'Delete Failed',
+        "We couldn't delete your account. Please try again or contact support."
+      );
     }
   }
 

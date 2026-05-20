@@ -261,18 +261,29 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     updateUser();
   }, [user?.id, isConfigured, authLoading]);
 
-  const fetchOfferings = async () => {
+  const fetchOfferings = async (attempt = 0): Promise<void> => {
     if (isWeb) return;
     try {
+      console.log(`[RevenueCat] fetchOfferings attempt ${attempt + 1}`);
       const fetchedOfferings = await Purchases.getOfferings();
+      console.log(`[RevenueCat] fetchOfferings result — current: ${fetchedOfferings.current?.identifier ?? 'null'} packages: ${fetchedOfferings.current?.availablePackages?.length ?? 0}`);
       setOfferings(fetchedOfferings);
-
       if (fetchedOfferings.current) {
         setCurrentOffering(fetchedOfferings.current);
         setPackages(fetchedOfferings.current.availablePackages);
+      } else if (attempt < 2) {
+        console.warn(`[RevenueCat] No current offering — retrying in ${(attempt + 1) * 1500}ms`);
+        await new Promise(r => setTimeout(r, (attempt + 1) * 1500));
+        return fetchOfferings(attempt + 1);
+      } else {
+        console.warn('[RevenueCat] fetchOfferings: no current offering after 3 attempts');
       }
     } catch (error) {
       console.error("[RevenueCat] Failed to fetch offerings:", error);
+      if (attempt < 2) {
+        await new Promise(r => setTimeout(r, (attempt + 1) * 1500));
+        return fetchOfferings(attempt + 1);
+      }
     }
   };
 
@@ -309,6 +320,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       }
       // Update throttle timestamp after a successful check
       lastCheckedRef.current = Date.now();
+      // If we have no packages yet, try fetching offerings again
+      if (packages.length === 0) {
+        console.log('[RevenueCat] checkSubscription: no packages loaded — fetching offerings');
+        await fetchOfferings();
+      }
     } catch (error: any) {
       // Gracefully handle RC 429 rate-limit (code 16 / backendErrorCode 7638)
       const isRateLimit =
@@ -334,22 +350,49 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       console.warn("[RevenueCat] Purchases not available on web");
       return false;
     }
+    console.log(`[RevenueCat] purchasePackage START — identifier: ${pkg.identifier} productId: ${pkg.product.identifier}`);
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       const hasEntitlement =
         typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== "undefined";
+      console.log(`[RevenueCat] purchasePackage SUCCESS — entitlement active: ${hasEntitlement}`);
       setIsSubscribed(hasEntitlement);
       if (hasEntitlement) {
         await SecureStore.setItemAsync(NATIVE_PURCHASE_KEY, "true").catch(() => {});
       }
       return hasEntitlement;
     } catch (error: any) {
-      // Don't treat user cancellation as an error
-      if (!error.userCancelled) {
-        console.error("[RevenueCat] Purchase failed:", error);
-        throw error;
+      console.log(`[RevenueCat] purchasePackage ERROR — code: ${error?.code} message: ${error?.message} userCancelled: ${error?.userCancelled}`);
+      // User cancelled — return silently, no error thrown
+      if (error?.userCancelled || error?.code === 1) {
+        return false;
       }
-      return false;
+      // Map RC error codes to calm, user-friendly messages
+      const friendlyMessage = (() => {
+        switch (error?.code) {
+          case 0:
+            return "Something went wrong. Please try again.";
+          case 1:
+            return null; // cancelled — handled above
+          case 2:
+            return "The App Store is temporarily unavailable. Please try again in a moment.";
+          case 3:
+            return "Purchases are not allowed on this device. Check your Screen Time or parental controls.";
+          case 4:
+            return "You already have an active subscription. Tap 'Restore Purchases' below.";
+          case 5:
+            return "Purchase receipt could not be verified. Please restore purchases.";
+          case 6:
+            return "Purchase receipt not found. Please restore purchases.";
+          case 7:
+            return "There was a problem with your Apple ID. Please sign in to the App Store and try again.";
+          case 8:
+            return "This subscription is not available right now. Please try again later.";
+          default:
+            return "Purchase could not be completed. Please try again or restore purchases.";
+        }
+      })();
+      throw new Error(friendlyMessage ?? "Purchase could not be completed. Please try again or restore purchases.");
     }
   };
 

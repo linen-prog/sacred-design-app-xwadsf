@@ -90,6 +90,7 @@ export default function PaywallScreen() {
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (packages.length > 0 && !selectedPackage) {
@@ -162,17 +163,21 @@ export default function PaywallScreen() {
 
   const handlePurchase = async () => {
     if (!selectedPackage) return;
-    console.log("[Paywall] Purchase pressed — package:", selectedPackage.identifier, "source:", source);
+    console.log("[Paywall] Purchase pressed — package:", selectedPackage.identifier, "productId:", selectedPackage.product.identifier, "price:", selectedPackage.product.priceString);
     try {
       setPurchasing(true);
+      setPurchaseError(null);
+      console.log("[Paywall] Calling purchasePackage...");
       const success = await purchasePackage(selectedPackage);
       if (success) {
-        console.log("[Paywall] Purchase successful");
+        console.log("[Paywall] purchasePackage returned success — navigating");
         navigateAfterPurchase();
+      } else {
+        console.log("[Paywall] purchasePackage returned false (cancelled or no entitlement)");
       }
     } catch (error: any) {
-      console.warn("[Paywall] Purchase failed:", error?.message);
-      Alert.alert("Purchase Failed", error.message || "Please try again.");
+      console.warn("[Paywall] Purchase error caught:", error?.message);
+      setPurchaseError(error?.message || "Purchase could not be completed. Please try again.");
     } finally {
       setPurchasing(false);
     }
@@ -342,6 +347,7 @@ export default function PaywallScreen() {
                     onPress={() => {
                       console.log("[Paywall] Package selected:", pkg.identifier);
                       setSelectedPackage(pkg);
+                      setPurchaseError(null);
                     }}
                   >
                     {isSelected && <View style={styles.packageSelectedBar} />}
@@ -365,15 +371,21 @@ export default function PaywallScreen() {
             </View>
           )}
 
-          {/* No packages — Expo Go notice */}
+          {/* No packages — retry UI */}
           {!isWeb && packages.length === 0 && !loading && (
             <View style={styles.noPackagesContainer}>
               <Text style={styles.noPackagesText}>
-                Purchases are not available in standard Expo Go.
+                Unable to load subscription options.
               </Text>
-              <Text style={[styles.noPackagesText, { marginTop: 8, opacity: 0.7 }]}>
-                Use a development build or production build to test purchases.
-              </Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => {
+                  console.log('[Paywall] Retry offerings tapped');
+                  checkSubscription(true);
+                }}
+              >
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </TouchableOpacity>
             </View>
           )}
         </ScrollView>
@@ -401,6 +413,14 @@ export default function PaywallScreen() {
                   ? `${selectedPackage.product.priceString}/month • Auto-renews. Cancel anytime.`
                   : "$4.99/month • Auto-renews. Cancel anytime."}
               </Text>
+              {purchaseError && (
+                <View style={styles.purchaseErrorBox}>
+                  <Text style={styles.purchaseErrorText}>{purchaseError}</Text>
+                  <TouchableOpacity onPress={() => setPurchaseError(null)}>
+                    <Text style={styles.purchaseErrorDismiss}>Dismiss</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
               <TouchableOpacity
                 style={[
                   styles.primaryButton,
@@ -823,5 +843,41 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: "500",
     fontFamily: "Inter_500Medium",
+  },
+  purchaseErrorBox: {
+    backgroundColor: 'rgba(201,168,76,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(201,168,76,0.3)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+    alignItems: 'center',
+    gap: 6,
+  },
+  purchaseErrorText: {
+    fontSize: 13,
+    color: 'rgba(245,240,232,0.85)',
+    textAlign: 'center',
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 19,
+  },
+  purchaseErrorDismiss: {
+    fontSize: 12,
+    color: 'rgba(201,168,76,0.8)',
+    fontFamily: 'Inter_400Regular',
+    textDecorationLine: 'underline',
+  },
+  retryButton: {
+    marginTop: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(201,168,76,0.4)',
+  },
+  retryButtonText: {
+    fontSize: 14,
+    color: 'rgba(201,168,76,0.9)',
+    fontFamily: 'Inter_400Regular',
   },
 });
