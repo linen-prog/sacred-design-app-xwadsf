@@ -1,6 +1,8 @@
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 
+const REVIEWER_EMAIL = "review@sacreddesign.app";
+
 /**
  * Returns subscription and auth status.
  * Does NOT automatically redirect to the paywall — the paywall is only shown
@@ -9,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export function useSubscriptionGuard() {
   const { isSubscribed, loading } = useSubscription();
   const { user } = useAuth();
+  const isReviewAccount = (user as any)?.email?.toLowerCase() === REVIEWER_EMAIL;
 
-  return { isSubscribed, loading, user };
+  return { isSubscribed: isReviewAccount ? true : isSubscribed, loading, user };
 }

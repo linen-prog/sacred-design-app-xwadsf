@@ -27,6 +27,7 @@ import Purchases, { PurchasesPackage } from "react-native-purchases";
 
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAppState } from "@/contexts/AppStateContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -73,6 +74,9 @@ export default function PaywallScreen() {
   const router = useRouter();
   const { source } = useLocalSearchParams<{ source?: string }>();
   const { updateAppState } = useAppState();
+  const { user } = useAuth();
+  const REVIEWER_EMAIL = "review@sacreddesign.app";
+  const isReviewAccount = (user as any)?.email?.toLowerCase() === REVIEWER_EMAIL;
 
   const {
     packages,
@@ -93,6 +97,13 @@ export default function PaywallScreen() {
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
   React.useEffect(() => {
+    if (isReviewAccount) {
+      console.log("[ReviewBypass] Reviewer on paywall — auto-navigating past paywall");
+      router.replace("/(tabs)");
+    }
+  }, [isReviewAccount]);
+
+  React.useEffect(() => {
     if (packages.length > 0 && !selectedPackage) {
       setSelectedPackage(packages[0]);
     }
@@ -107,6 +118,9 @@ export default function PaywallScreen() {
     console.log("Price number:", selectedPackage?.product?.price);
     console.log("Currency code:", selectedPackage?.product?.currencyCode);
   }, [selectedPackage, offerings]);
+
+  // Reviewer bypass — render nothing while the useEffect redirect fires
+  if (isReviewAccount) return null;
 
   // Derive copy from source param
   const isQuizComplete = source === "quiz_complete";

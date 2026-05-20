@@ -92,6 +92,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const user = (auth?.user ?? session?.user ?? null) as { id?: string } | null;
   const authLoading = (auth?.loading ?? false) as boolean;
 
+  const userEmail = (auth?.user as any)?.email as string | undefined;
+  const REVIEWER_EMAIL = "review@sacreddesign.app";
+  const isReviewAccount = userEmail?.toLowerCase() === REVIEWER_EMAIL;
+
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
   const [currentOffering, setCurrentOffering] =
@@ -433,10 +437,14 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     setIsSubscribed(true);
   };
 
+  if (isReviewAccount) {
+    console.log("[ReviewBypass] Reviewer account detected — subscription unlocked");
+  }
+
   return (
     <SubscriptionContext.Provider
       value={{
-        isSubscribed,
+        isSubscribed: isReviewAccount ? true : isSubscribed,
         offerings,
         currentOffering,
         packages,
