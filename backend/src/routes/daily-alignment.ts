@@ -57,6 +57,35 @@ function determineLevelFromDayCount(dayCount: number): number {
 }
 
 export function register(app: App, fastify: any) {
+  // Helper function to get session from request
+  const getSessionFromRequest = async (request: any) => {
+    try {
+      // Check if Better Auth middleware already attached session to request
+      if (request.user || request.auth || request.session) {
+        return request.session || { user: request.user } || request.auth;
+      }
+
+      // Try passing the Fastify request directly
+      const session = await app.auth.api.getSession(request);
+      if (session) return session;
+
+      // If that doesn't work, try creating a fetch Request object
+      const url = new URL(`http://${request.hostname || 'localhost'}${request.url}`);
+      const fetchRequest = new Request(url.toString(), {
+        method: request.method,
+        headers: request.headers,
+      });
+      const session2 = await app.auth.api.getSession(fetchRequest);
+      if (session2) return session2;
+
+      // Last fallback: try with just headers
+      return await app.auth.api.getSession({ headers: request.headers });
+    } catch (error) {
+      app.logger.warn({ err: error }, 'Failed to get session');
+      return null;
+    }
+  };
+
   fastify.post('/api/daily-alignment', {
     schema: {
       description: 'Get or create a daily alignment for the current user',
@@ -108,14 +137,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: CreateAlignmentBody }>,
     reply: FastifyReply
   ): Promise<AlignmentResponse | void> => {
-    const headers = new Headers();
-    Object.entries(request.headers).forEach(([key, value]) => {
-      if (value) {
-        headers.append(key, Array.isArray(value) ? value[0] : value);
-      }
-    });
-
-    const session = await app.auth.api.getSession({ headers });
+    const session = await getSessionFromRequest(request);
     if (!session) {
       return reply.status(401).send({ error: 'Unauthorized' });
     }
@@ -357,14 +379,7 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<TodayResponse | void> => {
-    const headers = new Headers();
-    Object.entries(request.headers).forEach(([key, value]) => {
-      if (value) {
-        headers.append(key, Array.isArray(value) ? value[0] : value);
-      }
-    });
-
-    const session = await app.auth.api.getSession({ headers });
+    const session = await getSessionFromRequest(request);
     if (!session) {
       return reply.status(401).send({ error: 'Unauthorized' });
     }

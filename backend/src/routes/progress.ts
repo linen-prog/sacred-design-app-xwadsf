@@ -38,15 +38,33 @@ export function calculateNewStreak(lastActiveDate: string | null | undefined, cu
 }
 
 export function register(app: App, fastify: any) {
-  // Helper function to get session from request headers
+  // Helper function to get session from request
   const getSessionFromRequest = async (request: any) => {
-    const headers = new Headers();
-    Object.entries(request.headers).forEach(([key, value]: [string, any]) => {
-      if (value) {
-        headers.append(key, Array.isArray(value) ? value[0] : value);
+    try {
+      // Check if Better Auth middleware already attached session to request
+      if (request.user || request.auth || request.session) {
+        return request.session || { user: request.user } || request.auth;
       }
-    });
-    return app.auth.api.getSession({ headers });
+
+      // Try passing the Fastify request directly
+      const session = await app.auth.api.getSession(request);
+      if (session) return session;
+
+      // If that doesn't work, try creating a fetch Request object
+      const url = new URL(`http://${request.hostname || 'localhost'}${request.url}`);
+      const fetchRequest = new Request(url.toString(), {
+        method: request.method,
+        headers: request.headers,
+      });
+      const session2 = await app.auth.api.getSession(fetchRequest);
+      if (session2) return session2;
+
+      // Last fallback: try with just headers
+      return await app.auth.api.getSession({ headers: request.headers });
+    } catch (error) {
+      app.logger.warn({ err: error }, 'Failed to get session');
+      return null;
+    }
   };
 
   // GET /api/progress

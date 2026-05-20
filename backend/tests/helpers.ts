@@ -3,6 +3,41 @@ import { afterAll } from "bun:test";
 const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:3001";
 
 /**
+ * Simple cookie jar to persist cookies between requests.
+ * Node.js/Bun fetch doesn't persist cookies automatically like browsers do.
+ */
+class CookieJar {
+  private cookies: Map<string, string> = new Map();
+
+  setCookie(setCookieHeader: string): void {
+    // Set-Cookie format: "name=value; Path=/; HttpOnly; Secure"
+    // We only care about the name=value part before the first semicolon
+    const parts = setCookieHeader.split(';');
+    const nameValue = parts[0].trim();
+
+    const eqIndex = nameValue.indexOf('=');
+    if (eqIndex > 0) {
+      const name = nameValue.substring(0, eqIndex).trim();
+      const value = nameValue.substring(eqIndex + 1).trim();
+      this.cookies.set(name, value);
+    }
+  }
+
+  getCookieHeader(): string | undefined {
+    const cookies = Array.from(this.cookies.entries())
+      .map(([name, value]) => `${name}=${value}`)
+      .join('; ');
+    return cookies ? cookies : undefined;
+  }
+
+  clear(): void {
+    this.cookies.clear();
+  }
+}
+
+const globalCookieJar = new CookieJar();
+
+/**
  * Strip Content-Type: application/json when there's no body.
  */
 function sanitizeOptions(options?: RequestInit): RequestInit | undefined {
@@ -26,15 +61,33 @@ export async function api(
   options?: RequestInit
 ): Promise<Response> {
   const sanitized = sanitizeOptions(options);
-  return fetch(`${BASE_URL}${path}`, {
+  const headers: any = {
+    ...sanitized?.headers,
+  };
+
+  // Add persisted cookies to the request
+  const cookieHeader = globalCookieJar.getCookieHeader();
+  if (cookieHeader) {
+    headers.cookie = cookieHeader;
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, {
     ...sanitized,
-    credentials: 'include',
+    headers,
   });
+
+  // Persist cookies from the response
+  const setCookieHeader = response.headers.get('set-cookie');
+  if (setCookieHeader) {
+    globalCookieJar.setCookie(setCookieHeader);
+  }
+
+  return response;
 }
 
 /**
  * Make an authenticated request to the API under test.
- * Sends Bearer token if available AND maintains session cookies via credentials: 'include'.
+ * Sends Bearer token if available AND maintains session cookies via cookie jar.
  */
 export async function authenticatedApi(
   path: string,
@@ -46,17 +99,29 @@ export async function authenticatedApi(
     ...sanitized?.headers,
   };
 
-  // Send Bearer token if provided - helps with various authentication methods
+  // Send Bearer token if provided
   if (token && token.length > 0) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  return fetch(`${BASE_URL}${path}`, {
+  // Add persisted cookies to the request
+  const cookieHeader = globalCookieJar.getCookieHeader();
+  if (cookieHeader) {
+    headers.cookie = cookieHeader;
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, {
     ...sanitized,
-    // credentials: 'include' is essential - handles session cookies automatically
-    credentials: 'include',
     headers,
   });
+
+  // Persist cookies from the response
+  const setCookieHeader = response.headers.get('set-cookie');
+  if (setCookieHeader) {
+    globalCookieJar.setCookie(setCookieHeader);
+  }
+
+  return response;
 }
 
 export interface TestUser {
@@ -76,6 +141,9 @@ export interface TestUser {
  * Sign up a test user and return the token and user object.
  */
 export async function signUpTestUser(): Promise<TestUser> {
+  // Clear cookies when signing up a new user to ensure fresh session
+  globalCookieJar.clear();
+
   const id = crypto.randomUUID();
   const res = await api("/api/auth/sign-up/email", {
     method: "POST",
