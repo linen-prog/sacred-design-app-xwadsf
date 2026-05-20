@@ -12,9 +12,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import Purchases from 'react-native-purchases';
+import Constants from 'expo-constants';
 import { useAuth } from "@/contexts/AuthContext";
 import { DiscoveryContext } from "@/contexts/DiscoveryContext";
-import { authenticatedDelete } from '@/utils/api';
+import { apiFetch, getSessionToken, authClient, setBearerToken, BEARER_TOKEN_KEY } from '@/lib/auth';
 import { updateAppState } from '@/utils/appState';
 
 const BG = "#F6F1E8";
@@ -117,14 +118,11 @@ export default function SettingsScreen() {
     );
   }
 
-  async function handleDeleteAccountConfirm() {
-    console.log("[Settings] Delete Account confirmed — calling DELETE /api/account");
-    setIsDeleting(true);
-    try {
-      await authenticatedDelete('/api/account');
-      console.log("[Settings] DELETE /api/account succeeded — running local cleanup");
+  async function performLocalCleanup() {
+    console.log('[DeleteAccount] performLocalCleanup: starting');
 
-      // 1. Reset app state
+    // 1. Reset app state
+    try {
       await updateAppState({
         revealViewed: false,
         revealUnlocked: false,
@@ -135,45 +133,141 @@ export default function SettingsScreen() {
         subscriptionActive: false,
         onboardingStarted: false,
       });
+      console.log('[DeleteAccount] performLocalCleanup: appState reset');
+    } catch (e: any) {
+      console.warn('[DeleteAccount] performLocalCleanup: appState reset failed:', e?.message);
+    }
 
-      // 2. Sign out from Better Auth
+    // 2. Sign out from Better Auth
+    try {
       await signOut();
+      console.log('[DeleteAccount] performLocalCleanup: signOut done');
+    } catch (e: any) {
+      console.warn('[DeleteAccount] performLocalCleanup: signOut failed:', e?.message);
+    }
 
-      // 3. Clear ALL AsyncStorage keys
+    // 3. Clear ALL AsyncStorage
+    try {
       await AsyncStorage.clear();
+      console.log('[DeleteAccount] performLocalCleanup: AsyncStorage cleared');
+    } catch (e: any) {
+      console.warn('[DeleteAccount] performLocalCleanup: AsyncStorage.clear failed:', e?.message);
+    }
 
-      // 4. Clear RevenueCat user
+    // 4. RevenueCat logout
+    try {
+      await Purchases.logOut();
+      console.log('[DeleteAccount] performLocalCleanup: RevenueCat logged out');
+    } catch (e: any) {
+      console.warn('[DeleteAccount] performLocalCleanup: RC logOut:', e?.message);
+    }
+
+    // 5. Wipe all known SecureStore keys
+    const secureKeys = [
+      BEARER_TOKEN_KEY,
+      'sacreddesign_cookie',
+      'better_auth_token',
+      'session_token',
+      'auth_token',
+      'bearer_token',
+    ];
+    for (const key of secureKeys) {
       try {
-        await Purchases.logOut();
-        console.log('[Settings] RevenueCat logged out');
-      } catch (rcErr: any) {
-        console.warn('[Settings] RC logOut:', rcErr?.message);
+        await SecureStore.deleteItemAsync(key);
+        console.log('[DeleteAccount] performLocalCleanup: deleted SecureStore key:', key);
+      } catch {}
+    }
+
+    console.log('[DeleteAccount] performLocalCleanup: complete');
+  }
+
+  async function handleDeleteAccountConfirm() {
+    console.log('[DeleteAccount] ===== DELETE ACCOUNT FLOW START =====');
+    setIsDeleting(true);
+
+    // Step 1: Determine if user is authenticated or guest
+    const isGuest = !user || (user as any).isAnonymous === true;
+    console.log('[DeleteAccount] user object:', JSON.stringify(user));
+    console.log('[DeleteAccount] isGuest:', isGuest);
+    console.log('[DeleteAccount] user.id:', (user as any)?.id ?? 'none');
+    console.log('[DeleteAccount] user.email:', (user as any)?.email ?? 'none');
+
+    if (isGuest) {
+      console.log('[DeleteAccount] Guest user detected — skipping backend, clearing local data only');
+      await performLocalCleanup();
+      Alert.alert(
+        'Local Data Cleared',
+        'Your local data has been cleared.',
+        [{ text: 'Start Fresh', onPress: () => router.replace('/onboarding/welcome') }]
+      );
+      return;
+    }
+
+    // Step 2: Get the auth token using the full fallback chain
+    let token: string | null = null;
+
+    // Try 1: SecureStore / cookie store
+    token = await getSessionToken();
+    console.log('[DeleteAccount] token from getSessionToken():', token ? `present (${token.length} chars)` : 'null');
+
+    // Try 2: Live authClient session
+    if (!token) {
+      console.log('[DeleteAccount] No cached token — trying live authClient.getSession()');
+      try {
+        const { data: session } = await authClient.getSession();
+        console.log('[DeleteAccount] authClient.getSession() result:', JSON.stringify(session));
+        if (session?.session?.token) {
+          token = session.session.token;
+          await setBearerToken(token);
+          console.log('[DeleteAccount] Token retrieved from live session and cached');
+        } else {
+          console.warn('[DeleteAccount] authClient.getSession() returned no token');
+        }
+      } catch (e: any) {
+        console.error('[DeleteAccount] authClient.getSession() threw:', e?.message);
+      }
+    }
+
+    console.log('[DeleteAccount] Final token status:', token ? 'PRESENT' : 'MISSING');
+
+    // Step 3: Determine backend URL
+    const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev';
+    const deleteUrl = `${BACKEND_URL}/api/account`;
+    console.log('[DeleteAccount] Backend URL:', BACKEND_URL);
+    console.log('[DeleteAccount] Delete URL:', deleteUrl);
+    console.log('[DeleteAccount] Token included in request:', !!token);
+
+    // Step 4: Call backend using apiFetch (full fallback chain)
+    let httpStatus: number | null = null;
+    let responseBody: string | null = null;
+    try {
+      console.log('[DeleteAccount] Sending DELETE request via apiFetch...');
+      const response = await apiFetch('/api/account', { method: 'DELETE' });
+      httpStatus = response.status;
+      responseBody = await response.text();
+      console.log('[DeleteAccount] HTTP status:', httpStatus);
+      console.log('[DeleteAccount] Response body:', responseBody);
+
+      if (!response.ok) {
+        throw new Error(`Backend returned ${httpStatus}: ${responseBody}`);
       }
 
-      // 5. Clear SecureStore keys
-      const secureKeys = ['better_auth_token', 'session_token', 'auth_token', 'bearer_token'];
-      for (const key of secureKeys) {
-        await SecureStore.deleteItemAsync(key).catch(() => {});
-      }
-
-      console.log("[Settings] Local cleanup complete — showing success modal");
+      console.log('[DeleteAccount] Backend deletion succeeded — running local cleanup');
+      await performLocalCleanup();
 
       Alert.alert(
         'Account Deleted',
         'Your account and all data have been permanently deleted.',
-        [
-          {
-            text: 'Start Fresh',
-            onPress: () => router.replace('/onboarding/welcome'),
-          },
-        ]
+        [{ text: 'Start Fresh', onPress: () => router.replace('/onboarding/welcome') }]
       );
     } catch (e: any) {
-      console.log(`[Settings] DELETE /api/account failed: ${e?.message}`);
+      console.error('[DeleteAccount] FAILED:', e?.message);
+      console.error('[DeleteAccount] HTTP status was:', httpStatus);
+      console.error('[DeleteAccount] Response body was:', responseBody);
       setIsDeleting(false);
       Alert.alert(
         'Delete Failed',
-        "We couldn't delete your account. Please try again or contact support."
+        `Could not delete your account.\n\nError: ${e?.message ?? 'Unknown error'}\n\nPlease try again or contact support.`
       );
     }
   }
