@@ -79,11 +79,7 @@ const authBeforeHook = createAuthMiddleware(async (ctx) => {
   if (ctx.path?.includes('/callback/')) {
     const body = ctx.body as Record<string, unknown> | undefined;
     const redirectTo = body?.redirect_to || 'none';
-    console.log('[oauth-callback]', {
-      path: ctx.path,
-      redirect_to: redirectTo,
-      timestamp: new Date().toISOString(),
-    });
+    app.logger.info({ path: ctx.path, redirect_to: redirectTo }, 'Processing OAuth callback');
   }
 });
 
