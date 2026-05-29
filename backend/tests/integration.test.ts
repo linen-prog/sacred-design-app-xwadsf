@@ -30,6 +30,8 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 200);
       const data = await res.json();
       expect(data.id).toBeDefined();
+      expect(data.primary_archetype).toBe("Warrior");
+      expect(data.secondary_archetype).toBe("Sage");
     });
 
     test("POST /api/daily-alignment returns 401 without authentication", async () => {
@@ -37,6 +39,7 @@ describe("API Integration Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(validPayload),
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -99,6 +102,7 @@ describe("API Integration Tests", () => {
     test("GET /api/daily-alignment/today returns 401 without authentication", async () => {
       const res = await api("/api/daily-alignment/today", {
         method: "GET",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -141,6 +145,7 @@ describe("API Integration Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(archetypePayload),
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -156,6 +161,8 @@ describe("API Integration Tests", () => {
       expect(data.id).toBeDefined();
       expect(data.user_id).toBeDefined();
       expect(data.quiz_completed).toBe(true);
+      expect(data.completed_at).toBeDefined();
+      expect(data.updated_at).toBeDefined();
     });
 
     test("GET /api/archetypes/me returns quiz_completed: true after saving archetype", async () => {
@@ -174,6 +181,7 @@ describe("API Integration Tests", () => {
     test("GET /api/archetypes/me returns 401 without authentication", async () => {
       const res = await api("/api/archetypes/me", {
         method: "GET",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -197,6 +205,7 @@ describe("API Integration Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(archetypePayload),
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -222,12 +231,20 @@ describe("API Integration Tests", () => {
       const data = await res.json();
       expect(data.alignment).toBeDefined();
       expect(data.alignment.id).toBeDefined();
+      expect(data.alignment.user_id).toBeDefined();
+      expect(data.alignment.day_number).toBeDefined();
+      expect(data.alignment.level).toBeDefined();
+      expect(data.alignment.action).toBeDefined();
+      expect(data.alignment.guidance).toBeDefined();
+      expect(data.alignment.somatic_cue).toBeDefined();
+      expect(data.alignment.scripture).toBeDefined();
       alignmentId = data.alignment.id;
     });
 
     test("POST /api/alignments/generate returns 401 without authentication", async () => {
       const res = await api("/api/alignments/generate", {
         method: "POST",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -248,6 +265,7 @@ describe("API Integration Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completed: true }),
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -321,6 +339,9 @@ describe("API Integration Tests", () => {
       expect(data.success).toBe(true);
       expect(data.reflection).toBeDefined();
       expect(data.reflection.reflection_text).toBeDefined();
+      expect(data.reflection.id).toBeDefined();
+      expect(data.reflection.alignment_id).toBeDefined();
+      expect(data.reflection.completed_at).toBeDefined();
     });
 
     test("POST /api/alignments/{id}/reflection returns 401 without authentication", async () => {
@@ -328,6 +349,7 @@ describe("API Integration Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reflection_text: "test" }),
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -382,6 +404,34 @@ describe("API Integration Tests", () => {
       expect(data.success).toBe(true);
     });
 
+    test("POST /api/alignments/checkin submits check-in with thought_about response", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: alignmentId,
+          response: "thought_about",
+        }),
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+    });
+
+    test("POST /api/alignments/checkin submits check-in with not_yet response", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: alignmentId,
+          response: "not_yet",
+        }),
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+    });
+
     test("POST /api/alignments/checkin returns 401 without authentication", async () => {
       const res = await api("/api/alignments/checkin", {
         method: "POST",
@@ -390,6 +440,7 @@ describe("API Integration Tests", () => {
           alignment_id: "00000000-0000-0000-0000-000000000000",
           response: "practiced",
         }),
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -447,6 +498,7 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 200);
       const data = await res.json();
       expect(data.alignment).toBeDefined();
+      expect(data.reason).toBeDefined();
     });
 
     test("GET /api/alignments/today accepts optional local_date query parameter", async () => {
@@ -468,6 +520,7 @@ describe("API Integration Tests", () => {
     test("GET /api/alignments/today returns 401 without authentication", async () => {
       const res = await api("/api/alignments/today", {
         method: "GET",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -484,6 +537,7 @@ describe("API Integration Tests", () => {
     test("GET /api/alignments/yesterday returns 401 without authentication", async () => {
       const res = await api("/api/alignments/yesterday?local_date=2026-05-08", {
         method: "GET",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -514,6 +568,7 @@ describe("API Integration Tests", () => {
     test("GET /api/alignments/history returns 401 without authentication", async () => {
       const res = await api("/api/alignments/history", {
         method: "GET",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -549,11 +604,13 @@ describe("API Integration Tests", () => {
       const data = await res.json();
       expect(data.day_count).toBeDefined();
       expect(data.streak).toBeDefined();
+      expect(data.last_active_date).toBeDefined();
     });
 
     test("GET /api/progress returns 401 without authentication", async () => {
       const res = await api("/api/progress", {
         method: "GET",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -572,8 +629,23 @@ describe("API Integration Tests", () => {
     test("GET /api/reflections returns 401 without authentication", async () => {
       const res = await api("/api/reflections", {
         method: "GET",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
+    });
+
+    test("GET /api/reflections returns reflection objects with expected fields", async () => {
+      const res = await authenticatedApi("/api/reflections", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      if (data.length > 0) {
+        expect(data[0].id).toBeDefined();
+        expect(data[0].alignment_id).toBeDefined();
+        expect(data[0].reflection_text).toBeDefined();
+        expect(data[0].completed_at).toBeDefined();
+      }
     });
   });
 
@@ -596,6 +668,9 @@ describe("API Integration Tests", () => {
       expect(data.mood.id).toBeDefined();
       expect(data.mood.mood).toBe("happy");
       expect(data.mood.date).toBe("2026-05-08");
+      expect(data.mood.user_id).toBeDefined();
+      expect(data.mood.note).toBe("Had a great day");
+      expect(data.mood.recorded_at).toBeDefined();
       moodId = data.mood.id;
     });
 
@@ -612,6 +687,7 @@ describe("API Integration Tests", () => {
       const data = await res.json();
       expect(data.mood).toBeDefined();
       expect(data.mood.id).toBeDefined();
+      expect(data.mood.mood).toBe("calm");
     });
 
     test("POST /api/moods returns 401 without authentication", async () => {
@@ -622,6 +698,7 @@ describe("API Integration Tests", () => {
           mood: "happy",
           date: "2026-05-08",
         }),
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -680,9 +757,25 @@ describe("API Integration Tests", () => {
       expect(Array.isArray(data.moods)).toBe(true);
     });
 
+    test("GET /api/moods returns moods with expected fields", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      if (data.moods.length > 0) {
+        expect(data.moods[0].id).toBeDefined();
+        expect(data.moods[0].mood).toBeDefined();
+        expect(data.moods[0].date).toBeDefined();
+        expect(data.moods[0].user_id).toBeDefined();
+        expect(data.moods[0].recorded_at).toBeDefined();
+      }
+    });
+
     test("GET /api/moods returns 401 without authentication", async () => {
       const res = await api("/api/moods", {
         method: "GET",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -708,6 +801,7 @@ describe("API Integration Tests", () => {
     test("GET /api/moods/today returns 401 without authentication", async () => {
       const res = await api("/api/moods/today?date=2026-05-08", {
         method: "GET",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });
@@ -737,11 +831,14 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 200);
       const data = await res.json();
       expect(data.success).toBe(true);
+      expect(data.userId).toBeDefined();
+      expect(data.message).toBeDefined();
     });
 
     test("DELETE /api/account returns 401 without authentication", async () => {
       const res = await api("/api/account", {
         method: "DELETE",
+        includeCookies: false,
       });
       await expectStatus(res, 401);
     });

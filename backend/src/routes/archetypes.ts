@@ -1,6 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, sql } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
+import { requireAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 interface SaveArchetypeBody {
@@ -11,8 +12,6 @@ interface SaveArchetypeBody {
 }
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
-
   // POST /api/archetypes/save
   fastify.post('/api/archetypes/save', {
     schema: {
@@ -65,7 +64,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: SaveArchetypeBody }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -195,7 +194,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: SaveArchetypeBody }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -343,7 +342,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;

@@ -89,7 +89,7 @@ app.withAuth({
     "sacreddesign://auth-callback",
     "exp://",
     "https://1b8ef625-33f1-4c4f-b692-f737f97ecb03.newly.dev",
-    "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev",
+    "https://ndkts8vdqz2rr5jxdn9saub4v57bk4p7.app.specular.dev",
     "https://*.newly.dev",
     "http://localhost:3001",
     "http://localhost:8081",
@@ -116,7 +116,7 @@ app.withAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirectURI: "https://99b2qumnfz5hty3hbh5psgj3fm289p7w.app.specular.dev/api/auth/callback/google",
+      redirectURI: "https://ndkts8vdqz2rr5jxdn9saub4v57bk4p7.app.specular.dev/api/auth/callback/google",
       ...(process.env.GOOGLE_IOS_CLIENT_ID && { iosClientId: process.env.GOOGLE_IOS_CLIENT_ID }),
     },
     apple: {
