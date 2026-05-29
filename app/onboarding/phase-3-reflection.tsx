@@ -98,6 +98,7 @@ export default function Phase3ReflectionScreen() {
           value={reflectionText}
           onChangeText={setReflectionText}
           textAlignVertical="top"
+          keyboardAppearance="light"
         />
 
         <Pressable

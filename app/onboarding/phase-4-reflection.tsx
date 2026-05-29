@@ -146,6 +146,7 @@ export default function Phase4ReflectionScreen() {
           value={reflectionText}
           onChangeText={setReflectionText}
           textAlignVertical="top"
+          keyboardAppearance="light"
         />
 
         <Pressable

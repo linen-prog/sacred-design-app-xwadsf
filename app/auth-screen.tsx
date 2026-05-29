@@ -198,6 +198,7 @@ export default function AuthScreen() {
               autoCapitalize="words"
               autoCorrect={false}
               returnKeyType="next"
+              keyboardAppearance="light"
             />
           )}
           <TextInput
@@ -210,6 +211,7 @@ export default function AuthScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="next"
+            keyboardAppearance="light"
           />
           <View style={styles.passwordWrapper}>
             <TextInput
@@ -222,6 +224,7 @@ export default function AuthScreen() {
               autoCapitalize="none"
               returnKeyType="done"
               onSubmitEditing={handleSubmit}
+              keyboardAppearance="light"
             />
             <Pressable
               style={styles.eyeToggle}

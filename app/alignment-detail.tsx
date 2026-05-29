@@ -247,6 +247,7 @@ export default function AlignmentDetailScreen() {
               if (validationMsg) setValidationMsg("");
             }}
             textAlignVertical="top"
+            keyboardAppearance="light"
           />
 
           {validationMsg ? (
