@@ -51,6 +51,42 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 400);
     });
 
+    test("POST /api/daily-alignment returns 400 with score out of range (> 10)", async () => {
+      const invalidPayload = {
+        primary_archetype: "Warrior",
+        secondary_archetype: "Sage",
+        blend_name: "Warrior Sage",
+        avoidant_score: 11,  // Invalid: exceeds maximum
+        anxious_score: 2,
+        overactive_score: 4,
+        grounded_score: 7,
+      };
+      const res = await authenticatedApi("/api/daily-alignment", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(invalidPayload),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/daily-alignment returns 400 with score out of range (< 0)", async () => {
+      const invalidPayload = {
+        primary_archetype: "Warrior",
+        secondary_archetype: "Sage",
+        blend_name: "Warrior Sage",
+        avoidant_score: -1,  // Invalid: below minimum
+        anxious_score: 2,
+        overactive_score: 4,
+        grounded_score: 7,
+      };
+      const res = await authenticatedApi("/api/daily-alignment", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(invalidPayload),
+      });
+      await expectStatus(res, 400);
+    });
+
     test("GET /api/daily-alignment/today returns alignment when authenticated", async () => {
       const res = await authenticatedApi("/api/daily-alignment/today", authToken, {
         method: "GET",
@@ -182,7 +218,7 @@ describe("API Integration Tests", () => {
       const res = await authenticatedApi("/api/alignments/generate", authToken, {
         method: "POST",
       });
-      await expectStatus(res, 200);
+      await expectStatus(res, 201);
       const data = await res.json();
       expect(data.alignment).toBeDefined();
       expect(data.alignment.id).toBeDefined();
@@ -225,6 +261,15 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 400);
     });
 
+    test("POST /api/alignments/{id}/complete returns 400 with completed: false (invalid enum value)", async () => {
+      const res = await authenticatedApi(`/api/alignments/${alignmentId}/complete`, authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: false }),
+      });
+      await expectStatus(res, 400);
+    });
+
     test("POST /api/alignments/{id}/complete returns 404 with nonexistent UUID", async () => {
       const res = await authenticatedApi("/api/alignments/00000000-0000-0000-0000-000000000000/complete", authToken, {
         method: "POST",
@@ -248,7 +293,7 @@ describe("API Integration Tests", () => {
       const alignRes = await authenticatedApi("/api/alignments/generate", authToken, {
         method: "POST",
       });
-      await expectStatus(alignRes, 200);
+      await expectStatus(alignRes, 201);
       const alignData = await alignRes.json();
       const otherAlignmentId = alignData.alignment.id;
 
@@ -323,6 +368,78 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 400);
     });
 
+    test("POST /api/alignments/checkin submits check-in when authenticated", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: alignmentId,
+          response: "practiced",
+        }),
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+    });
+
+    test("POST /api/alignments/checkin returns 401 without authentication", async () => {
+      const res = await api("/api/alignments/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: "00000000-0000-0000-0000-000000000000",
+          response: "practiced",
+        }),
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("POST /api/alignments/checkin returns 400 with missing alignment_id field", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          response: "practiced",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/alignments/checkin returns 400 with missing response field", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: "00000000-0000-0000-0000-000000000000",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/alignments/checkin returns 400 with invalid response enum value", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: alignmentId,
+          response: "invalid_response",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/alignments/checkin returns 400 with invalid alignment_id format", async () => {
+      const res = await authenticatedApi("/api/alignments/checkin", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alignment_id: "invalid-uuid",
+          response: "practiced",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
     test("GET /api/alignments/today returns alignment when authenticated", async () => {
       const res = await authenticatedApi("/api/alignments/today", authToken, {
         method: "GET",
@@ -332,11 +449,57 @@ describe("API Integration Tests", () => {
       expect(data.alignment).toBeDefined();
     });
 
+    test("GET /api/alignments/today accepts optional local_date query parameter", async () => {
+      const res = await authenticatedApi("/api/alignments/today?local_date=2026-04-28", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.alignment).toBeDefined();
+    });
+
+    test("GET /api/alignments/today returns 400 with invalid local_date format", async () => {
+      const res = await authenticatedApi("/api/alignments/today?local_date=invalid-date", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
+    });
+
     test("GET /api/alignments/today returns 401 without authentication", async () => {
       const res = await api("/api/alignments/today", {
         method: "GET",
       });
       await expectStatus(res, 401);
+    });
+
+    test("GET /api/alignments/yesterday returns alignment or null when authenticated with valid local_date", async () => {
+      const res = await authenticatedApi("/api/alignments/yesterday?local_date=2026-05-08", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.alignment).toBeDefined();
+    });
+
+    test("GET /api/alignments/yesterday returns 401 without authentication", async () => {
+      const res = await api("/api/alignments/yesterday?local_date=2026-05-08", {
+        method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("GET /api/alignments/yesterday returns 400 with missing local_date parameter", async () => {
+      const res = await authenticatedApi("/api/alignments/yesterday", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("GET /api/alignments/yesterday returns 400 with invalid local_date format", async () => {
+      const res = await authenticatedApi("/api/alignments/yesterday?local_date=invalid-date", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
     });
 
     test("GET /api/alignments/history returns alignment history when authenticated", async () => {
@@ -409,6 +572,176 @@ describe("API Integration Tests", () => {
     test("GET /api/reflections returns 401 without authentication", async () => {
       const res = await api("/api/reflections", {
         method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+  });
+
+  describe("Moods", () => {
+    let moodId: string;
+
+    test("POST /api/moods creates a mood entry when authenticated", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mood: "happy",
+          date: "2026-05-08",
+          note: "Had a great day",
+        }),
+      });
+      await expectStatus(res, 201);
+      const data = await res.json();
+      expect(data.mood).toBeDefined();
+      expect(data.mood.id).toBeDefined();
+      expect(data.mood.mood).toBe("happy");
+      expect(data.mood.date).toBe("2026-05-08");
+      moodId = data.mood.id;
+    });
+
+    test("POST /api/moods creates mood without optional note field", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mood: "calm",
+          date: "2026-05-07",
+        }),
+      });
+      await expectStatus(res, 201);
+      const data = await res.json();
+      expect(data.mood).toBeDefined();
+      expect(data.mood.id).toBeDefined();
+    });
+
+    test("POST /api/moods returns 401 without authentication", async () => {
+      const res = await api("/api/moods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mood: "happy",
+          date: "2026-05-08",
+        }),
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("POST /api/moods returns 400 with missing mood field", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: "2026-05-08",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/moods returns 400 with missing date field", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mood: "happy",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("POST /api/moods returns 400 with invalid date format", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mood: "happy",
+          date: "invalid-date",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("GET /api/moods returns moods array when authenticated", async () => {
+      const res = await authenticatedApi("/api/moods", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.moods).toBeDefined();
+      expect(Array.isArray(data.moods)).toBe(true);
+    });
+
+    test("GET /api/moods accepts optional limit query parameter", async () => {
+      const res = await authenticatedApi("/api/moods?limit=10", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.moods).toBeDefined();
+      expect(Array.isArray(data.moods)).toBe(true);
+    });
+
+    test("GET /api/moods returns 401 without authentication", async () => {
+      const res = await api("/api/moods", {
+        method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("GET /api/moods/today returns mood for specific date when authenticated", async () => {
+      const res = await authenticatedApi("/api/moods/today?date=2026-05-08", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.mood).toBeDefined();
+    });
+
+    test("GET /api/moods/today returns null if no mood found for date", async () => {
+      const res = await authenticatedApi("/api/moods/today?date=1990-01-01", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.mood).toBeNull();
+    });
+
+    test("GET /api/moods/today returns 401 without authentication", async () => {
+      const res = await api("/api/moods/today?date=2026-05-08", {
+        method: "GET",
+      });
+      await expectStatus(res, 401);
+    });
+
+    test("GET /api/moods/today returns 400 with missing required date parameter", async () => {
+      const res = await authenticatedApi("/api/moods/today", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("GET /api/moods/today returns 400 with invalid date format", async () => {
+      const res = await authenticatedApi("/api/moods/today?date=invalid-date", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
+    });
+  });
+
+  describe("Account", () => {
+    test("DELETE /api/account deletes account when authenticated", async () => {
+      // Create a new user for deletion since this endpoint removes the account
+      const { token: deleteToken } = await signUpTestUser();
+      const res = await authenticatedApi("/api/account", deleteToken, {
+        method: "DELETE",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+    });
+
+    test("DELETE /api/account returns 401 without authentication", async () => {
+      const res = await api("/api/account", {
+        method: "DELETE",
       });
       await expectStatus(res, 401);
     });

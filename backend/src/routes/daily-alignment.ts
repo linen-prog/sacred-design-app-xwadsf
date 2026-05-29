@@ -57,6 +57,8 @@ function determineLevelFromDayCount(dayCount: number): number {
 }
 
 export function register(app: App, fastify: any) {
+  const requireAuth = app.requireAuth();
+
   fastify.post('/api/daily-alignment', {
     schema: {
       description: 'Get or create a daily alignment for the current user',
@@ -108,7 +110,6 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: CreateAlignmentBody }>,
     reply: FastifyReply
   ): Promise<AlignmentResponse | void> => {
-    const requireAuth = app.requireAuth();
     const session = await requireAuth(request, reply);
     if (!session) return;
 
@@ -349,7 +350,6 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<TodayResponse | void> => {
-    const requireAuth = app.requireAuth();
     const session = await requireAuth(request, reply);
     if (!session) return;
 

@@ -3,6 +3,41 @@ import { afterAll } from "bun:test";
 const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:3001";
 
 /**
+ * Simple cookie jar to persist cookies between requests.
+ * Node.js/Bun fetch doesn't persist cookies automatically like browsers do.
+ */
+class CookieJar {
+  private cookies: Map<string, string> = new Map();
+
+  setCookie(setCookieHeader: string): void {
+    // Set-Cookie format: "name=value; Path=/; HttpOnly; Secure"
+    // We only care about the name=value part before the first semicolon
+    const parts = setCookieHeader.split(';');
+    const nameValue = parts[0].trim();
+
+    const eqIndex = nameValue.indexOf('=');
+    if (eqIndex > 0) {
+      const name = nameValue.substring(0, eqIndex).trim();
+      const value = nameValue.substring(eqIndex + 1).trim();
+      this.cookies.set(name, value);
+    }
+  }
+
+  getCookieHeader(): string | undefined {
+    const cookies = Array.from(this.cookies.entries())
+      .map(([name, value]) => `${name}=${value}`)
+      .join('; ');
+    return cookies ? cookies : undefined;
+  }
+
+  clear(): void {
+    this.cookies.clear();
+  }
+}
+
+const globalCookieJar = new CookieJar();
+
+/**
  * Strip Content-Type: application/json when there's no body.
  */
 function sanitizeOptions(options?: RequestInit): RequestInit | undefined {
@@ -25,11 +60,34 @@ export async function api(
   path: string,
   options?: RequestInit
 ): Promise<Response> {
-  return fetch(`${BASE_URL}${path}`, sanitizeOptions(options));
+  const sanitized = sanitizeOptions(options);
+  const headers: any = {
+    ...sanitized?.headers,
+  };
+
+  // Add persisted cookies to the request
+  const cookieHeader = globalCookieJar.getCookieHeader();
+  if (cookieHeader) {
+    headers.cookie = cookieHeader;
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, {
+    ...sanitized,
+    headers,
+  });
+
+  // Persist cookies from the response
+  const setCookieHeader = response.headers.get('set-cookie');
+  if (setCookieHeader) {
+    globalCookieJar.setCookie(setCookieHeader);
+  }
+
+  return response;
 }
 
 /**
  * Make an authenticated request to the API under test.
+ * Sends Bearer token if available AND maintains session cookies via cookie jar.
  */
 export async function authenticatedApi(
   path: string,
@@ -37,13 +95,33 @@ export async function authenticatedApi(
   options?: RequestInit
 ): Promise<Response> {
   const sanitized = sanitizeOptions(options);
-  return fetch(`${BASE_URL}${path}`, {
+  const headers: any = {
+    ...sanitized?.headers,
+  };
+
+  // Send Bearer token if provided
+  if (token && token.length > 0) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  // Add persisted cookies to the request
+  const cookieHeader = globalCookieJar.getCookieHeader();
+  if (cookieHeader) {
+    headers.cookie = cookieHeader;
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, {
     ...sanitized,
-    headers: {
-      ...sanitized?.headers,
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
+
+  // Persist cookies from the response
+  const setCookieHeader = response.headers.get('set-cookie');
+  if (setCookieHeader) {
+    globalCookieJar.setCookie(setCookieHeader);
+  }
+
+  return response;
 }
 
 export interface TestUser {
@@ -63,6 +141,9 @@ export interface TestUser {
  * Sign up a test user and return the token and user object.
  */
 export async function signUpTestUser(): Promise<TestUser> {
+  // Clear cookies when signing up a new user to ensure fresh session
+  globalCookieJar.clear();
+
   const id = crypto.randomUUID();
   const res = await api("/api/auth/sign-up/email", {
     method: "POST",
@@ -79,14 +160,61 @@ export async function signUpTestUser(): Promise<TestUser> {
     throw new Error(`Failed to sign up test user (${res.status}): ${body}`);
   }
 
-  const data = (await res.json()) as TestUser;
+  const data = (await res.json()) as any;
+
+  // Extract user object - should be at data.user or at root of data
+  const user = data.user || data;
+
+  if (!user.id) {
+    throw new Error(
+      `Failed to extract user ID from sign-up response: ${JSON.stringify(data)}`
+    );
+  }
+
+  // Try to extract a session token from the response
+  // Better Auth might return: { user, session: { token: "..." } }
+  // Or it might use cookies + session ID
+  let token = "";
+
+  if (data.session?.token) {
+    token = data.session.token;
+  } else if (data.sessionToken) {
+    token = data.sessionToken;
+  } else if (data.token) {
+    token = data.token;
+  } else if (data.session?.id) {
+    token = data.session.id;
+  } else {
+    // Fallback: use user ID as token
+    // Authentication will rely on session cookies + credentials: 'include'
+    token = user.id;
+  }
+
+  if (!token) {
+    throw new Error(
+      `Failed to extract session from sign-up response: ${JSON.stringify(data)}`
+    );
+  }
+
+  const testUser: TestUser = {
+    token,
+    user: {
+      id: user.id || "",
+      name: user.name || data.name || "Test User",
+      email: user.email || data.email || "",
+      emailVerified: user.emailVerified ?? data.emailVerified ?? false,
+      image: user.image || data.image || null,
+      createdAt: user.createdAt || data.createdAt || new Date().toISOString(),
+      updatedAt: user.updatedAt || data.updatedAt || new Date().toISOString(),
+    },
+  };
 
   // Auto-register cleanup so the test file doesn't need to
   afterAll(async () => {
-    await deleteTestUser(data.token);
+    await deleteTestUser(testUser.token);
   });
 
-  return data;
+  return testUser;
 }
 
 /**
@@ -107,8 +235,8 @@ export async function expectStatus(res: Response, ...expected: number[]): Promis
  * Delete the test user (cleanup).
  */
 export async function deleteTestUser(token: string): Promise<void> {
-  await authenticatedApi("/api/auth/delete-user", token, {
-    method: "POST",
+  await authenticatedApi("/api/account", token, {
+    method: "DELETE",
   });
 }
 
