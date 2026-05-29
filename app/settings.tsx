@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Pressable,
   Alert,
+  Platform,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,6 +27,9 @@ const TEXT_ROW = "#2F3E2F";
 const SECTION_LABEL_COLOR = "rgba(47,62,47,0.45)";
 const RESET_COLOR = "#8A7060";
 const DIVIDER = "rgba(47,62,47,0.07)";
+
+const IOS_REVIEW_URL = 'https://apps.apple.com/app/id6762496742?action=write-review';
+const ANDROID_REVIEW_URL = 'https://play.google.com/store/apps/details?id=com.sacreddesign.app';
 
 function SectionLabel({ text }: { text: string }) {
   return <Text style={styles.sectionLabel}>{text}</Text>;
@@ -283,6 +288,20 @@ export default function SettingsScreen() {
     router.replace("/onboarding/welcome");
   }
 
+  async function handleRateApp() {
+    console.log("[Settings] 'Rate Sacred Design' pressed");
+    const url = Platform.OS === 'ios' ? IOS_REVIEW_URL : ANDROID_REVIEW_URL;
+    try {
+      await Linking.openURL(url);
+    } catch (e: any) {
+      console.warn('[Settings] Failed to open review URL:', e?.message);
+      Alert.alert(
+        'Unable to open',
+        'Could not open the app store. Please try again later.'
+      );
+    }
+  }
+
   function handleBack() {
     console.log("[Settings] Back button pressed");
     router.back();
@@ -356,6 +375,11 @@ export default function SettingsScreen() {
           onPress={handleRetakeDiscovery}
           danger
         />
+      </View>
+      {/* About section */}
+      <SectionLabel text="ABOUT" />
+      <View style={styles.sectionCard}>
+        <TappableRow label="Rate Sacred Design" onPress={handleRateApp} />
       </View>
     </ScrollView>
   );
