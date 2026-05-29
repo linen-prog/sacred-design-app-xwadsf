@@ -3,6 +3,7 @@ import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { generateText } from 'ai';
 import { gateway } from '@specific-dev/framework';
 import * as schema from '../db/schema/schema.js';
+import { requireAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 interface CompleteAlignmentBody {
@@ -28,8 +29,6 @@ const FALLBACK_ALIGNMENT = {
 };
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
-
   // POST /api/alignments/generate
   fastify.post('/api/alignments/generate', {
     schema: {
@@ -148,7 +147,8 @@ Return ONLY valid JSON with these exact keys:
         app.logger.info({ userId }, '[generate] AI raw response: ' + text);
         aiOutput = JSON.parse(text);
       } catch (aiError) {
-        app.logger.warn({ err: aiError, userId }, '[generate] AI generation failed, using fallback');
+        app.logger.warn({ err: aiError, userId }, '[generate] AI generation failed, using fallback alignment');
+        // Continue with fallback - don't rethrow
       }
 
       // Insert into daily_alignments

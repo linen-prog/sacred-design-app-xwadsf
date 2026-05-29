@@ -6,6 +6,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import * as schema from '../db/schema/schema.js';
 import { calculateNewStreak } from './progress.js';
+import { requireAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 interface CreateAlignmentBody {
@@ -57,8 +58,6 @@ function determineLevelFromDayCount(dayCount: number): number {
 }
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
-
   fastify.post('/api/daily-alignment', {
     schema: {
       description: 'Get or create a daily alignment for the current user',
@@ -110,7 +109,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: CreateAlignmentBody }>,
     reply: FastifyReply
   ): Promise<AlignmentResponse | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -350,7 +349,7 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<TodayResponse | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;

@@ -55,20 +55,25 @@ function sanitizeOptions(options?: RequestInit): RequestInit | undefined {
 
 /**
  * Make a request to the API under test.
+ * By default, includes persisted cookies.
+ * Set includeCookies: false to make an unauthenticated request.
  */
 export async function api(
   path: string,
-  options?: RequestInit
+  options?: RequestInit & { includeCookies?: boolean }
 ): Promise<Response> {
   const sanitized = sanitizeOptions(options);
   const headers: any = {
     ...sanitized?.headers,
   };
 
-  // Add persisted cookies to the request
-  const cookieHeader = globalCookieJar.getCookieHeader();
-  if (cookieHeader) {
-    headers.cookie = cookieHeader;
+  // Add persisted cookies to the request UNLESS explicitly disabled
+  const includeCookies = options?.includeCookies !== false;
+  if (includeCookies) {
+    const cookieHeader = globalCookieJar.getCookieHeader();
+    if (cookieHeader) {
+      headers.cookie = cookieHeader;
+    }
   }
 
   const response = await fetch(`${BASE_URL}${path}`, {
