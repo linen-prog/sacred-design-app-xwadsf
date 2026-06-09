@@ -104,11 +104,27 @@ app.withAuth({
   emailAndPassword: {
     requireEmailVerification: false,
     sendResetPassword: async ({ user, url }) => {
+      const plainTextBody = `You requested a password reset for your Sacred Design account.
+
+Tap the link below to set a new password. This link expires in 1 hour.
+
+${url}
+
+If you didn't request this, you can safely ignore this email.`;
+
+      const htmlBody = `<p>You requested a password reset for your Sacred Design account.</p>
+<p>Tap the link below to set a new password. This link expires in 1 hour.</p>
+<p><a href="${url}">${url}</a></p>
+<p>If you didn't request this, you can safely ignore this email.</p>`;
+
+      app.logger.info({ userId: user.id, email: user.email }, 'Sending password reset email');
+
       resend.emails.send({
-        from: 'Sacred Design <noreply@example.com>',
+        from: 'noreply@sacreddesign.app',
         to: user.email,
-        subject: 'Reset your password',
-        html: `<p>Click the link to reset your password: <a href="${url}">${url}</a></p>`,
+        subject: 'Reset your Sacred Design password',
+        text: plainTextBody,
+        html: htmlBody,
       });
     },
   },

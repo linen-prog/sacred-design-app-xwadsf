@@ -80,7 +80,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -273,7 +273,7 @@ Return ONLY valid JSON with these exact keys:
     request: FastifyRequest<{ Querystring: { local_date?: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -446,7 +446,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Params: { id: string }; Body: CompleteAlignmentBody }>,
     reply: FastifyReply
   ): Promise<{ success: boolean } | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -574,7 +574,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Params: { id: string }; Body: ReflectionBody }>,
     reply: FastifyReply
   ): Promise<{ success: boolean; reflection: any } | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -701,7 +701,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any[] | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -842,7 +842,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Querystring: { local_date: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -932,7 +932,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Body: { alignment_id: string; response: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
