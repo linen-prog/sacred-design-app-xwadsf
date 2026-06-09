@@ -242,6 +242,18 @@ export default function AuthScreen() {
             </Pressable>
           </View>
 
+          {!isSignUp && (
+            <Pressable
+              style={styles.forgotPasswordLink}
+              onPress={() => {
+                console.log('[AuthScreen] Forgot password pressed — navigating to /forgot-password');
+                router.push('/forgot-password' as any);
+              }}
+              hitSlop={8}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+            </Pressable>
+          )}
         </View>
 
         {/* Error card */}
@@ -445,6 +457,16 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     color: "rgba(201,168,76,0.45)",
+  },
+  forgotPasswordLink: {
+    alignSelf: "flex-end",
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  forgotPasswordText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: "rgba(201,168,76,0.7)",
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _cardBg: {
