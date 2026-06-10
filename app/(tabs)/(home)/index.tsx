@@ -348,6 +348,7 @@ export default function HomeScreen() {
   }, []);
 
   async function loadProgress() {
+    if (!isSignedIn) return;
     console.log("[Home] GET /api/progress");
     try {
       const res = await apiFetch("/api/progress");
@@ -458,6 +459,11 @@ export default function HomeScreen() {
   }
 
   async function loadTodayAlignment() {
+    if (!isSignedIn) {
+      console.log("[Home] loadTodayAlignment — user not signed in, skipping fetch");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     setAuthRequired(false);

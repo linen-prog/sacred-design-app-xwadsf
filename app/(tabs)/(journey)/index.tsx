@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { apiFetch } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 const JOURNEY_BG = require("../../../assets/images/3c13e2d7-0feb-4251-9c16-2d05c7546294.jpeg");
 
@@ -147,6 +148,8 @@ function SymbolicDivider() {
 export default function JourneyScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { user } = useAuth();
+  const isSignedIn = !!(user && (user as any).isAnonymous !== true);
   const [history, setHistory] = useState<AlignmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -162,6 +165,10 @@ export default function JourneyScreen() {
   );
 
   async function loadReflections() {
+    if (!isSignedIn) {
+      setReflectionsLoading(false);
+      return;
+    }
     setReflectionsLoading(true);
     console.log("[Journey] GET /api/reflections");
     const controller = new AbortController();
@@ -191,6 +198,10 @@ export default function JourneyScreen() {
   }
 
   async function loadHistory() {
+    if (!isSignedIn) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     console.log("[Journey] GET /api/alignments/history");
