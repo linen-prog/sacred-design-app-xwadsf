@@ -574,7 +574,7 @@ export default function HomeScreen() {
   const firstName = user ? (String((user as any).name ?? "")).split(" ")[0] : "";
   const blendName = sacredDesignResult?.blend_name ?? "";
 
-  const greetingLine = firstName ? `Good to see you back, ${firstName}` : "Good to see you back";
+  const greetingLine = firstName ? `Welcome back, ${firstName}` : "Welcome back";
 
   const showBanner =
     !bannerDismissed &&
@@ -624,6 +624,7 @@ export default function HomeScreen() {
         </Pressable>
 
         <View style={styles.contentWrapper}>
+          <Text style={styles.greeting}>{greetingLine}</Text>
           <Text style={styles.eyebrow}>SACRED DESIGN</Text>
           <Text style={styles.heroTitle}>Bring Your{"\n"}Design to Life</Text>
           <Text style={styles.subtitle}>One small step today makes it real.</Text>
@@ -702,7 +703,7 @@ export default function HomeScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 180 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Atmospheric lower glow */}
@@ -945,6 +946,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 24,
     paddingTop: 16,
+  },
+  greeting: {
+    fontFamily: "Lora_400Regular",
+    fontSize: 22,
+    color: "#3a2e1f",
+    textAlign: "center",
+    marginBottom: 8,
+    marginTop: 4,
   },
   eyebrow: {
     fontFamily: "Lora_700Bold",
