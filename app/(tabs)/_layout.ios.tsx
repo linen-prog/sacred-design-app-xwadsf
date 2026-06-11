@@ -19,6 +19,7 @@ export default function TabLayout() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- router intentionally omitted: useRouter() returns new refs on every render
   useEffect(() => {
+    console.log('[TabLayout] useEffect fired — isLoading:', isLoading, 'revealViewed:', appState.revealViewed, 'initialRouteName: (home)');
     if (isLoading) return;
     if (hasRedirectedRef.current) return;
     if (!appState.revealViewed) {

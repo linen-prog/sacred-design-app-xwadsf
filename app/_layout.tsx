@@ -158,12 +158,12 @@ function NavigationGuard() {
 
       // PRIORITY 1: Reveal viewed → go to tabs
       if (appState.revealViewed) {
-        const target = '/(tabs)';
+        const target = '/(tabs)/(home)';
         if (currentPathname === target) {
           console.log('[RootNavigator] Already on target route — skipping:', target);
           return;
         }
-        console.log('[RootNavigator] revealViewed=true — navigating to /(tabs)');
+        console.log('[Sacred Routing] redirecting to /(tabs)/(home) — revealViewed:', appState.revealViewed, 'pathname:', currentPathname);
         router.replace(target as any);
         return;
       }
@@ -172,12 +172,12 @@ function NavigationGuard() {
       // This is the key guard that prevents the loop
       if (appState.quizCompleted || appState.primaryArchetype) {
         if (appState.revealViewed) {
-          const target = '/(tabs)';
+          const target = '/(tabs)/(home)';
           if (currentPathname === target) {
             console.log('[RootNavigator] Already on target route — skipping:', target);
             return;
           }
-          console.log('[RootNavigator] quizCompleted/primaryArchetype + revealViewed — routing to /(tabs)', {
+          console.log('[RootNavigator] quizCompleted/primaryArchetype + revealViewed — routing to /(tabs)/(home)', {
             currentRoute: currentPathname ?? 'unknown',
             targetRoute: target,
             quizComplete: appState.quizCompleted,
@@ -185,6 +185,7 @@ function NavigationGuard() {
             revealViewed: appState.revealViewed,
             reasonForRedirect: 'reveal viewed, going to tabs',
           });
+          console.log('[Sacred Routing] redirecting to /(tabs)/(home) — revealViewed:', appState.revealViewed, 'pathname:', currentPathname);
           router.replace(target as any);
           return;
         }
@@ -277,10 +278,13 @@ function NavigationGuard() {
           }
 
           if (hasCompletedQuiz === 'true' && (await isOnboardingComplete())) {
-            console.log('[RootNavigator] Legacy: quiz complete — setting revealViewed and navigating to /(tabs)');
+            console.log('[RootNavigator] Legacy: quiz complete — setting revealViewed and navigating to /(tabs)/(home)');
             updateAppState({ revealViewed: true, dailyAlignmentReady: true }, user?.id ?? null).catch(() => {});
-            const target = '/(tabs)';
-            if (currentPathname !== target) router.replace(target as any);
+            const target = '/(tabs)/(home)';
+            if (currentPathname !== target) {
+              console.log('[Sacred Routing] redirecting to /(tabs)/(home) — revealViewed:', appState.revealViewed, 'pathname:', currentPathname);
+              router.replace(target as any);
+            }
           } else if (hasSeenOnboarding === 'true') {
             console.log('[RootNavigator] Legacy: partial onboarding — resuming at /onboarding/welcome');
             const target = '/onboarding/welcome';

@@ -250,6 +250,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     console.log('[DailyAlignment] MOUNT');
+    console.log('[Sacred Home] mounted build 34');
     return () => console.log('[DailyAlignment] UNMOUNT');
   }, []);
 
@@ -706,6 +707,9 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 180 }]}
         showsVerticalScrollIndicator={false}
       >
+        <Text style={{ color: 'red', fontFamily: 'Inter_600SemiBold', fontSize: 12, textAlign: 'center', marginBottom: 8, backgroundColor: 'rgba(255,0,0,0.1)', paddingVertical: 4 }}>
+          DEBUG HOME BUILD 34
+        </Text>
         {/* Atmospheric lower glow */}
         <View
           pointerEvents="none"

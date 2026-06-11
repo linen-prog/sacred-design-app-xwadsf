@@ -462,6 +462,20 @@ export default function MyDesignScreen() {
         contentContainerStyle={styles.resultContent}
         showsVerticalScrollIndicator={false}
       >
+      <Text style={{ color: 'blue', fontFamily: 'Inter_600SemiBold', fontSize: 12, textAlign: 'center', marginBottom: 8, backgroundColor: 'rgba(0,0,255,0.08)', paddingVertical: 4 }}>
+        DEBUG DESIGN BUILD 34
+      </Text>
+      <Pressable
+        onPress={() => {
+          console.log('[Debug] Go to Home button pressed');
+          router.replace('/(tabs)/(home)');
+        }}
+        style={{ backgroundColor: 'rgba(0,0,255,0.12)', borderRadius: 8, padding: 12, margin: 16, alignItems: 'center' }}
+      >
+        <Text style={{ color: 'blue', fontFamily: 'Inter_600SemiBold', fontSize: 13 }}>
+          Go to Home Debug
+        </Text>
+      </Pressable>
       {/* Today's Focus card — top of Design tab */}
       <TodayFocusCard
         hasDesignResult={hasDesignResult}
