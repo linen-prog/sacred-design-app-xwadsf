@@ -3,7 +3,7 @@ import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { generateText } from 'ai';
 import { gateway } from '@specific-dev/framework';
 import * as schema from '../db/schema/schema.js';
-import { requireAuthSession } from '../utils/auth.js';
+import { requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
 import type { App } from '../index.js';
 
 interface CompleteAlignmentBody {
@@ -29,6 +29,8 @@ const FALLBACK_ALIGNMENT = {
 };
 
 export function register(app: App, fastify: any) {
+  const requireAuth = app.requireAuth();
+
   // POST /api/alignments/generate
   fastify.post('/api/alignments/generate', {
     schema: {
@@ -80,7 +82,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthSession(app, request, reply);
+    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -273,7 +275,7 @@ Return ONLY valid JSON with these exact keys:
     request: FastifyRequest<{ Querystring: { local_date?: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthSession(app, request, reply);
+    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -446,7 +448,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Params: { id: string }; Body: CompleteAlignmentBody }>,
     reply: FastifyReply
   ): Promise<{ success: boolean } | void> => {
-    const session = await requireAuthSession(app, request, reply);
+    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -574,7 +576,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Params: { id: string }; Body: ReflectionBody }>,
     reply: FastifyReply
   ): Promise<{ success: boolean; reflection: any } | void> => {
-    const session = await requireAuthSession(app, request, reply);
+    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -701,7 +703,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any[] | void> => {
-    const session = await requireAuthSession(app, request, reply);
+    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -842,7 +844,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Querystring: { local_date: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthSession(app, request, reply);
+    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -932,7 +934,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Body: { alignment_id: string; response: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthSession(app, request, reply);
+    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
