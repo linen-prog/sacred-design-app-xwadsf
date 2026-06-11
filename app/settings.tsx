@@ -236,7 +236,7 @@ export default function SettingsScreen() {
     console.log('[DeleteAccount] Final token status:', token ? 'PRESENT' : 'MISSING');
 
     // Step 3: Determine backend URL
-    const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'https://bekz9kt4b8s23rg5eped7n5e6uqxppym.app.specular.dev';
+    const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'https://rumbzpkjcykav9r57b52k9veurge7zze.app.specular.dev';
     const deleteUrl = `${BACKEND_URL}/api/account`;
     console.log('[DeleteAccount] Backend URL:', BACKEND_URL);
     console.log('[DeleteAccount] Delete URL:', deleteUrl);
