@@ -11,6 +11,7 @@ import { register as registerArchetypeRoutes } from './routes/archetypes.js';
 import { register as registerProgressRoutes } from './routes/progress.js';
 import { register as registerAccountRoutes } from './routes/account.js';
 import { register as registerMoodsRoutes } from './routes/moods.js';
+import { initializeAuth } from './utils/auth.js';
 
 // Combine app schema and auth schema
 const schema = { ...appSchema, ...authSchema };
@@ -90,6 +91,7 @@ app.withAuth({
     "exp://",
     "https://1b8ef625-33f1-4c4f-b692-f737f97ecb03.newly.dev",
     "https://ndkts8vdqz2rr5jxdn9saub4v57bk4p7.app.specular.dev",
+    "https://eegnmx97zpckyedgdvpgescqwme3qq4j.app.specular.dev",
     "https://*.newly.dev",
     "http://localhost:3001",
     "http://localhost:8081",
@@ -144,6 +146,9 @@ If you didn't request this, you can safely ignore this email.`;
 
 // Log auth configuration on startup
 app.logger.info('Better Auth initialized with providers: email, google, apple');
+
+// Initialize auth middleware (must be after app.withAuth())
+initializeAuth(app);
 
 // Register routes - add your route modules here
 // IMPORTANT: Always use registration functions to avoid circular dependency issues
