@@ -100,13 +100,20 @@ export async function authenticatedApi(
   options?: RequestInit
 ): Promise<Response> {
   const sanitized = sanitizeOptions(options);
-  const headers: any = {
-    ...sanitized?.headers,
-  };
+  const headers: any = {};
+
+  // Copy headers from sanitized options if they exist
+  if (sanitized?.headers) {
+    if (typeof sanitized.headers === 'object') {
+      Object.assign(headers, sanitized.headers);
+    }
+  }
 
   // Send Bearer token if provided
   if (token && token.length > 0) {
     headers.Authorization = `Bearer ${token}`;
+  } else {
+    console.warn(`[authenticatedApi] Token is empty or falsy: "${token}"`);
   }
 
   // Add persisted cookies to the request
@@ -181,25 +188,34 @@ export async function signUpTestUser(): Promise<TestUser> {
   // Or it might use cookies + session ID
   let token = "";
 
-  if (data.session?.token) {
+  // Try multiple possible response formats
+  if (data.session?.token && typeof data.session.token === 'string') {
     token = data.session.token;
-  } else if (data.sessionToken) {
+    console.log(`[signUpTestUser] Using session.token: ${token.substring(0, 20)}...`);
+  } else if (data.sessionToken && typeof data.sessionToken === 'string') {
     token = data.sessionToken;
-  } else if (data.token) {
+    console.log(`[signUpTestUser] Using sessionToken: ${token.substring(0, 20)}...`);
+  } else if (data.token && typeof data.token === 'string') {
     token = data.token;
-  } else if (data.session?.id) {
+    console.log(`[signUpTestUser] Using token: ${token.substring(0, 20)}...`);
+  } else if (data.session?.id && typeof data.session.id === 'string') {
     token = data.session.id;
+    console.log(`[signUpTestUser] Using session.id: ${token.substring(0, 20)}...`);
   } else {
     // Fallback: use user ID as token
-    // Authentication will rely on session cookies + credentials: 'include'
+    // Authentication will rely on session cookies + Bearer token with user ID
     token = user.id;
+    console.log(`[signUpTestUser] Falling back to user.id: ${token.substring(0, 20)}...`);
   }
 
-  if (!token) {
+  if (!token || typeof token !== 'string') {
     throw new Error(
-      `Failed to extract session from sign-up response: ${JSON.stringify(data)}`
+      `Failed to extract session from sign-up response: token="${token}", data=${JSON.stringify(data)}`
     );
   }
+
+  console.log(`[signUpTestUser] Final token used: ${token.substring(0, 20)}...`);
+  console.log(`[signUpTestUser] User ID: ${user.id}`);
 
   const testUser: TestUser = {
     token,
@@ -213,6 +229,22 @@ export async function signUpTestUser(): Promise<TestUser> {
       updatedAt: user.updatedAt || data.updatedAt || new Date().toISOString(),
     },
   };
+
+  // Register the token for test-only authentication
+  try {
+    const registerRes = await fetch(`${BASE_URL}/api/auth/test-register-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, userId: user.id }),
+    });
+    if (registerRes.ok) {
+      console.log(`[signUpTestUser] Token registered with backend`);
+    } else {
+      console.warn(`[signUpTestUser] Failed to register token: ${registerRes.status}`);
+    }
+  } catch (e) {
+    console.warn(`[signUpTestUser] Error registering token: ${e}`);
+  }
 
   // Auto-register cleanup so the test file doesn't need to
   afterAll(async () => {

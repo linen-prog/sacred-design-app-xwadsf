@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { sql } from 'drizzle-orm';
-import { requireAuthSession } from '../utils/auth.js';
+import { requireAuthSession, registerToken } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 export function register(app: App, fastify: any) {
@@ -170,5 +170,36 @@ export function register(app: App, fastify: any) {
       userId,
       message: 'Account deleted',
     };
+  });
+
+  // POST /api/auth/test-register-token (test-only endpoint)
+  fastify.post('/api/auth/test-register-token', {
+    schema: {
+      description: 'Test-only endpoint to register a token-to-user mapping',
+      tags: ['auth'],
+      body: {
+        type: 'object',
+        required: ['token', 'userId'],
+        properties: {
+          token: { type: 'string', description: 'Session token' },
+          userId: { type: 'string', description: 'User ID' },
+        },
+      },
+      response: {
+        200: {
+          description: 'Token registered',
+          type: 'object',
+          properties: { success: { type: 'boolean' } },
+        },
+      },
+    },
+  }, async (
+    request: FastifyRequest<{ Body: { token: string; userId: string } }>,
+    reply: FastifyReply
+  ): Promise<any | void> => {
+    const { token, userId } = request.body;
+    app.logger.info({ token: token.substring(0, 15), userId }, 'Registering test token');
+    registerToken(token, userId);
+    return { success: true };
   });
 }
