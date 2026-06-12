@@ -190,7 +190,7 @@ export default function RevealScreen() {
     if (user) {
       console.log('[Reveal] User is signed in — awaiting propagation delay then navigating to tabs');
       await new Promise(resolve => setTimeout(resolve, 75));
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/(home)');
       console.log('[Reveal] Navigation triggered to /(tabs)');
     } else {
       console.log('[Reveal] User is not signed in — showing sign-in prompt');
@@ -424,7 +424,7 @@ export default function RevealScreen() {
             style={styles.promptSecondaryButton}
             onPress={() => {
               console.log('[Reveal] "Continue without saving" pressed — navigating to tabs');
-              router.replace('/(tabs)');
+              router.replace('/(tabs)/(home)');
             }}
             activeOpacity={0.7}
           >
