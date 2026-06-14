@@ -50,6 +50,7 @@ export default function ProfileScreen() {
 
   const [confirmModal, setConfirmModal] = useState<'startFresh' | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [tutorialVisible, setTutorialVisible] = useState(false);
 
   async function handleStartFresh() {
     console.log('[Profile] Start Fresh confirmed — clearing design and restarting');
@@ -279,6 +280,17 @@ export default function ProfileScreen() {
           >
             <Text style={styles.settingsRowLabel}>Rate This App</Text>
           </TouchableOpacity>
+          <View style={styles.inCardDivider} />
+          <TouchableOpacity
+            style={styles.settingsFeedbackRow}
+            onPress={() => {
+              console.log('[Profile] How Sacred Design Works pressed');
+              setTutorialVisible(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.settingsRowLabel}>How Sacred Design Works</Text>
+          </TouchableOpacity>
         </View>
 
         {/* SECTION 5: Account Actions */}
@@ -354,6 +366,45 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </>
             ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* TUTORIAL MODAL */}
+      <Modal
+        visible={tutorialVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTutorialVisible(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setTutorialVisible(false)}>
+          <Pressable style={styles.tutorialCard} onPress={() => {}}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.tutorialTitle}>How Sacred Design Works</Text>
+
+              <Text style={styles.tutorialStepNumber}>1. Take the Sacred Discovery</Text>
+              <Text style={styles.tutorialStepBody}>Answer a few reflective questions so the app can understand how you naturally think, feel, respond, and show up.</Text>
+
+              <Text style={styles.tutorialStepNumber}>2. Discover Your Sacred Design</Text>
+              <Text style={styles.tutorialStepBody}>Receive your primary and secondary archetypes, your blend name, strengths, stuck patterns, and growth path.</Text>
+
+              <Text style={styles.tutorialStepNumber}>3. Bring Your Design to Life</Text>
+              <Text style={styles.tutorialStepBody}>Each day, receive one personalized Daily Alignment with a clear action, guidance, somatic cue, scripture, and reflection prompt.</Text>
+
+              <Text style={styles.tutorialStepNumber}>4. Reflect and Grow</Text>
+              <Text style={styles.tutorialStepBody}>Use the journal to notice what shifted and strengthen new patterns over time.</Text>
+
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={() => {
+                  console.log('[Profile] Tutorial dismissed');
+                  setTutorialVisible(false);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalConfirmText}>Got it</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -626,6 +677,41 @@ const styles = StyleSheet.create({
     color: '#9A9A8E',
     paddingVertical: 12,
     textAlign: 'center',
+  },
+
+  tutorialCard: {
+    backgroundColor: 'rgba(255,250,238,0.97)',
+    borderRadius: 20,
+    padding: 28,
+    width: 320,
+    maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: 'rgba(220,185,100,0.25)',
+    shadowColor: '#7A5C10',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    elevation: 6,
+  },
+  tutorialTitle: {
+    fontFamily: 'Lora_700Bold',
+    fontSize: 20,
+    color: '#2C3A2C',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  tutorialStepNumber: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
+    color: '#4A6043',
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  tutorialStepBody: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    color: '#6B6B5E',
+    lineHeight: 22,
   },
 
 });
