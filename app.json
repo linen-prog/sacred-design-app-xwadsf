@@ -3,7 +3,7 @@
     "newArchEnabled": true,
     "name": "Sacred Design",
     "slug": "sacred-design",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/d30a4c14-cf4b-4775-bf62-ff8a649fe66b.jpeg",
     "userInterfaceStyle": "light",
@@ -27,7 +27,7 @@
           }
         ]
       },
-      "buildNumber": "34"
+      "buildNumber": "35"
     },
     "android": {
       "adaptiveIcon": {
