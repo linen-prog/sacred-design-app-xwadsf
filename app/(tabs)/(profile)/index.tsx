@@ -252,6 +252,21 @@ export default function ProfileScreen() {
           >
             <Text style={styles.settingsRowLabel}>Send feedback</Text>
           </TouchableOpacity>
+          <View style={styles.inCardDivider} />
+          <TouchableOpacity
+            style={styles.settingsFeedbackRow}
+            onPress={() => {
+              console.log('[Profile] Report a Problem pressed — opening mail');
+              const subject = encodeURIComponent('Sacred Design Support Request');
+              const body = encodeURIComponent(
+                'Hi Sacred Design Support,\n\nWhat happened:\n\nWhat I expected:\n\nDevice:\n\nApp version, if known:\n\nThank you.'
+              );
+              Linking.openURL(`mailto:help@theosomatic.com?subject=${subject}&body=${body}`);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.settingsRowLabel}>Report a Problem</Text>
+          </TouchableOpacity>
         </View>
 
         {/* SECTION 5: Account Actions */}
