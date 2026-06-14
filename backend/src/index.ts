@@ -3,8 +3,10 @@ import { anonymous } from "better-auth/plugins";
 import { createAuthMiddleware } from "@specific-dev/framework";
 import * as jose from 'jose';
 import { createPrivateKey } from 'crypto';
+import { eq } from 'drizzle-orm';
 import * as appSchema from './db/schema/schema.js';
 import * as authSchema from './db/schema/auth-schema.js';
+import { testTokenMap } from './utils/require-auth-with-test.js';
 import { register as registerDailyAlignmentRoutes } from './routes/daily-alignment.js';
 import { register as registerAlignmentCompletionRoutes } from './routes/alignment-completion.js';
 import { register as registerArchetypeRoutes } from './routes/archetypes.js';
@@ -92,7 +94,7 @@ app.withAuth({
     "exp://",
     "https://1b8ef625-33f1-4c4f-b692-f737f97ecb03.newly.dev",
     "https://ndkts8vdqz2rr5jxdn9saub4v57bk4p7.app.specular.dev",
-    "https://rumbzpkjcykav9r57b52k9veurge7zze.app.specular.dev",
+    "https://r5rqs6387vjta64cqxej6wwdaf3auqhs.app.specular.dev",
     "https://*.newly.dev",
     "http://localhost:3001",
     "http://localhost:8081",
@@ -147,6 +149,29 @@ If you didn't request this, you can safely ignore this email.`;
 
 // Log auth configuration on startup
 app.logger.info('Better Auth initialized with providers: email, google, apple');
+
+// Add test token support - converts Bearer tokens to valid sessions for testing
+app.fastify.addHook('onRequest', async (request, reply) => {
+  const authHeader = request.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring('Bearer '.length).trim();
+    const userId = testTokenMap.get(token);
+
+    if (userId) {
+      app.logger.info({ userId, tokenPrefix: token.substring(0, 15) }, 'Test token found, looking up user');
+      // Get the user from the database
+      const users = await app.db.select().from(authSchema.user).where(
+        eq(authSchema.user.id, userId)
+      ).limit(1);
+
+      if (users.length > 0) {
+        // Store user info in request context so routes can access it
+        (request as any).testUser = users[0];
+        app.logger.info({ userId }, 'Test token converted to user session');
+      }
+    }
+  }
+});
 
 // Register routes - add your route modules here
 // IMPORTANT: Always use registration functions to avoid circular dependency issues

@@ -206,8 +206,8 @@ Return ONLY valid JSON with these exact keys:
         app.logger.info({ userId }, '[generate] user_progress created');
       }
 
-      reply.status(201);
-      return { alignment: inserted };
+      app.logger.info({ userId, alignmentId: inserted.id }, '[generate] Sending 201 response');
+      return reply.status(201).send({ alignment: inserted });
     } catch (error) {
       app.logger.error({ err: error, userId }, '[generate] Failed to generate alignment');
       if (error instanceof SyntaxError) {

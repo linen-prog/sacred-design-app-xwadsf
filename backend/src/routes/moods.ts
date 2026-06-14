@@ -84,8 +84,8 @@ export function register(app: App, fastify: any) {
       const inserted = insertResult[0];
       app.logger.info({ userId, moodId: inserted.id }, 'Mood entry created');
 
-      reply.status(201);
-      return {
+      app.logger.info({ userId, moodId: inserted.id }, 'Sending 201 response');
+      return reply.status(201).send({
         mood: {
           id: inserted.id,
           user_id: inserted.userId,
@@ -94,7 +94,7 @@ export function register(app: App, fastify: any) {
           recorded_at: inserted.recordedAt.toISOString(),
           date: inserted.date,
         },
-      };
+      });
     } catch (error) {
       app.logger.error({ err: error, userId, mood, date }, 'Failed to create mood entry');
       throw error;
