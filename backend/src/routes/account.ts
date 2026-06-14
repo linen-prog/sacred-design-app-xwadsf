@@ -1,9 +1,10 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { sql } from 'drizzle-orm';
-import { requireAuthSession, registerToken } from '../utils/auth.js';
+import { testTokenMap } from '../utils/require-auth-with-test.js';
 import type { App } from '../index.js';
 
 export function register(app: App, fastify: any) {
+  const requireAuth = app.requireAuth();
 
   // DELETE /api/account
   fastify.delete('/api/account', {
@@ -45,7 +46,7 @@ export function register(app: App, fastify: any) {
   ): Promise<any | void> => {
     app.logger.info({ method: 'DELETE', path: '/api/account' }, 'Delete account request received');
 
-    const session = await requireAuthSession(app, request, reply);
+    const session = await requireAuth(request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -199,7 +200,10 @@ export function register(app: App, fastify: any) {
   ): Promise<any | void> => {
     const { token, userId } = request.body;
     app.logger.info({ token: token.substring(0, 15), userId }, 'Registering test token');
-    registerToken(token, userId);
+    testTokenMap.set(token, userId);
     return { success: true };
   });
+
+  // Export testTokenMap for other routes
+  (app as any).testTokenMap = testTokenMap;
 }
