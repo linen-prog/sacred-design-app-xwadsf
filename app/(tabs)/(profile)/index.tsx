@@ -24,7 +24,7 @@ import { authenticatedDelete } from '@/utils/api';
 import { updateAppState as updateStateUtil } from '@/utils/appState';
 
 const PROFILE_BG = require('../../../assets/images/3618ef37-552b-42de-ada7-b4be33506794.jpeg');
-const APP_STORE_ID = 'TODO_APP_STORE_ID'; // TODO: replace with real App Store numeric ID once app is live
+const APP_STORE_ID = '6762496742';
 
 export default function ProfileScreen() {
   const router = useRouter();
