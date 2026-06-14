@@ -24,6 +24,7 @@ import { authenticatedDelete } from '@/utils/api';
 import { updateAppState as updateStateUtil } from '@/utils/appState';
 
 const PROFILE_BG = require('../../../assets/images/3618ef37-552b-42de-ada7-b4be33506794.jpeg');
+const APP_STORE_ID = 'TODO_APP_STORE_ID'; // TODO: replace with real App Store numeric ID once app is live
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -266,6 +267,17 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
           >
             <Text style={styles.settingsRowLabel}>Report a Problem</Text>
+          </TouchableOpacity>
+          <View style={styles.inCardDivider} />
+          <TouchableOpacity
+            style={styles.settingsFeedbackRow}
+            onPress={() => {
+              console.log('[Profile] Rate This App pressed — opening App Store');
+              Linking.openURL(`https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.settingsRowLabel}>Rate This App</Text>
           </TouchableOpacity>
         </View>
 
