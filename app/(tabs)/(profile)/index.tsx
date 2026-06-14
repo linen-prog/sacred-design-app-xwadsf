@@ -11,6 +11,7 @@ import {
   Linking,
   Alert,
   ImageBackground,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -272,9 +273,19 @@ export default function ProfileScreen() {
           <View style={styles.inCardDivider} />
           <TouchableOpacity
             style={styles.settingsFeedbackRow}
-            onPress={() => {
-              console.log('[Profile] Rate This App pressed — opening App Store');
-              Linking.openURL(`https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`);
+            onPress={async () => {
+              console.log('[Profile] Rate This App pressed — platform:', Platform.OS);
+              if (Platform.OS === 'android') {
+                const marketUrl = 'market://details?id=com.sacreddesign.app';
+                const webUrl = 'https://play.google.com/store/apps/details?id=com.sacreddesign.app';
+                try {
+                  await Linking.openURL(marketUrl);
+                } catch {
+                  Linking.openURL(webUrl);
+                }
+              } else {
+                Linking.openURL(`https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`);
+              }
             }}
             activeOpacity={0.7}
           >
