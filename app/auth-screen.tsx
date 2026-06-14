@@ -318,17 +318,7 @@ export default function AuthScreen() {
           <Text style={styles.skipLinkText}>Skip for now</Text>
         </Pressable>
 
-        {__DEV__ && (
-          <Pressable
-            onPress={() => {
-              console.log("[AuthScreen] Debug Auth link pressed");
-              router.push("/debug-auth");
-            }}
-            style={{ marginTop: 8, padding: 8, alignSelf: "center" }}
-          >
-            <Text style={{ fontSize: 11, color: "rgba(201,168,76,0.3)" }}>🔍 Debug Auth</Text>
-          </Pressable>
-        )}
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
