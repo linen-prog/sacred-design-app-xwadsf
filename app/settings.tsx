@@ -290,15 +290,18 @@ export default function SettingsScreen() {
 
   async function handleRateApp() {
     console.log("[Settings] 'Rate Sacred Design' pressed");
-    const url = Platform.OS === 'ios' ? IOS_REVIEW_URL : ANDROID_REVIEW_URL;
+    if (Platform.OS === 'android') {
+      Alert.alert(
+        'Coming Soon',
+        'Rating will be available after Sacred Design is published on Google Play.'
+      );
+      return;
+    }
     try {
-      await Linking.openURL(url);
+      await Linking.openURL(IOS_REVIEW_URL);
     } catch (e: any) {
       console.warn('[Settings] Failed to open review URL:', e?.message);
-      Alert.alert(
-        'Unable to open',
-        'Could not open the app store. Please try again later.'
-      );
+      Alert.alert('Unable to open', 'Could not open the App Store. Please try again later.');
     }
   }
 
@@ -380,6 +383,22 @@ export default function SettingsScreen() {
       <SectionLabel text="ABOUT" />
       <View style={styles.sectionCard}>
         <TappableRow label="Rate Sacred Design" onPress={handleRateApp} />
+        <RowDivider />
+        <TappableRow
+          label="Privacy Policy"
+          onPress={() => {
+            console.log("[Settings] Privacy Policy tapped");
+            Linking.openURL('https://sacreddesign-app.com/privacy');
+          }}
+        />
+        <RowDivider />
+        <TappableRow
+          label="Terms of Use"
+          onPress={() => {
+            console.log("[Settings] Terms of Use tapped");
+            Linking.openURL('https://sacreddesign-app.com/terms');
+          }}
+        />
       </View>
     </ScrollView>
   );

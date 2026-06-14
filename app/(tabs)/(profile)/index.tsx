@@ -276,13 +276,10 @@ export default function ProfileScreen() {
             onPress={async () => {
               console.log('[Profile] Rate This App pressed — platform:', Platform.OS);
               if (Platform.OS === 'android') {
-                const marketUrl = 'market://details?id=com.sacreddesign.app';
-                const webUrl = 'https://play.google.com/store/apps/details?id=com.sacreddesign.app';
-                try {
-                  await Linking.openURL(marketUrl);
-                } catch {
-                  Linking.openURL(webUrl);
-                }
+                Alert.alert(
+                  'Coming Soon',
+                  'Rating will be available after Sacred Design is published on Google Play.'
+                );
               } else {
                 Linking.openURL(`https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`);
               }
