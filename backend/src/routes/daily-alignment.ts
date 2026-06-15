@@ -111,9 +111,13 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: CreateAlignmentBody }>,
     reply: FastifyReply
   ): Promise<AlignmentResponse | void> => {
-    app.logger.debug({ authHeader: request.headers.authorization?.substring(0, 20) || 'none' }, 'POST /api/daily-alignment received');
+    app.logger.info({ authHeader: request.headers.authorization?.substring(0, 20) || 'none' }, 'POST /api/daily-alignment received');
     const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
-    if (!session) return;
+    app.logger.info({ hasSession: !!session }, 'After requireAuthWithTestTokens');
+    if (!session) {
+      app.logger.info('No session, returning early');
+      return;
+    }
 
     const userId = session.user.id;
     const today = getTodayDate();
@@ -137,7 +141,7 @@ export function register(app: App, fastify: any) {
       if (existingAlignment.length > 0) {
         const alignment = existingAlignment[0];
         app.logger.info({ alignmentId: alignment.id, userId }, 'Returning existing alignment for today');
-        return {
+        const response = {
           id: alignment.id,
           day_number: alignment.dayNumber,
           level: alignment.level,
@@ -150,6 +154,8 @@ export function register(app: App, fastify: any) {
           blend_name: alignment.blendName,
           generated_at: alignment.generatedAt.toISOString(),
         };
+        app.logger.info({ alignmentId: alignment.id }, 'Returning existing alignment');
+        return response;
       }
 
       // Get or create user progress
@@ -285,7 +291,7 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
       const created = insertResult[0];
       app.logger.info({ alignmentId: created.id, userId, dayCount }, 'Daily alignment created');
 
-      return {
+      const response = {
         id: created.id,
         day_number: created.dayNumber,
         level: created.level,
@@ -298,6 +304,8 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
         blend_name: created.blendName,
         generated_at: created.generatedAt.toISOString(),
       };
+      app.logger.info({ response }, 'Returning response from POST /api/daily-alignment');
+      return response;
     } catch (error) {
       app.logger.error({ err: error, userId }, 'Failed to create daily alignment');
       throw error;

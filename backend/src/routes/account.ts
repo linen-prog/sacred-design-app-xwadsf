@@ -190,7 +190,7 @@ export function register(app: App, fastify: any) {
         200: {
           description: 'Token registered',
           type: 'object',
-          properties: { success: { type: 'boolean' } },
+          properties: { success: { type: 'boolean' }, mapSize: { type: 'integer' } },
         },
       },
     },
@@ -199,9 +199,11 @@ export function register(app: App, fastify: any) {
     reply: FastifyReply
   ): Promise<any | void> => {
     const { token, userId } = request.body;
-    app.logger.info({ token: token.substring(0, 15), userId }, 'Registering test token');
+    const tokenHash = Buffer.from(token).toString('base64').substring(0, 20);
+    app.logger.info({ tokenHash, tokenLen: token.length, userId, mapSizeBefore: testTokenMap.size }, 'Registering test token');
     testTokenMap.set(token, userId);
-    return { success: true };
+    app.logger.info({ tokenHash, tokenLen: token.length, userId, mapSizeAfter: testTokenMap.size, verified: testTokenMap.get(token) }, 'Test token registered - verification');
+    return { success: true, mapSize: testTokenMap.size };
   });
 
   // Export testTokenMap for other routes

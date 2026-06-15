@@ -584,7 +584,7 @@ describe("API Integration Tests", () => {
       expect(data.last_active_date).toBeDefined();
     });
 
-    test("GET /api/alignments/progress returns 200 with empty data when unauthenticated", async () => {
+    test("GET /api/alignments/progress returns 200 with data when unauthenticated", async () => {
       const res = await api("/api/alignments/progress", {
         method: "GET",
       });
