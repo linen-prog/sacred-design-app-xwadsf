@@ -66,7 +66,9 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: SaveArchetypeBody }>,
     reply: FastifyReply
   ): Promise<any | void> => {
+    app.logger.info({ path: request.url, method: request.method }, 'POST /api/archetypes/save - HANDLER CALLED');
     const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    app.logger.info({ hasSession: !!session, sessionUserId: session?.user?.id }, 'After requireAuthWithTestTokens in archetypes save');
     if (!session) return;
 
     const userId = session.user.id;

@@ -111,9 +111,11 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: CreateAlignmentBody }>,
     reply: FastifyReply
   ): Promise<AlignmentResponse | void> => {
-    app.logger.info({ authHeader: request.headers.authorization?.substring(0, 20) || 'none' }, 'POST /api/daily-alignment received');
+    app.logger.info({ authHeader: request.headers.authorization?.substring(0, 20) || 'none', path: request.url, method: request.method }, 'POST /api/daily-alignment received - HANDLER CALLED');
+    const testUserInRequest = (request as any).testUser;
+    app.logger.info({ testUserSet: !!testUserInRequest, testUserId: testUserInRequest?.id }, 'Checking testUser before requireAuthWithTestTokens');
     const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
-    app.logger.info({ hasSession: !!session }, 'After requireAuthWithTestTokens');
+    app.logger.info({ hasSession: !!session, sessionUserId: session?.user?.id }, 'After requireAuthWithTestTokens');
     if (!session) {
       app.logger.info('No session, returning early');
       return;

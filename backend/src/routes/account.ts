@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { sql } from 'drizzle-orm';
-import { testTokenMap } from '../utils/require-auth-with-test.js';
+import { testTokenMap, requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
 import type { App } from '../index.js';
 
 export function register(app: App, fastify: any) {
@@ -46,7 +46,7 @@ export function register(app: App, fastify: any) {
   ): Promise<any | void> => {
     app.logger.info({ method: 'DELETE', path: '/api/account' }, 'Delete account request received');
 
-    const session = await requireAuth(request, reply);
+    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -199,10 +199,7 @@ export function register(app: App, fastify: any) {
     reply: FastifyReply
   ): Promise<any | void> => {
     const { token, userId } = request.body;
-    const tokenHash = Buffer.from(token).toString('base64').substring(0, 20);
-    app.logger.info({ tokenHash, tokenLen: token.length, userId, mapSizeBefore: testTokenMap.size }, 'Registering test token');
     testTokenMap.set(token, userId);
-    app.logger.info({ tokenHash, tokenLen: token.length, userId, mapSizeAfter: testTokenMap.size, verified: testTokenMap.get(token) }, 'Test token registered - verification');
     return { success: true, mapSize: testTokenMap.size };
   });
 
