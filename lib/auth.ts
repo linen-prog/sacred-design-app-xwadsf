@@ -4,7 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 
-const API_URL = (Constants.expoConfig?.extra?.backendUrl as string) || "https://r5rqs6387vjta64cqxej6wwdaf3auqhs.app.specular.dev";
+const API_URL = (Constants.expoConfig?.extra?.backendUrl as string) || "https://ryuajzvp5d8m89evx7wjad8eym558h7e.app.specular.dev";
 
 export const BEARER_TOKEN_KEY = "sacreddesign_bearer_token";
 const COOKIE_KEY = "sacreddesign_cookie";
