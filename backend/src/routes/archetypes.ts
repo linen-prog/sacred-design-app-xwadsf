@@ -93,6 +93,8 @@ export function register(app: App, fastify: any) {
             secondaryArchetype: secondary_archetype,
             blendName: blend_name,
             scores,
+            quizCompleted: true,
+            completedAt: new Date(),
             updatedAt: new Date(),
           })
           .where(eq(schema.userArchetypes.userId, userId))
@@ -109,8 +111,8 @@ export function register(app: App, fastify: any) {
           blend_name: archetype.blendName,
           scores: archetype.scores,
           quiz_completed: archetype.quizCompleted,
-          completed_at: archetype.completedAt.toISOString(),
-          updated_at: archetype.updatedAt.toISOString(),
+          completed_at: archetype.completedAt?.toISOString() || new Date().toISOString(),
+          updated_at: archetype.updatedAt?.toISOString() || new Date().toISOString(),
         };
       } else {
         // Insert new record
@@ -139,8 +141,8 @@ export function register(app: App, fastify: any) {
           blend_name: archetype.blendName,
           scores: archetype.scores,
           quiz_completed: archetype.quizCompleted,
-          completed_at: archetype.completedAt.toISOString(),
-          updated_at: archetype.updatedAt.toISOString(),
+          completed_at: archetype.completedAt?.toISOString() || new Date().toISOString(),
+          updated_at: archetype.updatedAt?.toISOString() || new Date().toISOString(),
         };
       }
     } catch (error) {
@@ -228,6 +230,8 @@ export function register(app: App, fastify: any) {
             secondaryArchetype: secondary_archetype,
             blendName: blend_name,
             scores,
+            quizCompleted: true,
+            completedAt: new Date(),
             updatedAt: new Date(),
           })
           .where(eq(schema.userArchetypes.userId, userId))
@@ -292,8 +296,8 @@ export function register(app: App, fastify: any) {
           blend_name: archetype.blendName,
           scores: archetype.scores,
           quiz_completed: archetype.quizCompleted,
-          completed_at: archetype.completedAt.toISOString(),
-          updated_at: archetype.updatedAt.toISOString(),
+          completed_at: archetype.completedAt?.toISOString() || new Date().toISOString(),
+          updated_at: archetype.updatedAt?.toISOString() || new Date().toISOString(),
         },
       };
     } catch (error) {
@@ -381,8 +385,8 @@ export function register(app: App, fastify: any) {
         blend_name: archetype.blendName,
         scores: archetype.scores,
         quiz_completed: archetype.quizCompleted,
-        completed_at: archetype.completedAt.toISOString(),
-        updated_at: archetype.updatedAt.toISOString(),
+        completed_at: archetype.completedAt?.toISOString() || new Date().toISOString(),
+        updated_at: archetype.updatedAt?.toISOString() || new Date().toISOString(),
       };
     } catch (error) {
       app.logger.error({ err: error, userId }, 'Failed to fetch archetype');

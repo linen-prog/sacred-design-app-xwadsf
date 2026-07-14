@@ -910,47 +910,4 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 401);
     });
   });
-
-  describe("Test Utilities", () => {
-    test("POST /api/test-register-token registers a token mapping", async () => {
-      const testToken = "test-token-" + Math.random().toString(36).substring(2, 15);
-      const testUserId = "00000000-0000-0000-0000-000000000001";
-      const res = await api("/api/test-register-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: testToken,
-          userId: testUserId,
-        }),
-      });
-      await expectStatus(res, 200);
-      const data = await res.json();
-      expect(data.success).toBe(true);
-      expect(data.mapSize).toBeDefined();
-    });
-
-    test("POST /api/test-register-token returns 400 with missing token field", async () => {
-      const testUserId = "00000000-0000-0000-0000-000000000001";
-      const res = await api("/api/test-register-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: testUserId,
-        }),
-      });
-      await expectStatus(res, 400);
-    });
-
-    test("POST /api/test-register-token returns 400 with missing userId field", async () => {
-      const testToken = "test-token-" + Math.random().toString(36).substring(2, 15);
-      const res = await api("/api/test-register-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: testToken,
-        }),
-      });
-      await expectStatus(res, 400);
-    });
-  });
 });

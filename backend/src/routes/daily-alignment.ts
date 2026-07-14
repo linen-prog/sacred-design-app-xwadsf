@@ -154,7 +154,7 @@ export function register(app: App, fastify: any) {
           primary_archetype: alignment.primaryArchetype,
           secondary_archetype: alignment.secondaryArchetype,
           blend_name: alignment.blendName,
-          generated_at: alignment.generatedAt.toISOString(),
+          generated_at: alignment.generatedAt?.toISOString() || new Date().toISOString(),
         };
         app.logger.info({ alignmentId: alignment.id }, 'Returning existing alignment');
         return response;
@@ -405,7 +405,7 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
           primary_archetype: alignment.primaryArchetype,
           secondary_archetype: alignment.secondaryArchetype,
           blend_name: alignment.blendName,
-          generated_at: alignment.generatedAt.toISOString(),
+          generated_at: alignment.generatedAt?.toISOString() || new Date().toISOString(),
         },
       };
     } catch (error) {

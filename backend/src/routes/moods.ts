@@ -91,7 +91,7 @@ export function register(app: App, fastify: any) {
           user_id: inserted.userId,
           mood: inserted.mood,
           note: inserted.note,
-          recorded_at: inserted.recordedAt.toISOString(),
+          recorded_at: inserted.recordedAt?.toISOString() || new Date().toISOString(),
           date: inserted.date,
         },
       });

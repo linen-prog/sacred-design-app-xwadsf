@@ -7,9 +7,9 @@ import { eq } from 'drizzle-orm';
 import * as appSchema from './db/schema/schema.js';
 import * as authSchema from './db/schema/auth-schema.js';
 import { testTokenMap } from './utils/require-auth-with-test.js';
-
-// Load .env file immediately to ensure environment variables are available
 import { config } from 'dotenv';
+
+// Load environment variables from .env file
 config();
 import { register as registerDailyAlignmentRoutes } from './routes/daily-alignment.js';
 import { register as registerAlignmentCompletionRoutes } from './routes/alignment-completion.js';
@@ -161,26 +161,29 @@ app.logger.info('Better Auth initialized with providers: email, google, apple');
 // Only enabled when TEST_AUTH_ENABLED=true AND NODE_ENV !== production (double-guard)
 const testAuthEnabled = (process.env.TEST_AUTH_ENABLED || '').toLowerCase().trim() === 'true';
 const isProduction = (process.env.NODE_ENV || '').toLowerCase() === 'production';
-app.logger.info({
-  testAuthEnabledEnv: process.env.TEST_AUTH_ENABLED,
-  testAuthEnabled,
-  nodeEnv: process.env.NODE_ENV,
-  isProduction,
-}, 'Test auth configuration check');
 if (testAuthEnabled && !isProduction) {
   app.logger.warn('⚠️  TEST_AUTH_ENABLED is active - test bearer tokens are accepted. This must never be enabled in production.');
-  // Use onRequest hook (runs first, before any middleware) to extract and store the token
   app.fastify.addHook('onRequest', async (request, reply) => {
     const authHeader = request.headers.authorization as string | undefined;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring('Bearer '.length).trim();
-      (request as any).testToken = token;
-      app.logger.info({ tokenLength: token.length, mapSize: testTokenMap.size, path: request.url }, 'Test token extracted from header in onRequest hook');
+      const userId = testTokenMap.get(token);
+
+      if (userId) {
+        try {
+          const users = await app.db.select().from(authSchema.user).where(
+            eq(authSchema.user.id, userId)
+          ).limit(1);
+
+          if (users.length > 0) {
+            (request as any).testUser = users[0];
+          }
+        } catch (err) {
+          // Silently continue on error
+        }
+      }
     }
   });
-  app.logger.info({ testAuthEnabled: true, mapSize: testTokenMap.size }, 'Test auth hook registered');
-} else {
-  app.logger.info({ testAuthEnabled, isProduction }, 'Test auth not enabled - checking conditions');
 }
 
 // Register routes - add your route modules here

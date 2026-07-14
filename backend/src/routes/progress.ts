@@ -179,7 +179,7 @@ export function register(app: App, fastify: any) {
         id: r.id,
         alignment_id: r.alignmentId,
         reflection_text: r.reflectionText,
-        completed_at: r.completedAt.toISOString(),
+        completed_at: r.completedAt?.toISOString() || new Date().toISOString(),
         day_number: r.dayNumber,
         action: r.action,
       }));

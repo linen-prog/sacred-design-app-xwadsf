@@ -221,7 +221,7 @@ Return ONLY valid JSON with these exact keys:
           primary_archetype: inserted.primaryArchetype,
           secondary_archetype: inserted.secondaryArchetype,
           blend_name: inserted.blendName,
-          generated_at: inserted.generatedAt.toISOString(),
+          generated_at: inserted.generatedAt?.toISOString() || new Date().toISOString(),
         },
       });
     } catch (error) {
@@ -434,7 +434,7 @@ Return ONLY a valid JSON object with these exact fields:
           primary_archetype: inserted.primaryArchetype,
           secondary_archetype: inserted.secondaryArchetype,
           blend_name: inserted.blendName,
-          generated_at: inserted.generatedAt.toISOString(),
+          generated_at: inserted.generatedAt?.toISOString() || new Date().toISOString(),
         },
         reason: 'generated',
       };
@@ -719,7 +719,7 @@ Return ONLY a valid JSON object with these exact fields:
           id: reflection.id,
           alignment_id: reflection.alignmentId,
           reflection_text: reflection.reflectionText,
-          completed_at: reflection.completedAt.toISOString(),
+          completed_at: reflection.completedAt?.toISOString() || new Date().toISOString(),
         },
       };
     } catch (error) {
