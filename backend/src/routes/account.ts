@@ -203,9 +203,15 @@ export function register(app: App, fastify: any) {
       request: FastifyRequest<{ Body: { token: string; userId: string } }>,
       reply: FastifyReply
     ): Promise<any | void> => {
-      const { userId } = request.body;
-      app.logger.info({ userId }, 'Test token registered for user');
-      testTokenMap.set(request.body.token, userId);
+      const { token: rawToken, userId } = request.body;
+      // Normalize token by trimming whitespace - tokens may contain newlines or extra whitespace
+      const token = (rawToken || '').trim();
+      app.logger.info({ userId, tokenLength: token.length, tokenFirstChar: token.charCodeAt(0), tokenLastChar: token.charCodeAt(token.length - 1) }, 'Test token registration received');
+      testTokenMap.set(token, userId);
+      app.logger.info({ userId, tokenLength: token.length, mapSize: testTokenMap.size }, 'Test token registered for user');
+      // Verify it was stored
+      const verify = testTokenMap.get(token);
+      app.logger.info({ userId, stored: !!verify, verifyMatch: verify === userId }, 'Verification of stored token');
       return { success: true, mapSize: testTokenMap.size };
     });
   }

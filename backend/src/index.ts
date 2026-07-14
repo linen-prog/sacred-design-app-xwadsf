@@ -161,6 +161,12 @@ app.logger.info('Better Auth initialized with providers: email, google, apple');
 // Only enabled when TEST_AUTH_ENABLED=true AND NODE_ENV !== production (double-guard)
 const testAuthEnabled = (process.env.TEST_AUTH_ENABLED || '').toLowerCase().trim() === 'true';
 const isProduction = (process.env.NODE_ENV || '').toLowerCase() === 'production';
+app.logger.info({
+  testAuthEnabledEnv: process.env.TEST_AUTH_ENABLED,
+  testAuthEnabled,
+  nodeEnv: process.env.NODE_ENV,
+  isProduction,
+}, 'Test auth configuration check');
 if (testAuthEnabled && !isProduction) {
   app.logger.warn('⚠️  TEST_AUTH_ENABLED is active - test bearer tokens are accepted. This must never be enabled in production.');
   // Use onRequest hook (runs first, before any middleware) to extract and store the token
