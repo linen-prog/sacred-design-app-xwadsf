@@ -235,7 +235,7 @@ export async function signUpTestUser(): Promise<TestUser> {
   // Register the token for test-only authentication
   try {
     console.log(`[signUpTestUser] About to register token, token length: ${token.length}, first 30 chars: ${token.substring(0, 30)}`);
-    const registerRes = await fetch(`${BASE_URL}/api/auth/test-register-token`, {
+    const registerRes = await fetch(`${BASE_URL}/api/test-register-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, userId: user.id }),

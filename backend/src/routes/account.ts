@@ -173,35 +173,43 @@ export function register(app: App, fastify: any) {
     };
   });
 
-  // POST /api/auth/test-register-token (test-only endpoint)
-  fastify.post('/api/auth/test-register-token', {
-    schema: {
-      description: 'Test-only endpoint to register a token-to-user mapping',
-      tags: ['auth'],
-      body: {
-        type: 'object',
-        required: ['token', 'userId'],
-        properties: {
-          token: { type: 'string', description: 'Session token' },
-          userId: { type: 'string', description: 'User ID' },
-        },
-      },
-      response: {
-        200: {
-          description: 'Token registered',
+  // POST /api/test-register-token (test-only endpoint - NOT under /api/auth/ to avoid Better Auth conflicts)
+  // Only registered when TEST_AUTH_ENABLED=true AND NODE_ENV !== production (double-guard)
+  const testAuthEnabled = process.env.TEST_AUTH_ENABLED === 'true';
+  const isProduction = process.env.NODE_ENV === 'production';
+  app.logger.info({ TEST_AUTH_ENABLED: process.env.TEST_AUTH_ENABLED, NODE_ENV: process.env.NODE_ENV, testAuthEnabled, isProduction }, 'Test token endpoint environment check');
+  if (testAuthEnabled && !isProduction) {
+    app.logger.warn('⚠️  POST /api/test-register-token is enabled - test token registration is active. This must never be enabled in production.');
+    fastify.post('/api/test-register-token', {
+      schema: {
+        description: 'Test-only endpoint to register a token-to-user mapping',
+        tags: ['auth'],
+        body: {
           type: 'object',
-          properties: { success: { type: 'boolean' }, mapSize: { type: 'integer' } },
+          required: ['token', 'userId'],
+          properties: {
+            token: { type: 'string', description: 'Session token' },
+            userId: { type: 'string', description: 'User ID' },
+          },
+        },
+        response: {
+          200: {
+            description: 'Token registered',
+            type: 'object',
+            properties: { success: { type: 'boolean' }, mapSize: { type: 'integer' } },
+          },
         },
       },
-    },
-  }, async (
-    request: FastifyRequest<{ Body: { token: string; userId: string } }>,
-    reply: FastifyReply
-  ): Promise<any | void> => {
-    const { token, userId } = request.body;
-    testTokenMap.set(token, userId);
-    return { success: true, mapSize: testTokenMap.size };
-  });
+    }, async (
+      request: FastifyRequest<{ Body: { token: string; userId: string } }>,
+      reply: FastifyReply
+    ): Promise<any | void> => {
+      const { userId } = request.body;
+      app.logger.info({ userId }, 'Test token registered for user');
+      testTokenMap.set(request.body.token, userId);
+      return { success: true, mapSize: testTokenMap.size };
+    });
+  }
 
   // Export testTokenMap for other routes
   (app as any).testTokenMap = testTokenMap;

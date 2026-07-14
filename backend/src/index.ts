@@ -27,10 +27,9 @@ export type App = typeof app;
 async function generateAppleClientSecretJWT(): Promise<string> {
   const privateKey = process.env.APPLE_PRIVATE_KEY;
 
-  // Log first 20 characters of private key to confirm it's set
+  // Log that private key is configured without exposing any of it
   if (privateKey) {
-    const preview = privateKey.substring(0, 20);
-    app.logger.info({ keyPreview: preview }, 'Apple private key is configured');
+    app.logger.info('Apple private key is configured');
   } else {
     app.logger.warn('APPLE_PRIVATE_KEY environment variable is not set - Apple OAuth will not work');
   }
@@ -151,27 +150,34 @@ If you didn't request this, you can safely ignore this email.`;
 app.logger.info('Better Auth initialized with providers: email, google, apple');
 
 // Add test token support - converts Bearer tokens to valid sessions for testing
-app.fastify.addHook('onRequest', async (request, reply) => {
-  const authHeader = request.headers.authorization as string | undefined;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring('Bearer '.length).trim();
-    const userId = testTokenMap.get(token);
+// Only enabled when TEST_AUTH_ENABLED=true AND NODE_ENV !== production (double-guard)
+const testAuthEnabled = process.env.TEST_AUTH_ENABLED === 'true';
+const isProduction = process.env.NODE_ENV === 'production';
+app.logger.info({ TEST_AUTH_ENABLED: process.env.TEST_AUTH_ENABLED, NODE_ENV: process.env.NODE_ENV, testAuthEnabled, isProduction }, 'Test auth environment check');
+if (testAuthEnabled && !isProduction) {
+  app.logger.warn('⚠️  TEST_AUTH_ENABLED is active - test bearer tokens are accepted. This must never be enabled in production.');
+  app.fastify.addHook('onRequest', async (request, reply) => {
+    const authHeader = request.headers.authorization as string | undefined;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring('Bearer '.length).trim();
+      const userId = testTokenMap.get(token);
 
-    if (userId) {
-      try {
-        const users = await app.db.select().from(authSchema.user).where(
-          eq(authSchema.user.id, userId)
-        ).limit(1);
+      if (userId) {
+        try {
+          const users = await app.db.select().from(authSchema.user).where(
+            eq(authSchema.user.id, userId)
+          ).limit(1);
 
-        if (users.length > 0) {
-          (request as any).testUser = users[0];
+          if (users.length > 0) {
+            (request as any).testUser = users[0];
+          }
+        } catch (err) {
+          // Silently continue on error
         }
-      } catch (err) {
-        // Silently continue on error
       }
     }
-  }
-});
+  });
+}
 
 // Register routes - add your route modules here
 // IMPORTANT: Always use registration functions to avoid circular dependency issues

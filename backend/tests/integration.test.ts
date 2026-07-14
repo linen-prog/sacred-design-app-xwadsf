@@ -209,6 +209,42 @@ describe("API Integration Tests", () => {
       });
       await expectStatus(res, 401);
     });
+
+    test("POST /api/archetypes/upsert can update an existing archetype", async () => {
+      // First upsert creates/saves the archetype
+      const res1 = await authenticatedApi("/api/archetypes/upsert", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(archetypePayload),
+      });
+      await expectStatus(res1, 200);
+      const data1 = await res1.json();
+      const firstId = data1.archetype.id;
+
+      // Second upsert with different values should update the same record
+      const updatedPayload = {
+        primary_archetype: "Sage",
+        secondary_archetype: "Lover",
+        blend_name: "Sage Lover",
+        scores: {
+          avoidant_score: 5,
+          anxious_score: 4,
+          overactive_score: 3,
+          grounded_score: 8,
+        },
+      };
+      const res2 = await authenticatedApi("/api/archetypes/upsert", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedPayload),
+      });
+      await expectStatus(res2, 200);
+      const data2 = await res2.json();
+      // Verify it's still the same record (upserted, not created)
+      expect(data2.archetype.id).toBe(firstId);
+      expect(data2.archetype.primary_archetype).toBe("Sage");
+      expect(data2.archetype.blend_name).toBe("Sage Lover");
+    });
   });
 
   describe("Alignments", () => {
@@ -757,6 +793,31 @@ describe("API Integration Tests", () => {
       expect(Array.isArray(data.moods)).toBe(true);
     });
 
+    test("GET /api/moods respects limit parameter boundary (limit=100)", async () => {
+      const res = await authenticatedApi("/api/moods?limit=100", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 200);
+      const data = await res.json();
+      expect(data.moods).toBeDefined();
+      expect(Array.isArray(data.moods)).toBe(true);
+      expect(data.moods.length).toBeLessThanOrEqual(100);
+    });
+
+    test("GET /api/moods rejects limit parameter beyond maximum (limit=101)", async () => {
+      const res = await authenticatedApi("/api/moods?limit=101", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("GET /api/moods rejects limit parameter below minimum (limit=0)", async () => {
+      const res = await authenticatedApi("/api/moods?limit=0", authToken, {
+        method: "GET",
+      });
+      await expectStatus(res, 400);
+    });
+
     test("GET /api/moods returns moods with expected fields", async () => {
       const res = await authenticatedApi("/api/moods", authToken, {
         method: "GET",
@@ -787,6 +848,12 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 200);
       const data = await res.json();
       expect(data.mood).toBeDefined();
+      // Mood can be an object or null
+      if (data.mood !== null) {
+        expect(data.mood.id).toBeDefined();
+        expect(data.mood.mood).toBeDefined();
+        expect(data.mood.date).toBeDefined();
+      }
     });
 
     test("GET /api/moods/today returns null if no mood found for date", async () => {
