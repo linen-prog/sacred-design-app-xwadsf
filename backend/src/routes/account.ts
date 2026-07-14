@@ -209,7 +209,4 @@ export function register(app: App, fastify: any) {
       return { success: true, mapSize: testTokenMap.size };
     });
   }
-
-  // Export testTokenMap for other routes
-  (app as any).testTokenMap = testTokenMap;
 }

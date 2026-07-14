@@ -163,15 +163,18 @@ const testAuthEnabled = (process.env.TEST_AUTH_ENABLED || '').toLowerCase().trim
 const isProduction = (process.env.NODE_ENV || '').toLowerCase() === 'production';
 if (testAuthEnabled && !isProduction) {
   app.logger.warn('⚠️  TEST_AUTH_ENABLED is active - test bearer tokens are accepted. This must never be enabled in production.');
-  // Simplified hook: just extract and store the token for later lookup
+  // Use onRequest hook (runs first, before any middleware) to extract and store the token
   app.fastify.addHook('onRequest', async (request, reply) => {
     const authHeader = request.headers.authorization as string | undefined;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring('Bearer '.length).trim();
       (request as any).testToken = token;
-      app.logger.info({ tokenLength: token.length, mapSize: testTokenMap.size }, 'Test token extracted from header');
+      app.logger.info({ tokenLength: token.length, mapSize: testTokenMap.size, path: request.url }, 'Test token extracted from header in onRequest hook');
     }
   });
+  app.logger.info({ testAuthEnabled: true, mapSize: testTokenMap.size }, 'Test auth hook registered');
+} else {
+  app.logger.info({ testAuthEnabled, isProduction }, 'Test auth not enabled - checking conditions');
 }
 
 // Register routes - add your route modules here

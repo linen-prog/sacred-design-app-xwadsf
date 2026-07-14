@@ -3,7 +3,8 @@ import { eq } from 'drizzle-orm';
 import { user } from '../db/schema/auth-schema.js';
 import type { App } from '../index.js';
 
-// In-memory token map for test support only
+// In-memory token map - will be populated by test registration endpoint
+// Using a module-level variable ensures it persists across requests
 export const testTokenMap = new Map<string, string>();
 
 /**
@@ -16,6 +17,8 @@ export async function requireAuthWithTestTokens(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
+  app.logger.debug({ mapSize: testTokenMap.size }, 'requireAuthWithTestTokens called, checking testTokenMap');
+
   // Check if test user was injected by the onRequest hook
   const testUser = (request as any).testUser;
   if (testUser && testUser.id) {
@@ -29,23 +32,29 @@ export async function requireAuthWithTestTokens(
     const authHeader = request.headers.authorization as string | undefined;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring('Bearer '.length).trim();
+      app.logger.debug({ tokenLength: token.length }, 'Extracted token from authorization header');
     }
+  } else {
+    app.logger.debug({ tokenLength: token.length }, 'Found testToken on request object from hook');
   }
 
   if (token) {
     const userId = testTokenMap.get(token);
+    const allTokens = Array.from(testTokenMap.entries());
     app.logger.info({
       tokenProvided: !!token,
       tokenLength: token?.length,
       userIdFound: !!userId,
       mapSize: testTokenMap.size,
+      allTokensLength: allTokens.length,
+      lookingForToken: token,
       source: 'bearer-token'
     }, 'Test token lookup');
 
     if (userId) {
       try {
         // Look up user from database
-        app.logger.info({ userId }, 'Looking up user in database');
+        app.logger.debug({ userId }, 'Looking up user in database');
         const users = await app.db.select().from(user).where(eq(user.id, userId)).limit(1);
         app.logger.info({ userFound: users.length > 0, userId }, 'Database lookup result');
         if (users.length > 0) {
@@ -55,7 +64,15 @@ export async function requireAuthWithTestTokens(
       } catch (err) {
         app.logger.error({ err, userId }, 'Error looking up test user in database');
       }
+    } else {
+      app.logger.warn({
+        token,
+        mapSize: testTokenMap.size,
+        mapEntries: allTokens.map(([k, v]) => ({ tokenKey: k, userId: v }))
+      }, 'Token not found in testTokenMap');
     }
+  } else {
+    app.logger.warn({ authHeader: request.headers.authorization ? 'present' : 'missing', testTokenOnRequest: !!(request as any).testToken }, 'No token provided for test auth');
   }
 
   // Fall back to framework's requireAuth
