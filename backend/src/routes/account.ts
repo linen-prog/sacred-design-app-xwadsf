@@ -177,13 +177,6 @@ export function register(app: App, fastify: any) {
   // Only registered when TEST_AUTH_ENABLED=true AND NODE_ENV !== production (double-guard)
   const testAuthEnabled = (process.env.TEST_AUTH_ENABLED || '').toLowerCase().trim() === 'true';
   const isProduction = (process.env.NODE_ENV || '').toLowerCase() === 'production';
-  app.logger.info({
-    TEST_AUTH_ENABLED: process.env.TEST_AUTH_ENABLED,
-    NODE_ENV: process.env.NODE_ENV,
-    testAuthEnabled,
-    isProduction,
-    testAuthEnabledCheck: `"${process.env.TEST_AUTH_ENABLED}" === "true"?`,
-  }, 'Test token endpoint environment check');
   if (testAuthEnabled && !isProduction) {
     app.logger.warn('⚠️  POST /api/test-register-token is enabled - test token registration is active. This must never be enabled in production.');
     fastify.post('/api/test-register-token', {

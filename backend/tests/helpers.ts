@@ -115,7 +115,7 @@ export async function authenticatedApi(
     // Log for debugging
     console.log(`[authenticatedApi] ${path} - Sending Bearer token, length: ${token.length}`);
   } else {
-    console.warn(`[authenticatedApi] Token is empty or falsy: "${token}"`);
+    console.warn(`[authenticatedApi] Token is empty or falsy (length: ${String(token).length})`);
   }
 
   // Add persisted cookies to the request

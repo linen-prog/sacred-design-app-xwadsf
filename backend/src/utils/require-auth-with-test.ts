@@ -19,33 +19,52 @@ export async function requireAuthWithTestTokens(
   // Check if test user was injected by the onRequest hook
   const testUser = (request as any).testUser;
   if (testUser && testUser.id) {
+    app.logger.info({ userId: testUser.id, source: 'hook' }, 'Using test user from hook');
     return { user: testUser };
   }
 
-  // Check for test token in Bearer header
-  const authHeader = request.headers.authorization as string | undefined;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring('Bearer '.length).trim();
+  // Check for test token (either from header or extracted by hook)
+  let token = (request as any).testToken;
+  if (!token) {
+    const authHeader = request.headers.authorization as string | undefined;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring('Bearer '.length).trim();
+    }
+  }
+
+  if (token) {
     const userId = testTokenMap.get(token);
+    app.logger.info({
+      tokenProvided: !!token,
+      tokenLength: token?.length,
+      userIdFound: !!userId,
+      mapSize: testTokenMap.size,
+      source: 'bearer-token'
+    }, 'Test token lookup');
 
     if (userId) {
       try {
         // Look up user from database
+        app.logger.info({ userId }, 'Looking up user in database');
         const users = await app.db.select().from(user).where(eq(user.id, userId)).limit(1);
+        app.logger.info({ userFound: users.length > 0, userId }, 'Database lookup result');
         if (users.length > 0) {
+          app.logger.info({ userId: users[0].id, email: users[0].email }, 'Test authentication successful');
           return { user: users[0] };
         }
       } catch (err) {
-        // Continue to framework auth if lookup fails
+        app.logger.error({ err, userId }, 'Error looking up test user in database');
       }
     }
   }
 
   // Fall back to framework's requireAuth
+  app.logger.info({ testTokenProvided: !!token }, 'Falling back to framework requireAuth');
   try {
     const session = await requireAuth(request, reply);
     return session;
   } catch (err) {
+    app.logger.warn({ err }, 'Framework requireAuth failed');
     if (!reply.sent) {
       reply.status(401).send({ error: 'Unauthorized' });
     }
