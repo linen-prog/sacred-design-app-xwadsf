@@ -88,16 +88,20 @@ const authBeforeHook = createAuthMiddleware(async (ctx) => {
 
 app.withAuth({
   trustedOrigins: [
+    // Production app scheme (iOS + Android deep-link callbacks)
     "sacreddesign://",
     "sacreddesign://auth-callback",
-    "exp://",
-    "https://1b8ef625-33f1-4c4f-b692-f737f97ecb03.newly.dev",
-    "https://ndkts8vdqz2rr5jxdn9saub4v57bk4p7.app.specular.dev",
+    // Current production backend URL
     "https://ryuajzvp5d8m89evx7wjad8eym558h7e.app.specular.dev",
+    // Wildcard for Newly preview/branch deployments
     "https://*.newly.dev",
-    "http://localhost:3001",
-    "http://localhost:8081",
-    "http://localhost:19006",
+    // Local development
+    ...(process.env.NODE_ENV !== 'production' ? [
+      "exp://",
+      "http://localhost:3001",
+      "http://localhost:8081",
+      "http://localhost:19006",
+    ] : []),
   ],
   plugins: [
     anonymous(),
@@ -151,9 +155,15 @@ app.logger.info('Better Auth initialized with providers: email, google, apple');
 
 // Add test token support - converts Bearer tokens to valid sessions for testing
 // Only enabled when TEST_AUTH_ENABLED=true AND NODE_ENV !== production (double-guard)
-const testAuthEnabled = process.env.TEST_AUTH_ENABLED === 'true';
-const isProduction = process.env.NODE_ENV === 'production';
-app.logger.info({ TEST_AUTH_ENABLED: process.env.TEST_AUTH_ENABLED, NODE_ENV: process.env.NODE_ENV, testAuthEnabled, isProduction }, 'Test auth environment check');
+const testAuthEnabled = (process.env.TEST_AUTH_ENABLED || '').toLowerCase().trim() === 'true';
+const isProduction = (process.env.NODE_ENV || '').toLowerCase() === 'production';
+app.logger.info({
+  TEST_AUTH_ENABLED: process.env.TEST_AUTH_ENABLED,
+  NODE_ENV: process.env.NODE_ENV,
+  testAuthEnabled,
+  isProduction,
+  testAuthEnabledCheck: `"${process.env.TEST_AUTH_ENABLED}" === "true"?`,
+}, 'Test auth environment check');
 if (testAuthEnabled && !isProduction) {
   app.logger.warn('⚠️  TEST_AUTH_ENABLED is active - test bearer tokens are accepted. This must never be enabled in production.');
   app.fastify.addHook('onRequest', async (request, reply) => {

@@ -113,7 +113,7 @@ export async function authenticatedApi(
   if (token && token.length > 0) {
     headers.Authorization = `Bearer ${token}`;
     // Log for debugging
-    console.log(`[authenticatedApi] ${path} - Sending Bearer token, length: ${token.length}, first 30 chars: ${token.substring(0, 30)}`);
+    console.log(`[authenticatedApi] ${path} - Sending Bearer token, length: ${token.length}`);
   } else {
     console.warn(`[authenticatedApi] Token is empty or falsy: "${token}"`);
   }
@@ -193,21 +193,21 @@ export async function signUpTestUser(): Promise<TestUser> {
   // Try multiple possible response formats
   if (data.session?.token && typeof data.session.token === 'string') {
     token = data.session.token;
-    console.log(`[signUpTestUser] Using session.token: ${token.substring(0, 20)}...`);
+    console.log(`[signUpTestUser] Using session.token, length: ${token.length}`);
   } else if (data.sessionToken && typeof data.sessionToken === 'string') {
     token = data.sessionToken;
-    console.log(`[signUpTestUser] Using sessionToken: ${token.substring(0, 20)}...`);
+    console.log(`[signUpTestUser] Using sessionToken, length: ${token.length}`);
   } else if (data.token && typeof data.token === 'string') {
     token = data.token;
-    console.log(`[signUpTestUser] Using token: ${token.substring(0, 20)}...`);
+    console.log(`[signUpTestUser] Using token, length: ${token.length}`);
   } else if (data.session?.id && typeof data.session.id === 'string') {
     token = data.session.id;
-    console.log(`[signUpTestUser] Using session.id: ${token.substring(0, 20)}...`);
+    console.log(`[signUpTestUser] Using session.id, length: ${token.length}`);
   } else {
     // Fallback: use user ID as token
     // Authentication will rely on session cookies + Bearer token with user ID
     token = user.id;
-    console.log(`[signUpTestUser] Falling back to user.id: ${token.substring(0, 20)}...`);
+    console.log(`[signUpTestUser] Falling back to user.id, length: ${token.length}`);
   }
 
   if (!token || typeof token !== 'string') {
@@ -216,7 +216,7 @@ export async function signUpTestUser(): Promise<TestUser> {
     );
   }
 
-  console.log(`[signUpTestUser] Final token used: ${token.substring(0, 20)}...`);
+  console.log(`[signUpTestUser] Final token length: ${token.length}`);
   console.log(`[signUpTestUser] User ID: ${user.id}`);
 
   const testUser: TestUser = {
@@ -234,7 +234,7 @@ export async function signUpTestUser(): Promise<TestUser> {
 
   // Register the token for test-only authentication
   try {
-    console.log(`[signUpTestUser] About to register token, token length: ${token.length}, first 30 chars: ${token.substring(0, 30)}`);
+    console.log(`[signUpTestUser] About to register token, token length: ${token.length}`);
     const registerRes = await fetch(`${BASE_URL}/api/test-register-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
