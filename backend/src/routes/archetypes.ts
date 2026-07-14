@@ -122,6 +122,9 @@ export function register(app: App, fastify: any) {
             secondaryArchetype: secondary_archetype,
             blendName: blend_name,
             scores,
+            quizCompleted: true,
+            completedAt: new Date(),
+            updatedAt: new Date(),
           })
           .returning();
 

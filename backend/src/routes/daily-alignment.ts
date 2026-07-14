@@ -195,6 +195,8 @@ export function register(app: App, fastify: any) {
           dayCount: 1,
           streak: 1,
           lastActiveDate: today,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
         app.logger.info({ userId }, 'Created initial user progress');
       }

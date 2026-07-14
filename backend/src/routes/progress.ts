@@ -53,7 +53,7 @@ export function register(app: App, fastify: any) {
           properties: {
             day_count: { type: 'integer' },
             streak: { type: 'integer' },
-            last_active_date: { type: ['string', 'null'] },
+            last_active_date: { type: 'string', nullable: true },
           },
         },
         401: {

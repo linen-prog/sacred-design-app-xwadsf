@@ -52,7 +52,7 @@ export function register(app: App, fastify: any) {
                 guidance: { type: 'string' },
                 somatic_cue: { type: 'string' },
                 scripture: { type: 'string' },
-                reflection_prompt: { type: ['string', 'null'] },
+                reflection_prompt: { type: 'string', nullable: true },
                 primary_archetype: { type: 'string' },
                 secondary_archetype: { type: 'string' },
                 blend_name: { type: 'string' },
@@ -207,7 +207,23 @@ Return ONLY valid JSON with these exact keys:
       }
 
       app.logger.info({ userId, alignmentId: inserted.id }, '[generate] Sending 201 response');
-      return reply.status(201).send({ alignment: inserted });
+      return reply.status(201).send({
+        alignment: {
+          id: inserted.id,
+          user_id: inserted.userId,
+          day_number: inserted.dayNumber,
+          level: inserted.level,
+          action: inserted.action,
+          guidance: inserted.guidance,
+          somatic_cue: inserted.somaticCue,
+          scripture: inserted.scripture,
+          reflection_prompt: inserted.reflectionPrompt,
+          primary_archetype: inserted.primaryArchetype,
+          secondary_archetype: inserted.secondaryArchetype,
+          blend_name: inserted.blendName,
+          generated_at: inserted.generatedAt.toISOString(),
+        },
+      });
     } catch (error) {
       app.logger.error({ err: error, userId }, '[generate] Failed to generate alignment');
       if (error instanceof SyntaxError) {
@@ -246,7 +262,7 @@ Return ONLY valid JSON with these exact keys:
                     guidance: { type: 'string' },
                     somatic_cue: { type: 'string' },
                     scripture: { type: 'string' },
-                    reflection_prompt: { type: ['string', 'null'] },
+                    reflection_prompt: { type: 'string', nullable: true },
                     primary_archetype: { type: 'string' },
                     secondary_archetype: { type: 'string' },
                     blend_name: { type: 'string' },
@@ -300,7 +316,24 @@ Return ONLY valid JSON with these exact keys:
       if (alignments.length > 0) {
         const alignment = alignments[0];
         app.logger.info({ userId, alignmentId: alignment.id }, '[today] found alignment');
-        return { alignment };
+        return {
+          alignment: {
+            id: alignment.id,
+            user_id: alignment.userId,
+            day_number: alignment.dayNumber,
+            level: alignment.level,
+            action: alignment.action,
+            guidance: alignment.guidance,
+            somatic_cue: alignment.somaticCue,
+            scripture: alignment.scripture,
+            reflection_prompt: alignment.reflectionPrompt,
+            primary_archetype: alignment.primaryArchetype,
+            secondary_archetype: alignment.secondaryArchetype,
+            blend_name: alignment.blendName,
+            generated_at: alignment.generatedAt.toISOString(),
+          },
+          reason: 'found',
+        };
       }
 
       // Auto-generate alignment for today
@@ -387,7 +420,25 @@ Return ONLY a valid JSON object with these exact fields:
       const inserted = insertResult[0];
       app.logger.info({ userId, alignmentId: inserted.id }, '[today] alignment generated successfully, id: ' + inserted.id);
 
-      return { alignment: inserted };
+      return {
+        alignment: {
+          id: inserted.id,
+          user_id: inserted.userId,
+          day_number: inserted.dayNumber,
+          level: inserted.level,
+          action: inserted.action,
+          guidance: inserted.guidance,
+          somatic_cue: inserted.somaticCue,
+          scripture: inserted.scripture,
+          reflection_prompt: inserted.reflectionPrompt,
+          primary_archetype: inserted.primaryArchetype,
+          secondary_archetype: inserted.secondaryArchetype,
+          blend_name: inserted.blendName,
+          generated_at: inserted.generatedAt.toISOString(),
+        },
+        reason: 'generated',
+      };
+
     } catch (error) {
       app.logger.error({ err: error, userId }, '[today] generation failed: ' + (error instanceof Error ? error.message : String(error)));
       throw error;
@@ -738,7 +789,7 @@ Return ONLY a valid JSON object with these exact fields:
           properties: {
             day_count: { type: 'integer' },
             level: { type: 'integer' },
-            last_active_date: { type: ['string', 'null'] },
+            last_active_date: { type: 'string', nullable: true },
           },
         },
         500: {
