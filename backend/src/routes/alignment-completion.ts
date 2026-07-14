@@ -3,7 +3,7 @@ import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { generateText } from 'ai';
 import { gateway } from '@specific-dev/framework';
 import * as schema from '../db/schema/schema.js';
-import { requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
+import { requireAuthWithTestTokens, optionalAuthWithTestTokens } from '../utils/require-auth-with-test.js';
 import type { App } from '../index.js';
 
 interface CompleteAlignmentBody {
@@ -804,15 +804,26 @@ Return ONLY a valid JSON object with these exact fields:
     reply: FastifyReply
   ): Promise<any> => {
     try {
-      const headers = new Headers();
-      Object.entries(request.headers).forEach(([key, value]) => {
-        if (value) {
-          headers.append(key, Array.isArray(value) ? value[0] : value);
-        }
-      });
+      // Try to get test auth first, then fall back to framework auth
+      let userId: string | undefined;
 
-      const session = await app.auth.api.getSession({ headers });
-      const userId = session?.user.id;
+      // Try test token auth first
+      const testSession = await optionalAuthWithTestTokens(app, request);
+      if (testSession) {
+        userId = testSession.user.id;
+        app.logger.info({ userId, source: 'test-token' }, 'Using test token for alignment progress');
+      } else {
+        // Fall back to framework auth
+        const headers = new Headers();
+        Object.entries(request.headers).forEach(([key, value]) => {
+          if (value) {
+            headers.append(key, Array.isArray(value) ? value[0] : value);
+          }
+        });
+
+        const session = await app.auth.api.getSession({ headers });
+        userId = session?.user.id;
+      }
 
       if (!userId) {
         app.logger.info({}, 'Fetching alignment progress for unauthenticated user');

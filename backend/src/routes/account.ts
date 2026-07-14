@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { sql } from 'drizzle-orm';
-import { testTokenMap, requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
+import { requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
 import type { App } from '../index.js';
 
 export function register(app: App, fastify: any) {
@@ -173,44 +173,4 @@ export function register(app: App, fastify: any) {
     };
   });
 
-  // POST /api/test-register-token (test-only endpoint - NOT under /api/auth/ to avoid Better Auth conflicts)
-  // Only registered when TEST_AUTH_ENABLED=true AND NODE_ENV !== production (double-guard)
-  const testAuthEnabled = (process.env.TEST_AUTH_ENABLED || '').toLowerCase().trim() === 'true';
-  const isProduction = (process.env.NODE_ENV || '').toLowerCase() === 'production';
-  if (false) { // TEMP HARD DISABLE — test-register-token must not run in production, ever
-    app.logger.warn('⚠️  POST /api/test-register-token is enabled - test token registration is active. This must never be enabled in production.');
-    fastify.post('/api/test-register-token', {
-      schema: {
-        description: 'Test-only endpoint to register a token-to-user mapping',
-        tags: ['auth'],
-        body: {
-          type: 'object',
-          required: ['token', 'userId'],
-          properties: {
-            token: { type: 'string', description: 'Session token' },
-            userId: { type: 'string', description: 'User ID' },
-          },
-        },
-        response: {
-          200: {
-            description: 'Token registered',
-            type: 'object',
-            properties: { success: { type: 'boolean' }, mapSize: { type: 'integer' } },
-          },
-        },
-      },
-    }, async (
-      request: FastifyRequest<{ Body: { token: string; userId: string } }>,
-      reply: FastifyReply
-    ): Promise<any | void> => {
-      const { token: rawToken, userId } = request.body;
-      const token = (rawToken || '').trim();
-      app.logger.info({ userId, tokenLength: token.length }, 'Test token registered for user');
-      testTokenMap.set(token, userId);
-      return { success: true, mapSize: testTokenMap.size };
-    });
-  }
-
-  // Export testTokenMap for other routes
-  (app as any).testTokenMap = testTokenMap;
 }

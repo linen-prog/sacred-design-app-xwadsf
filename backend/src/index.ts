@@ -17,6 +17,7 @@ import { register as registerArchetypeRoutes } from './routes/archetypes.js';
 import { register as registerProgressRoutes } from './routes/progress.js';
 import { register as registerAccountRoutes } from './routes/account.js';
 import { register as registerMoodsRoutes } from './routes/moods.js';
+import { register as registerTestUtilsRoutes } from './routes/test-utils.js';
 
 // Combine app schema and auth schema
 const schema = { ...appSchema, ...authSchema };
@@ -188,6 +189,7 @@ if (testAuthEnabled && !isProduction) {
 
 // Register routes - add your route modules here
 // IMPORTANT: Always use registration functions to avoid circular dependency issues
+registerTestUtilsRoutes(app, app.fastify);
 registerDailyAlignmentRoutes(app, app.fastify);
 registerAlignmentCompletionRoutes(app, app.fastify);
 registerArchetypeRoutes(app, app.fastify);

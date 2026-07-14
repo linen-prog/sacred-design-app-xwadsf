@@ -8,6 +8,79 @@ import type { App } from '../index.js';
 export const testTokenMap = new Map<string, string>();
 
 /**
+ * Optional version of requireAuthWithTestTokens that returns null instead of 401.
+ * Useful for endpoints that support both authenticated and unauthenticated access.
+ */
+export async function optionalAuthWithTestTokens(
+  app: App,
+  request: FastifyRequest,
+): Promise<{ user: any } | null> {
+  // Check if test user was injected by the onRequest hook
+  const testUser = (request as any).testUser;
+  if (testUser && testUser.id) {
+    app.logger.info({ userId: testUser.id, source: 'hook' }, 'Using test user from hook (optional auth)');
+    return { user: testUser };
+  }
+
+  // Check for test token (either from header or extracted by hook)
+  let token = (request as any).testToken;
+  if (!token) {
+    const authHeader = request.headers.authorization as string | undefined;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring('Bearer '.length).trim();
+      app.logger.info({ tokenLength: token.length }, 'Extracted token from authorization header (optional auth)');
+    }
+  }
+
+  if (token) {
+    const normalizedToken = (token || '').trim();
+    const userId = testTokenMap.get(normalizedToken);
+
+    if (userId) {
+      try {
+        app.logger.info({ userId }, 'Looking up user in database (optional auth)');
+        const users = await app.db.select().from(user).where(eq(user.id, userId)).limit(1);
+        if (users.length > 0) {
+          app.logger.info({ userId: users[0].id }, 'Test authentication successful (optional auth)');
+          return { user: users[0] };
+        } else {
+          app.logger.warn({ userId }, 'User not found in database but found in test token map (optional auth)');
+          return {
+            user: {
+              id: userId,
+              name: 'Test User',
+              email: `test-${userId}@example.com`,
+              emailVerified: false,
+              image: null,
+              isAnonymous: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }
+          };
+        }
+      } catch (err) {
+        app.logger.error({ err, userId }, 'Error looking up test user in database (optional auth)');
+        return {
+          user: {
+            id: userId,
+            name: 'Test User',
+            email: `test-${userId}@example.com`,
+            emailVerified: false,
+            image: null,
+            isAnonymous: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+        };
+      }
+    }
+  }
+
+  // No test token found, return null instead of throwing
+  return null;
+}
+
+/**
  * Wraps the framework's requireAuth to also support test tokens.
  * Tries test token first, then falls back to framework auth.
  */
