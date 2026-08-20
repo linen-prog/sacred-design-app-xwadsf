@@ -1,7 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, desc, and } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
-import { requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
+import { requireAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 interface CreateMoodBody {
@@ -11,7 +11,6 @@ interface CreateMoodBody {
 }
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
 
   // POST /api/moods
   fastify.post('/api/moods', {
@@ -61,7 +60,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: CreateMoodBody }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -149,7 +148,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Querystring: { limit?: number } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -234,7 +233,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Querystring: { date: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;

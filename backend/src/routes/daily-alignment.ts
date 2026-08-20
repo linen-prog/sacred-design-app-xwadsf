@@ -6,7 +6,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import * as schema from '../db/schema/schema.js';
 import { calculateNewStreak } from './progress.js';
-import { requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
+import { requireAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 interface CreateAlignmentBody {
@@ -58,8 +58,6 @@ function determineLevelFromDayCount(dayCount: number): number {
 }
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
-
   fastify.post('/api/daily-alignment', {
     schema: {
       description: 'Get or create a daily alignment for the current user',
@@ -112,14 +110,8 @@ export function register(app: App, fastify: any) {
     reply: FastifyReply
   ): Promise<AlignmentResponse | void> => {
     app.logger.info({ authHeader: request.headers.authorization?.substring(0, 20) || 'none', path: request.url, method: request.method }, 'POST /api/daily-alignment received - HANDLER CALLED');
-    const testUserInRequest = (request as any).testUser;
-    app.logger.info({ testUserSet: !!testUserInRequest, testUserId: testUserInRequest?.id }, 'Checking testUser before requireAuthWithTestTokens');
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
-    app.logger.info({ hasSession: !!session, sessionUserId: session?.user?.id }, 'After requireAuthWithTestTokens');
-    if (!session) {
-      app.logger.info('No session, returning early');
-      return;
-    }
+    const session = await requireAuthSession(app, request, reply);
+    if (!session) return;
 
     const userId = session.user.id;
     const today = getTodayDate();
@@ -364,7 +356,7 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<TodayResponse | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;

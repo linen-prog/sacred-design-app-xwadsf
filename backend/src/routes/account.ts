@@ -1,10 +1,9 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { sql } from 'drizzle-orm';
-import { requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
+import { requireAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
 
   // DELETE /api/account
   fastify.delete('/api/account', {
@@ -46,7 +45,7 @@ export function register(app: App, fastify: any) {
   ): Promise<any | void> => {
     app.logger.info({ method: 'DELETE', path: '/api/account' }, 'Delete account request received');
 
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;

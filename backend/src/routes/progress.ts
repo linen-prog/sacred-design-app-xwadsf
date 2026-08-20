@@ -1,7 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, sql } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
-import { requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
+import { requireAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 function getTodayDate(): string {
@@ -39,7 +39,6 @@ export function calculateNewStreak(lastActiveDate: string | null | undefined, cu
 }
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
 
   // GET /api/progress
   fastify.get('/api/progress', {
@@ -72,7 +71,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -147,7 +146,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
