@@ -145,7 +145,7 @@ importers:
         version: 2.32.0(react-native@0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       react-native-purchases:
         specifier: ^10.4.2
-        version: 10.6.0(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+        version: 10.7.2(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       react-native-reanimated:
         specifier: ~4.1.0
         version: 4.1.7(react-native-worklets@0.5.1(@babel/core@7.29.7)(react-native@0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -1120,8 +1120,8 @@ packages:
   '@expo/config-plugins@54.0.4':
     resolution: {integrity: sha512-g2yXGICdoOw5i3LkQSDxl2Q5AlQCrG7oniu0pCPPO+UxGb7He4AFqSvPSy8HpRUj55io17hT62FTjYRD+d6j3Q==}
 
-  '@expo/config-plugins@57.0.6':
-    resolution: {integrity: sha512-7CmKrS5Rnu8aSZyNlxH2qzA7Ls1HEa4EQvEVOAkHDKPr1e4Cg/nz7I7dUl09QDTVjMvkKYDH4Th0DuAsgqASaw==}
+  '@expo/config-plugins@57.0.8':
+    resolution: {integrity: sha512-x6lx4s/19i39/+1dMPwb9tFCc4WR843dG5Yi+C64lhKL3YHX+6oKrT2Kv72PCEalnUY+usQDkB3NrLSrYOWtDg==}
 
   '@expo/config-types@54.0.10':
     resolution: {integrity: sha512-/J16SC2an1LdtCZ67xhSkGXpALYUVUNyZws7v+PVsFZxClYehDSoKLqyRaGkpHlYrCc08bS0RF5E0JV6g50psA==}
@@ -1132,8 +1132,8 @@ packages:
   '@expo/config@12.0.13':
     resolution: {integrity: sha512-Cu52arBa4vSaupIWsF0h7F/Cg//N374nYb7HAxV0I4KceKA7x2UXpYaHOL7EEYYvp7tZdThBjvGpVmr8ScIvaQ==}
 
-  '@expo/config@57.0.6':
-    resolution: {integrity: sha512-VpMJpB/De/fb9bBFVVBiK6Ntg9lt0kAleLH9hcZz85CYRUQ3jVFVA8rNC5f8y4cp2+FiiPNFp62+kEOFI6pDiw==}
+  '@expo/config@57.0.8':
+    resolution: {integrity: sha512-7VpAu2ZMXNZI0+Kn+nD3vQBIyST89LATNkZpnp/cXh8/aj7zUXO8d/T+hOxsvhOFwR8eQO+jKXEw8tQbidiMxA==}
 
   '@expo/devcert@1.2.1':
     resolution: {integrity: sha512-qC4eaxmKMTmJC2ahwyui6ud8f3W60Ss7pMkpBq40Hu3zyiAaugPXnZ24145U7K36qO9UHdZUVxsCvIpz2RYYCA==}
@@ -1212,8 +1212,8 @@ packages:
   '@expo/plist@0.8.1':
     resolution: {integrity: sha512-3gTReGIUm0oRaMClsAJYxBnVPCl6fVpsl8HS+DTVxDhW4GyVyxg9E/Znm3BvcHtUJ51RJJI14pC1wvrNilCRHw==}
 
-  '@expo/prebuild-config@57.0.10':
-    resolution: {integrity: sha512-myrS5NolFAQWD8g7QuqkettnkyJx3GRl603N6rlmqAMxmO5EU7sZu4EX2EsIKkva8QtpX84B0E17PsM9xXMsTQ==}
+  '@expo/prebuild-config@57.0.13':
+    resolution: {integrity: sha512-VhSySuXqOwK4fIc+9rgms7zN+c1Khj2xpuIgpVLPNyWRtpS8wB+eyV5CSohjSUBa3h+NsFdPk/VG6p0ZwlMDrg==}
 
   '@expo/require-utils@55.0.5':
     resolution: {integrity: sha512-U4K/CQ2VpXuwfNGsN+daKmYOt15hCP8v/pXaYH6eut7kdYZo6SfJ1yr67BIcJ+1Gzzs+QzTxswAZChKpXmceyw==}
@@ -1784,14 +1784,14 @@ packages:
   '@react-navigation/routers@7.6.0':
     resolution: {integrity: sha512-lblhDXfS75jLc7G2K7BZGM+7cjqQXk13X/MA4fq/12r62zM+fBhhreLzYflSitrDDXFRJpSvJXy0ziiGU04Xow==}
 
-  '@revenuecat/purchases-js-hybrid-mappings@18.28.0':
-    resolution: {integrity: sha512-H3fN3RILX4KmJx0v25IQUOTihfALun+v9GR0TqrGHphGihzI6ypQivNXOPR76dofUUiKRFq8rwD6DwUcyLIrJA==}
+  '@revenuecat/purchases-js-hybrid-mappings@18.31.0':
+    resolution: {integrity: sha512-iVnTulEs9tXHAJwogYhUN639mU1vV/2eLv1vKvEV9lxDw6rbL5mj4vDHbK9Yrw4IeI0C8Z8Xy14UDZ74W+y2VQ==}
 
-  '@revenuecat/purchases-js@1.49.1':
-    resolution: {integrity: sha512-eW5/zT0/Jyp0z2Sq1JTFFdlHrUn31fGLuL099/zee8SemHzszlzKOp1IPCOSolLscTUmFUwlalC65opsa365uw==}
+  '@revenuecat/purchases-js@1.52.3':
+    resolution: {integrity: sha512-ZU+mqdW7jsGTqYhtDmvDjcLzplvfh+jTspSKC0eMijxmFik0r/Wwq/CkD3o0QEqVRbVF0HkwEh2zZp6qdGR1Eg==}
 
-  '@revenuecat/purchases-typescript-internal@18.28.0':
-    resolution: {integrity: sha512-VPbRlXsPuJaG99EcoJlE1fZNxJqj2yE9+ywX24JEUNAfA+Y1CHCsGu4DlEK/ngl5a2wwXkEY18tE9sdSxnvm5Q==}
+  '@revenuecat/purchases-typescript-internal@18.31.0':
+    resolution: {integrity: sha512-5AE00P0AX34ou14ayEXFEdlWbNPFSYwAQl+1MWvTMKOd9wup1/T3erM53kp2t+ms4oajJv14qwNjzlCnH4JdnA==}
 
   '@rollup/plugin-babel@6.1.0':
     resolution: {integrity: sha512-dFZNuFD2YRcoomP4oYf+DvQNSUA9ih+A3vUqopQx5EdtPGo3WBnQcI/S8pwpz91UsGfL0HsMSOlaMld8HrbubA==}
@@ -3546,8 +3546,8 @@ packages:
     resolution: {integrity: sha512-WOaud6UKg16ciCOj8raKcMOoKFMHLXKI29U29yhgu1lf+Y7VxJyCktUcYo6AM+ccZ7zLD1uWZdMtgnpf+95OXA==}
     hasBin: true
 
-  expo-modules-autolinking@57.0.9:
-    resolution: {integrity: sha512-lj2nsAKMMRLXSFnGgaaQrWJ2fdSpLPc/bca6Rkiw4g8zYPn7qX4MRUJgavvzm/hBrzvMnlhXVgJtidOGuwBh+w==}
+  expo-modules-autolinking@57.0.10:
+    resolution: {integrity: sha512-jNqLswMx8QHN8VXRgud+xT+9q+J9U63CEGlx+k4V/IE9Qyt9HrKbWp+pIDma0fOquta5HBfSfsShcI+NkEpTiA==}
     hasBin: true
 
   expo-modules-core@3.0.30:
@@ -5346,8 +5346,8 @@ packages:
       react: '*'
       react-native: '*'
 
-  react-native-purchases@10.6.0:
-    resolution: {integrity: sha512-JzwQEklktpN0IRycR0IBpdXxVW4uI/04dgkSkQXa+9OP9JNLfV4zWjNPH++JDRmGbtj1ZnX/r2kQVoZ/ne2xoA==}
+  react-native-purchases@10.7.2:
+    resolution: {integrity: sha512-pI2Vh1oUtjjggYCd8P6u4Rl8Hck/lNhx6exxeoZYCGEeu7VQgGxzRDYTJ5f+96g057G6FcZ0bfMyD4VBxxQsuA==}
     peerDependencies:
       react: '>= 16.6.3'
       react-native: '>= 0.73.0'
@@ -7594,7 +7594,7 @@ snapshots:
       '@expo/osascript': 2.7.0
       '@expo/package-manager': 1.13.0
       '@expo/plist': 0.4.9
-      '@expo/prebuild-config': 57.0.10(typescript@5.9.3)
+      '@expo/prebuild-config': 57.0.13(typescript@5.9.3)
       '@expo/schema-utils': 0.1.8
       '@expo/spawn-async': 1.8.0
       '@expo/ws-tunnel': 1.0.6
@@ -7678,7 +7678,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@expo/config-plugins@57.0.6(typescript@5.9.3)':
+  '@expo/config-plugins@57.0.8(typescript@5.9.3)':
     dependencies:
       '@expo/config-types': 57.0.2
       '@expo/json-file': 11.0.1
@@ -7719,9 +7719,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@expo/config@57.0.6(typescript@5.9.3)':
+  '@expo/config@57.0.8(typescript@5.9.3)':
     dependencies:
-      '@expo/config-plugins': 57.0.6(typescript@5.9.3)
+      '@expo/config-plugins': 57.0.8(typescript@5.9.3)
       '@expo/config-types': 57.0.2
       '@expo/json-file': 11.0.1
       '@expo/require-utils': 57.0.4(typescript@5.9.3)
@@ -7915,16 +7915,16 @@ snapshots:
       base64-js: 1.5.1
       xmlbuilder: 15.1.1
 
-  '@expo/prebuild-config@57.0.10(typescript@5.9.3)':
+  '@expo/prebuild-config@57.0.13(typescript@5.9.3)':
     dependencies:
-      '@expo/config': 57.0.6(typescript@5.9.3)
-      '@expo/config-plugins': 57.0.6(typescript@5.9.3)
+      '@expo/config': 57.0.8(typescript@5.9.3)
+      '@expo/config-plugins': 57.0.8(typescript@5.9.3)
       '@expo/config-types': 57.0.2
       '@expo/image-utils': 0.11.4(typescript@5.9.3)
       '@expo/json-file': 11.0.1
       '@react-native/normalize-colors': 0.86.2
       debug: 4.4.3
-      expo-modules-autolinking: 57.0.9(typescript@5.9.3)
+      expo-modules-autolinking: 57.0.10(typescript@5.9.3)
       resolve-from: 5.0.0
       semver: 7.8.5
     transitivePeerDependencies:
@@ -8579,13 +8579,13 @@ snapshots:
     dependencies:
       nanoid: 3.3.15
 
-  '@revenuecat/purchases-js-hybrid-mappings@18.28.0':
+  '@revenuecat/purchases-js-hybrid-mappings@18.31.0':
     dependencies:
-      '@revenuecat/purchases-js': 1.49.1
+      '@revenuecat/purchases-js': 1.52.3
 
-  '@revenuecat/purchases-js@1.49.1': {}
+  '@revenuecat/purchases-js@1.52.3': {}
 
-  '@revenuecat/purchases-typescript-internal@18.28.0': {}
+  '@revenuecat/purchases-typescript-internal@18.31.0': {}
 
   '@rollup/plugin-babel@6.1.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(rollup@4.62.2)':
     dependencies:
@@ -10520,7 +10520,7 @@ snapshots:
       require-from-string: 2.0.2
       resolve-from: 5.0.0
 
-  expo-modules-autolinking@57.0.9(typescript@5.9.3):
+  expo-modules-autolinking@57.0.10(typescript@5.9.3):
     dependencies:
       '@expo/require-utils': 57.0.4(typescript@5.9.3)
       '@expo/spawn-async': 1.8.0
@@ -10593,7 +10593,7 @@ snapshots:
 
   expo-splash-screen@31.0.13(expo@54.0.35)(typescript@5.9.3):
     dependencies:
-      '@expo/prebuild-config': 57.0.10(typescript@5.9.3)
+      '@expo/prebuild-config': 57.0.13(typescript@5.9.3)
       expo: 54.0.35(@babel/core@7.29.7)(@expo/metro-runtime@6.1.2)(expo-router@6.0.24)(react-native-webview@13.17.0(react-native@0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
     transitivePeerDependencies:
       - supports-color
@@ -12517,10 +12517,10 @@ snapshots:
       react: 19.1.0
       react-native: 0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0)
 
-  react-native-purchases@10.6.0(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
+  react-native-purchases@10.7.2(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
     dependencies:
-      '@revenuecat/purchases-js-hybrid-mappings': 18.28.0
-      '@revenuecat/purchases-typescript-internal': 18.28.0
+      '@revenuecat/purchases-js-hybrid-mappings': 18.31.0
+      '@revenuecat/purchases-typescript-internal': 18.31.0
       react: 19.1.0
       react-native: 0.81.4(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0)
     optionalDependencies:
