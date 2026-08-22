@@ -57,6 +57,13 @@ function determineLevelFromDayCount(dayCount: number): number {
   return 3;
 }
 
+const FALLBACK_ALIGNMENT = {
+  action: 'Take one moment today to pause and notice how you feel before responding to someone.',
+  guidance: 'Before your next conversation, take a breath and check in with your body. Notice any tension or ease. Let that awareness guide how you show up.',
+  somatic_cue: 'Place one hand on your chest and take a slow breath before speaking.',
+  scripture: 'Be still, and know that I am God. — Psalm 46:10',
+};
+
 export function register(app: App, fastify: any) {
   fastify.post('/api/daily-alignment', {
     schema: {
@@ -252,18 +259,26 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
 
       app.logger.info({ userId, level, dayCount }, 'Generating alignment with AI');
 
-      const { output } = await generateText({
-        model: gateway('google/gemini-3-flash'),
-        system: systemPrompt,
-        prompt: userPrompt,
-        output: Output.object({
-          schema: alignmentSchema,
-          name: 'DailyAlignment',
-          description: 'Daily alignment with action, guidance, scripture, and somatic cue',
-        }),
-      });
+      let aiOutput: AlignmentOutput = FALLBACK_ALIGNMENT;
 
-      const aiOutput = output as AlignmentOutput;
+      try {
+        const { output } = await generateText({
+          model: gateway('google/gemini-3-flash'),
+          system: systemPrompt,
+          prompt: userPrompt,
+          output: Output.object({
+            schema: alignmentSchema,
+            name: 'DailyAlignment',
+            description: 'Daily alignment with action, guidance, scripture, and somatic cue',
+          }),
+        });
+
+        aiOutput = output as AlignmentOutput;
+        app.logger.info({ userId, dayCount }, 'AI generation succeeded');
+      } catch (aiError) {
+        app.logger.warn({ err: aiError, userId, dayCount }, 'AI generation failed, using fallback alignment');
+        // Continue with fallback - don't rethrow
+      }
 
       // Insert into daily alignments
       const now = new Date();
