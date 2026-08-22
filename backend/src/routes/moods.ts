@@ -80,11 +80,17 @@ export function register(app: App, fastify: any) {
         })
         .returning();
 
+      if (!insertResult || insertResult.length === 0) {
+        app.logger.error({ userId, mood, date }, 'Insert mood returned no rows');
+        throw new Error('Failed to insert mood - no rows returned');
+      }
+
       const inserted = insertResult[0];
       app.logger.info({ userId, moodId: inserted.id }, 'Mood entry created');
 
-      app.logger.info({ userId, moodId: inserted.id }, 'Sending 201 response');
-      return reply.status(201).send({
+      app.logger.info({ userId, moodId: inserted.id }, 'Mood entry created successfully');
+      reply.status(201);
+      return {
         mood: {
           id: inserted.id,
           user_id: inserted.userId,
@@ -93,10 +99,12 @@ export function register(app: App, fastify: any) {
           recorded_at: inserted.recordedAt?.toISOString() || new Date().toISOString(),
           date: inserted.date,
         },
-      });
+      };
     } catch (error) {
-      app.logger.error({ err: error, userId, mood, date }, 'Failed to create mood entry');
-      throw error;
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      app.logger.error({ err: error, userId, mood, date, errorMsg }, 'Failed to create mood entry');
+      reply.status(500).send({ error: `Failed to create mood: ${errorMsg}` });
+      return;
     }
   });
 

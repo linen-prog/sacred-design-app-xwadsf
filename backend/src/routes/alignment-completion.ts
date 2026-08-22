@@ -224,11 +224,13 @@ Return ONLY valid JSON with these exact keys:
         },
       });
     } catch (error) {
-      app.logger.error({ err: error, userId }, '[generate] Failed to generate alignment');
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      app.logger.error({ err: error, userId, errorMsg }, '[generate] Failed to generate alignment');
       if (error instanceof SyntaxError) {
         return reply.status(500).send({ error: 'Failed to parse AI response' });
       }
-      throw error;
+      reply.status(500).send({ error: `Failed to generate alignment: ${errorMsg}` });
+      return;
     }
   });
 

@@ -104,8 +104,10 @@ export function register(app: App, fastify: any) {
         last_active_date: progress.lastActiveDate || null,
       };
     } catch (error) {
-      app.logger.error({ err: error, userId }, 'Failed to fetch progress');
-      throw error;
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      app.logger.error({ err: error, userId, errorMsg }, 'Failed to fetch progress');
+      reply.status(500).send({ error: `Failed to fetch progress: ${errorMsg}` });
+      return;
     }
   });
 
@@ -183,8 +185,10 @@ export function register(app: App, fastify: any) {
         action: r.action,
       }));
     } catch (error) {
-      app.logger.error({ err: error, userId }, 'Failed to fetch reflections');
-      throw error;
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      app.logger.error({ err: error, userId, errorMsg }, 'Failed to fetch reflections');
+      reply.status(500).send({ error: `Failed to fetch reflections: ${errorMsg}` });
+      return;
     }
   });
 }

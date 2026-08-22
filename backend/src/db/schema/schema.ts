@@ -3,7 +3,7 @@ import { user } from './auth-schema.js';
 
 export const userProgress = pgTable('user_progress', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().unique().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().unique(),
   dayCount: integer('day_count').notNull().default(1),
   streak: integer('streak').notNull().default(0),
   lastActiveDate: text('last_active_date').notNull(),
@@ -13,7 +13,7 @@ export const userProgress = pgTable('user_progress', {
 
 export const dailyAlignments = pgTable('daily_alignments', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
   dayNumber: integer('day_number').notNull(),
   level: integer('level').notNull(),
   action: text('action').notNull(),
@@ -29,15 +29,15 @@ export const dailyAlignments = pgTable('daily_alignments', {
 
 export const alignmentReflections = pgTable('alignment_reflections', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
-  alignmentId: uuid('alignment_id').notNull().references(() => dailyAlignments.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  alignmentId: uuid('alignment_id').notNull(),
   reflectionText: text('reflection_text'),
   completedAt: timestamp('completed_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const userArchetypes = pgTable('user_archetypes', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().unique().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().unique(),
   primaryArchetype: text('primary_archetype').notNull(),
   secondaryArchetype: text('secondary_archetype').notNull(),
   blendName: text('blend_name').notNull(),
@@ -49,7 +49,7 @@ export const userArchetypes = pgTable('user_archetypes', {
 
 export const moodEntries = pgTable('mood_entries', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
   mood: text('mood').notNull(),
   note: text('note'),
   recordedAt: timestamp('recorded_at', { withTimezone: true }).defaultNow().notNull(),

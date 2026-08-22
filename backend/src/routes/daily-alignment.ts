@@ -284,6 +284,11 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
         })
         .returning();
 
+      if (!insertResult || insertResult.length === 0) {
+        app.logger.error({ userId }, 'Insert alignment returned no rows');
+        throw new Error('Failed to insert alignment - no rows returned');
+      }
+
       const created = insertResult[0];
       app.logger.info({ alignmentId: created.id, userId, dayCount }, 'Daily alignment created');
 
@@ -303,8 +308,10 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
       app.logger.info({ response }, 'Returning response from POST /api/daily-alignment');
       return response;
     } catch (error) {
-      app.logger.error({ err: error, userId }, 'Failed to create daily alignment');
-      throw error;
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      app.logger.error({ err: error, userId, errorMsg }, 'Failed to create daily alignment');
+      reply.status(500).send({ error: `Failed to create alignment: ${errorMsg}` });
+      return;
     }
   });
 
