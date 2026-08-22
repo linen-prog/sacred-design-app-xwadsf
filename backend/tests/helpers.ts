@@ -164,7 +164,8 @@ export interface TestUser {
 }
 
 /**
- * Sign up a test user and return the token and user object.
+ * Sign up a test user and return the session token and user object.
+ * Uses the Better Auth session token from the sign-up response — NOT the user ID.
  */
 export async function signUpTestUser(): Promise<TestUser> {
   // Clear cookies when signing up a new user to ensure fresh session
@@ -188,28 +189,20 @@ export async function signUpTestUser(): Promise<TestUser> {
 
   const data = (await res.json()) as any;
 
-  // Extract user object - should be at data.user or at root of data
-  const user = data.user || data;
+  // Extract session token — Better Auth returns it as data.token
+  const token: string | undefined = data.token;
+  if (!token || typeof token !== 'string') {
+    throw new Error(
+      `Failed to extract session token from sign-up response: ${JSON.stringify(data)}`
+    );
+  }
 
+  const user = data.user || data;
   if (!user.id) {
     throw new Error(
       `Failed to extract user ID from sign-up response: ${JSON.stringify(data)}`
     );
   }
-
-  // For Bearer token authentication, use the user ID
-  // The Bearer token will be used to look up the user in the database
-  const token = user.id;
-  console.log(`[signUpTestUser] Using user.id as Bearer token, length: ${token.length}`);
-
-  if (!token || typeof token !== 'string') {
-    throw new Error(
-      `Failed to extract session from sign-up response: token="${token}", data=${JSON.stringify(data)}`
-    );
-  }
-
-  console.log(`[signUpTestUser] Final token length: ${token.length}`);
-  console.log(`[signUpTestUser] User ID: ${user.id}`);
 
   const testUser: TestUser = {
     token,

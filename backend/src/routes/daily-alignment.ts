@@ -116,7 +116,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: CreateAlignmentBody }>,
     reply: FastifyReply
   ): Promise<AlignmentResponse | void> => {
-    app.logger.info({ authHeader: request.headers.authorization?.substring(0, 20) || 'none', path: request.url, method: request.method }, 'POST /api/daily-alignment received - HANDLER CALLED');
+    app.logger.info({ hasAuthHeader: !!request.headers.authorization, path: request.url, method: request.method }, 'POST /api/daily-alignment received - HANDLER CALLED');
     const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 

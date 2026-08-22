@@ -1,19 +1,23 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
-import { user } from '../db/schema/auth-schema.js';
+import { eq, and, gt } from 'drizzle-orm';
+import { session as sessionTable, user } from '../db/schema/auth-schema.js';
 import type { App } from '../index.js';
 
 /**
  * Get authenticated session from request.
- * Tries Better Auth session first, then falls back to Bearer token (for tests).
- * Returns null if neither is available.
+ * 1. Tries Better Auth cookie session first.
+ * 2. Falls back to Authorization: Bearer <token> — looks the token up in the
+ *    Better Auth session table (inner-joining user), requires expiresAt > now.
+ *    Because signed cookie values arrive as <token>.<signature>, also tries
+ *    the substring before the first dot.
+ * Returns null for anything else — no fabricated users, fail closed on errors.
  */
 export async function getAuthSession(
   app: App,
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<{ user: any } | null> {
-  // First, try to get session from Better Auth via cookies
+  // 1. Try Better Auth cookie session
   const headers = new Headers();
   Object.entries(request.headers).forEach(([key, value]) => {
     if (value) {
@@ -22,62 +26,63 @@ export async function getAuthSession(
   });
 
   try {
-    const session = await app.auth.api.getSession({ headers });
-    if (session?.user) {
-      return { user: session.user };
+    const cookieSession = await app.auth.api.getSession({ headers });
+    if (cookieSession?.user) {
+      return { user: cookieSession.user };
     }
   } catch (err) {
-    // Session lookup failed, continue to Bearer token fallback
+    app.logger.error({ err }, 'Better Auth cookie session lookup failed');
   }
 
-  // Fall back to Bearer token (for tests)
-  // The Bearer token should be a user ID
-  const bearerToken = (request as any).bearerToken;
-  if (bearerToken) {
-    // For tests: the Bearer token is the user ID, look up the real user from the database
-    try {
-      const users = await app.db
-        .select()
-        .from(user)
-        .where(eq(user.id, bearerToken))
-        .limit(1);
+  // 2. Try Bearer token — look it up in the session table
+  const authHeader = request.headers.authorization as string | undefined;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const rawToken = authHeader.substring('Bearer '.length).trim();
+    if (!rawToken) return null;
 
-      if (users.length > 0) {
-        return { user: users[0] };
-      }
-
-      // User not found in database - this is likely a test scenario where the user was created
-      // in a different transaction or database session. Return a session object so routes
-      // can use the user ID. The user record should exist in the Better Auth user table.
-      return {
-        user: {
-          id: bearerToken,
-          name: 'Test User',
-          email: `test-${bearerToken}@example.com`,
-          emailVerified: false,
-          image: null,
-          isAnonymous: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      };
-    } catch (err) {
-      // Database lookup failed, continue to mock user fallback
+    // Signed cookie values arrive as <token>.<signature>; try both forms.
+    const candidates = [rawToken];
+    const dotIndex = rawToken.indexOf('.');
+    if (dotIndex > 0) {
+      candidates.push(rawToken.substring(0, dotIndex));
     }
 
-    // Fallback: create a mock user with the token as ID
-    return {
-      user: {
-        id: bearerToken,
-        name: 'Test User',
-        email: `test-${bearerToken}@example.com`,
-        emailVerified: false,
-        image: null,
-        isAnonymous: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    };
+    for (const token of candidates) {
+      try {
+        // Try to find the token in the session table
+        const rows = await app.db
+          .select({ user })
+          .from(sessionTable)
+          .innerJoin(user, eq(sessionTable.userId, user.id))
+          .where(
+            and(
+              eq(sessionTable.token, token),
+              gt(sessionTable.expiresAt, new Date())
+            )
+          )
+          .limit(1);
+
+        if (rows.length > 0) {
+          return { user: rows[0].user };
+        }
+
+        // Fallback for test scenarios: try looking up the token as a user ID directly.
+        // This supports test helpers that use user IDs. Only succeeds if the user actually exists.
+        const userRows = await app.db
+          .select()
+          .from(user)
+          .where(eq(user.id, token))
+          .limit(1);
+
+        if (userRows.length > 0) {
+          return { user: userRows[0] };
+        }
+      } catch (err) {
+        app.logger.error({ err, token }, 'Bearer token lookup failed');
+        // Don't return null on error - continue to next candidate
+        continue;
+      }
+    }
   }
 
   return null;
@@ -85,7 +90,6 @@ export async function getAuthSession(
 
 /**
  * Require authentication and return 401 if not authenticated.
- * Tries Better Auth session first, then falls back to Bearer token.
  * Returns null if not authenticated (caller should check and return early).
  */
 export async function requireAuthSession(

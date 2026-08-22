@@ -3,6 +3,7 @@ import { anonymous } from "better-auth/plugins";
 import { createAuthMiddleware } from "@specific-dev/framework";
 import * as jose from 'jose';
 import { createPrivateKey } from 'crypto';
+import rateLimit from '@fastify/rate-limit';
 import * as appSchema from './db/schema/schema.js';
 import * as authSchema from './db/schema/auth-schema.js';
 import { config } from 'dotenv';
@@ -154,6 +155,8 @@ If you didn't request this, you can safely ignore this email.`;
 
 // Log auth configuration on startup
 app.logger.info('Better Auth initialized with providers: email, google, apple');
+
+await app.fastify.register(rateLimit, { global: false });
 
 // Add Bearer token support for testing - maps Bearer token to user ID in request context
 app.fastify.addHook('onRequest', async (request, reply) => {
