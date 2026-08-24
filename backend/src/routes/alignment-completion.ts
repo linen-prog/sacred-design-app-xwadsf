@@ -3,7 +3,7 @@ import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { generateText } from 'ai';
 import { gateway } from '@specific-dev/framework';
 import * as schema from '../db/schema/schema.js';
-import { requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
+import { requireAuthSession, getAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 interface CompleteAlignmentBody {
@@ -13,6 +13,10 @@ interface CompleteAlignmentBody {
 
 interface ReflectionBody {
   reflection_text: string;
+}
+
+interface GenerateAlignmentBody {
+  local_date?: string;
 }
 
 function getTodayDate(): string {
@@ -28,14 +32,46 @@ const FALLBACK_ALIGNMENT = {
   reflection_prompt: 'Where did you feel most like yourself today?',
 };
 
+const AI_ROUTE_RATE_LIMIT = {
+  max: 60,
+  timeWindow: '1 hour',
+  keyGenerator: (request: FastifyRequest) =>
+    (request.headers.authorization as string | undefined) || request.ip,
+};
+
+function serializeAlignment(inserted: any): any {
+  return {
+    id: inserted.id,
+    user_id: inserted.userId,
+    day_number: inserted.dayNumber,
+    level: inserted.level,
+    action: inserted.action,
+    guidance: inserted.guidance,
+    somatic_cue: inserted.somaticCue,
+    scripture: inserted.scripture,
+    reflection_prompt: inserted.reflectionPrompt,
+    primary_archetype: inserted.primaryArchetype,
+    secondary_archetype: inserted.secondaryArchetype,
+    blend_name: inserted.blendName,
+    generated_at: inserted.generatedAt?.toISOString() || new Date().toISOString(),
+  };
+}
+
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
 
   // POST /api/alignments/generate
   fastify.post('/api/alignments/generate', {
+    config: { rateLimit: AI_ROUTE_RATE_LIMIT },
     schema: {
       description: 'Generate a daily alignment using the user\'s saved archetype',
       tags: ['alignments'],
+      body: {
+        type: 'object',
+        properties: {
+          local_date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        },
+        additionalProperties: false,
+      },
       response: {
         201: {
           description: 'Daily alignment generated successfully',
@@ -79,16 +115,39 @@ export function register(app: App, fastify: any) {
       },
     },
   }, async (
-    request: FastifyRequest,
+    request: FastifyRequest<{ Body: GenerateAlignmentBody }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
 
     try {
       app.logger.info({ userId }, '[generate] userId: ' + userId);
+
+      // Idempotency: validate and resolve local_date
+      const rawDate = request.body?.local_date;
+      const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+      const localDate = (rawDate && datePattern.test(rawDate)) ? rawDate : getTodayDate();
+
+      // Check if an alignment already exists for this user on this date
+      const existing = await app.db
+        .select()
+        .from(schema.dailyAlignments)
+        .where(
+          and(
+            eq(schema.dailyAlignments.userId, userId),
+            sql`DATE(${schema.dailyAlignments.generatedAt} AT TIME ZONE 'UTC') = ${localDate}`
+          )
+        )
+        .orderBy(desc(schema.dailyAlignments.generatedAt))
+        .limit(1);
+
+      if (existing.length > 0) {
+        app.logger.info({ userId, alignmentId: existing[0].id }, '[generate] returning existing alignment for date: ' + localDate);
+        return reply.status(201).send({ alignment: serializeAlignment(existing[0]) });
+      }
 
       // Query user's archetype
       const archetypeRows = await app.db
@@ -104,7 +163,6 @@ export function register(app: App, fastify: any) {
       }
 
       const row = archetypeRows[0];
-      app.logger.info({ userId }, '[generate] archetype row: ' + JSON.stringify(row));
 
       const primaryArchetype = row.primaryArchetype;
       const secondaryArchetype = row.secondaryArchetype;
@@ -146,7 +204,7 @@ Return ONLY valid JSON with these exact keys:
           prompt,
         });
 
-        app.logger.info({ userId }, '[generate] AI raw response: ' + text);
+        app.logger.info({ userId }, '[generate] AI raw response length: ' + text.length);
         aiOutput = JSON.parse(text);
       } catch (aiError) {
         app.logger.warn({ err: aiError, userId }, '[generate] AI generation failed, using fallback alignment');
@@ -180,7 +238,6 @@ Return ONLY valid JSON with these exact keys:
 
       // Upsert user_progress
       if (progressRows.length > 0) {
-        // Update existing row
         await app.db
           .update(schema.userProgress)
           .set({
@@ -192,7 +249,6 @@ Return ONLY valid JSON with these exact keys:
 
         app.logger.info({ userId, newDayCount: dayCount + 1 }, '[generate] user_progress updated');
       } else {
-        // Insert new row
         await app.db
           .insert(schema.userProgress)
           .values({
@@ -207,34 +263,21 @@ Return ONLY valid JSON with these exact keys:
       }
 
       app.logger.info({ userId, alignmentId: inserted.id }, '[generate] Sending 201 response');
-      return reply.status(201).send({
-        alignment: {
-          id: inserted.id,
-          user_id: inserted.userId,
-          day_number: inserted.dayNumber,
-          level: inserted.level,
-          action: inserted.action,
-          guidance: inserted.guidance,
-          somatic_cue: inserted.somaticCue,
-          scripture: inserted.scripture,
-          reflection_prompt: inserted.reflectionPrompt,
-          primary_archetype: inserted.primaryArchetype,
-          secondary_archetype: inserted.secondaryArchetype,
-          blend_name: inserted.blendName,
-          generated_at: inserted.generatedAt?.toISOString() || new Date().toISOString(),
-        },
-      });
+      return reply.status(201).send({ alignment: serializeAlignment(inserted) });
     } catch (error) {
-      app.logger.error({ err: error, userId }, '[generate] Failed to generate alignment');
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      app.logger.error({ err: error, userId, errorMsg }, '[generate] Failed to generate alignment');
       if (error instanceof SyntaxError) {
         return reply.status(500).send({ error: 'Failed to parse AI response' });
       }
-      throw error;
+      reply.status(500).send({ error: `Failed to generate alignment: ${errorMsg}` });
+      return;
     }
   });
 
   // GET /api/alignments/today
   fastify.get('/api/alignments/today', {
+    config: { rateLimit: AI_ROUTE_RATE_LIMIT },
     schema: {
       description: "Get today's alignment (auto-generates if missing)",
       tags: ['alignments'],
@@ -291,7 +334,7 @@ Return ONLY valid JSON with these exact keys:
     request: FastifyRequest<{ Querystring: { local_date?: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -317,21 +360,7 @@ Return ONLY valid JSON with these exact keys:
         const alignment = alignments[0];
         app.logger.info({ userId, alignmentId: alignment.id }, '[today] found alignment');
         return {
-          alignment: {
-            id: alignment.id,
-            user_id: alignment.userId,
-            day_number: alignment.dayNumber,
-            level: alignment.level,
-            action: alignment.action,
-            guidance: alignment.guidance,
-            somatic_cue: alignment.somaticCue,
-            scripture: alignment.scripture,
-            reflection_prompt: alignment.reflectionPrompt,
-            primary_archetype: alignment.primaryArchetype,
-            secondary_archetype: alignment.secondaryArchetype,
-            blend_name: alignment.blendName,
-            generated_at: alignment.generatedAt.toISOString(),
-          },
+          alignment: serializeAlignment(alignment),
           reason: 'found',
         };
       }
@@ -383,7 +412,7 @@ Return ONLY a valid JSON object with these exact fields:
           prompt,
         });
 
-        app.logger.info({ userId }, '[today] AI raw response: ' + text);
+        app.logger.info({ userId }, '[today] AI raw response length: ' + text.length);
 
         // Strip markdown code fences if present
         let jsonText = text;
@@ -421,21 +450,7 @@ Return ONLY a valid JSON object with these exact fields:
       app.logger.info({ userId, alignmentId: inserted.id }, '[today] alignment generated successfully, id: ' + inserted.id);
 
       return {
-        alignment: {
-          id: inserted.id,
-          user_id: inserted.userId,
-          day_number: inserted.dayNumber,
-          level: inserted.level,
-          action: inserted.action,
-          guidance: inserted.guidance,
-          somatic_cue: inserted.somaticCue,
-          scripture: inserted.scripture,
-          reflection_prompt: inserted.reflectionPrompt,
-          primary_archetype: inserted.primaryArchetype,
-          secondary_archetype: inserted.secondaryArchetype,
-          blend_name: inserted.blendName,
-          generated_at: inserted.generatedAt?.toISOString() || new Date().toISOString(),
-        },
+        alignment: serializeAlignment(inserted),
         reason: 'generated',
       };
 
@@ -464,6 +479,7 @@ Return ONLY a valid JSON object with these exact fields:
           completed: { type: 'boolean', enum: [true] },
           reflection_text: { type: 'string' },
         },
+        additionalProperties: false,
       },
       response: {
         200: {
@@ -499,7 +515,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Params: { id: string }; Body: CompleteAlignmentBody }>,
     reply: FastifyReply
   ): Promise<{ success: boolean } | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -509,7 +525,6 @@ Return ONLY a valid JSON object with these exact fields:
     app.logger.info({ userId, alignmentId: id, completed }, 'Completing alignment');
 
     try {
-      // Fetch alignment
       const alignments = await app.db
         .select()
         .from(schema.dailyAlignments)
@@ -523,13 +538,11 @@ Return ONLY a valid JSON object with these exact fields:
 
       const alignment = alignments[0];
 
-      // Verify ownership
       if (alignment.userId !== userId) {
         app.logger.warn({ userId, alignmentId: id }, 'Alignment access denied');
         return reply.status(403).send({ error: 'Access denied' });
       }
 
-      // Check if reflection already exists
       const existingReflections = await app.db
         .select()
         .from(schema.alignmentReflections)
@@ -542,7 +555,6 @@ Return ONLY a valid JSON object with these exact fields:
         .limit(1);
 
       if (existingReflections.length === 0) {
-        // Insert reflection with empty text
         await app.db.insert(schema.alignmentReflections).values({
           userId,
           alignmentId: id,
@@ -554,11 +566,7 @@ Return ONLY a valid JSON object with these exact fields:
         app.logger.info({ alignmentId: id, userId }, 'Alignment already completed');
       }
 
-      app.logger.info({ alignmentId: id, userId }, 'Alignment completed');
-
-      return {
-        success: true,
-      };
+      return { success: true };
     } catch (error) {
       app.logger.error({ err: error, userId, alignmentId: id }, 'Failed to complete alignment');
       throw error;
@@ -583,6 +591,7 @@ Return ONLY a valid JSON object with these exact fields:
         properties: {
           reflection_text: { type: 'string', minLength: 1 },
         },
+        additionalProperties: false,
       },
       response: {
         200: {
@@ -602,7 +611,7 @@ Return ONLY a valid JSON object with these exact fields:
           },
         },
         400: {
-          description: 'Bad request - missing or empty reflection_text',
+          description: 'Bad request',
           type: 'object',
           properties: { error: { type: 'string' } },
         },
@@ -627,7 +636,7 @@ Return ONLY a valid JSON object with these exact fields:
     request: FastifyRequest<{ Params: { id: string }; Body: ReflectionBody }>,
     reply: FastifyReply
   ): Promise<{ success: boolean; reflection: any } | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -637,13 +646,10 @@ Return ONLY a valid JSON object with these exact fields:
     app.logger.info({ userId, alignmentId: id }, 'Submitting reflection');
 
     try {
-      // Validate reflection_text is not empty
       if (!reflection_text || reflection_text.trim().length === 0) {
-        app.logger.warn({ userId, alignmentId: id }, 'Reflection text is empty');
         return reply.status(400).send({ error: 'Reflection text is required and cannot be empty' });
       }
 
-      // Fetch alignment and verify ownership
       const alignments = await app.db
         .select()
         .from(schema.dailyAlignments)
@@ -651,19 +657,13 @@ Return ONLY a valid JSON object with these exact fields:
         .limit(1);
 
       if (alignments.length === 0) {
-        app.logger.warn({ userId, alignmentId: id }, 'Alignment not found');
         return reply.status(404).send({ error: 'Alignment not found' });
       }
 
-      const alignment = alignments[0];
-
-      // Verify ownership
-      if (alignment.userId !== userId) {
-        app.logger.warn({ userId, alignmentId: id }, 'Alignment access denied');
+      if (alignments[0].userId !== userId) {
         return reply.status(403).send({ error: 'Access denied' });
       }
 
-      // Check if reflection already exists
       const existingReflections = await app.db
         .select()
         .from(schema.alignmentReflections)
@@ -678,13 +678,9 @@ Return ONLY a valid JSON object with these exact fields:
       let reflection;
 
       if (existingReflections.length > 0) {
-        // Update existing reflection
         const updated = await app.db
           .update(schema.alignmentReflections)
-          .set({
-            reflectionText: reflection_text,
-            completedAt: new Date(),
-          })
+          .set({ reflectionText: reflection_text, completedAt: new Date() })
           .where(
             and(
               eq(schema.alignmentReflections.alignmentId, id),
@@ -692,26 +688,14 @@ Return ONLY a valid JSON object with these exact fields:
             )
           )
           .returning();
-
         reflection = updated[0];
-        app.logger.info({ userId, alignmentId: id, reflectionId: reflection.id }, 'Reflection updated');
       } else {
-        // Insert new reflection
         const inserted = await app.db
           .insert(schema.alignmentReflections)
-          .values({
-            userId,
-            alignmentId: id,
-            reflectionText: reflection_text,
-            completedAt: new Date(),
-          })
+          .values({ userId, alignmentId: id, reflectionText: reflection_text, completedAt: new Date() })
           .returning();
-
         reflection = inserted[0];
-        app.logger.info({ userId, alignmentId: id, reflectionId: reflection.id }, 'Reflection created');
       }
-
-      app.logger.info({ userId, alignmentId: id }, 'Reflection submitted successfully');
 
       return {
         success: true,
@@ -734,31 +718,19 @@ Return ONLY a valid JSON object with these exact fields:
       description: 'Get alignment history for the user',
       tags: ['alignments'],
       response: {
-        200: {
-          description: 'Alignment history',
-          type: 'array',
-        },
-        401: {
-          description: 'Unauthorized',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-        },
-        500: {
-          description: 'Server error',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-        },
+        200: { description: 'Alignment history', type: 'array' },
+        401: { description: 'Unauthorized', type: 'object', properties: { error: { type: 'string' } } },
+        500: { description: 'Server error', type: 'object', properties: { error: { type: 'string' } } },
       },
     },
   }, async (
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any[] | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
-
     app.logger.info({ userId }, 'Fetching alignment history');
 
     try {
@@ -767,8 +739,6 @@ Return ONLY a valid JSON object with these exact fields:
         .from(schema.dailyAlignments)
         .where(eq(schema.dailyAlignments.userId, userId))
         .orderBy(desc(schema.dailyAlignments.dayNumber));
-
-      app.logger.info({ userId, count: alignments.length }, 'Retrieved alignment history');
 
       return alignments;
     } catch (error) {
@@ -792,11 +762,7 @@ Return ONLY a valid JSON object with these exact fields:
             last_active_date: { type: 'string', nullable: true },
           },
         },
-        500: {
-          description: 'Server error',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-        },
+        500: { description: 'Server error', type: 'object', properties: { error: { type: 'string' } } },
       },
     },
   }, async (
@@ -804,26 +770,12 @@ Return ONLY a valid JSON object with these exact fields:
     reply: FastifyReply
   ): Promise<any> => {
     try {
-      const headers = new Headers();
-      Object.entries(request.headers).forEach(([key, value]) => {
-        if (value) {
-          headers.append(key, Array.isArray(value) ? value[0] : value);
-        }
-      });
-
-      const session = await app.auth.api.getSession({ headers });
+      const session = await getAuthSession(app, request, reply);
       const userId = session?.user.id;
 
       if (!userId) {
-        app.logger.info({}, 'Fetching alignment progress for unauthenticated user');
-        return {
-          day_count: 0,
-          level: 1,
-          last_active_date: null,
-        };
+        return { day_count: 0, level: 1, last_active_date: null };
       }
-
-      app.logger.info({ userId }, 'Fetching alignment progress');
 
       const alignmentCount = await app.db
         .select({ count: count() })
@@ -833,13 +785,7 @@ Return ONLY a valid JSON object with these exact fields:
       const dayCount = alignmentCount[0]?.count || 0;
       const level = Math.ceil((dayCount + 1) / 7);
 
-      app.logger.info({ userId, dayCount }, 'Retrieved user progress');
-
-      return {
-        day_count: dayCount,
-        level,
-        last_active_date: null,
-      };
+      return { day_count: dayCount, level, last_active_date: null };
     } catch (error) {
       app.logger.error({ err: error }, 'Failed to fetch progress');
       throw error;
@@ -855,7 +801,7 @@ Return ONLY a valid JSON object with these exact fields:
         type: 'object',
         required: ['local_date'],
         properties: {
-          local_date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$', description: 'Today\'s local date in YYYY-MM-DD format' },
+          local_date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
         },
       },
       response: {
@@ -879,34 +825,23 @@ Return ONLY a valid JSON object with these exact fields:
             },
           },
         },
-        401: {
-          description: 'Unauthorized',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-        },
-        500: {
-          description: 'Server error',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-        },
+        401: { description: 'Unauthorized', type: 'object', properties: { error: { type: 'string' } } },
+        500: { description: 'Server error', type: 'object', properties: { error: { type: 'string' } } },
       },
     },
   }, async (
     request: FastifyRequest<{ Querystring: { local_date: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
     const { local_date } = request.query;
 
-    // Calculate yesterday's date
     const today = new Date(local_date);
     const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-    app.logger.info({ userId, lookingForDate: yesterdayStr }, '[yesterday] userId: ' + userId + ', looking for date: ' + yesterdayStr);
 
     try {
       const alignments = await app.db
@@ -922,13 +857,10 @@ Return ONLY a valid JSON object with these exact fields:
         .limit(1);
 
       if (alignments.length === 0) {
-        app.logger.info({ userId }, '[yesterday] No alignment found for yesterday');
         return { alignment: null };
       }
 
       const alignment = alignments[0];
-      app.logger.info({ userId, alignmentId: alignment.id }, '[yesterday] found alignment');
-
       return {
         alignment: {
           id: alignment.id,
@@ -938,7 +870,7 @@ Return ONLY a valid JSON object with these exact fields:
         },
       };
     } catch (error) {
-      app.logger.error({ err: error, userId }, '[yesterday] Failed to fetch yesterday\'s alignment');
+      app.logger.error({ err: error, userId }, '[yesterday] Failed to fetch');
       throw error;
     }
   });
@@ -955,46 +887,26 @@ Return ONLY a valid JSON object with these exact fields:
           alignment_id: { type: 'string', format: 'uuid' },
           response: { type: 'string', enum: ['practiced', 'thought_about', 'not_yet'] },
         },
+        additionalProperties: false,
       },
       response: {
-        200: {
-          description: 'Check-in submitted successfully',
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-          },
-        },
-        400: {
-          description: 'Bad request',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-        },
-        401: {
-          description: 'Unauthorized',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-        },
-        500: {
-          description: 'Server error',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-        },
+        200: { description: 'Check-in submitted', type: 'object', properties: { success: { type: 'boolean' } } },
+        400: { description: 'Bad request', type: 'object', properties: { error: { type: 'string' } } },
+        401: { description: 'Unauthorized', type: 'object', properties: { error: { type: 'string' } } },
+        500: { description: 'Server error', type: 'object', properties: { error: { type: 'string' } } },
       },
     },
   }, async (
     request: FastifyRequest<{ Body: { alignment_id: string; response: string } }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
     const { alignment_id, response } = request.body;
 
-    app.logger.info({ userId, alignmentId: alignment_id, response }, '[checkin] userId: ' + userId + ', alignmentId: ' + alignment_id + ', response: ' + response);
-
     try {
-      // Check if reflection already exists
       const existingReflections = await app.db
         .select()
         .from(schema.alignmentReflections)
@@ -1007,38 +919,24 @@ Return ONLY a valid JSON object with these exact fields:
         .limit(1);
 
       if (existingReflections.length > 0) {
-        // Update existing reflection
         await app.db
           .update(schema.alignmentReflections)
-          .set({
-            reflectionText: response,
-            completedAt: new Date(),
-          })
+          .set({ reflectionText: response, completedAt: new Date() })
           .where(
             and(
               eq(schema.alignmentReflections.userId, userId),
               eq(schema.alignmentReflections.alignmentId, alignment_id)
             )
           );
-
-        app.logger.info({ userId, alignmentId: alignment_id }, '[checkin] reflection updated');
       } else {
-        // Insert new reflection
         await app.db
           .insert(schema.alignmentReflections)
-          .values({
-            userId,
-            alignmentId: alignment_id,
-            reflectionText: response,
-            completedAt: new Date(),
-          });
-
-        app.logger.info({ userId, alignmentId: alignment_id }, '[checkin] reflection created');
+          .values({ userId, alignmentId: alignment_id, reflectionText: response, completedAt: new Date() });
       }
 
       return { success: true };
     } catch (error) {
-      app.logger.error({ err: error, userId, alignmentId: alignment_id }, '[checkin] Failed to submit check-in');
+      app.logger.error({ err: error, userId, alignmentId: alignment_id }, '[checkin] Failed');
       throw error;
     }
   });

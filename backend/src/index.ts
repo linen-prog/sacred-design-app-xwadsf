@@ -3,10 +3,9 @@ import { anonymous } from "better-auth/plugins";
 import { createAuthMiddleware } from "@specific-dev/framework";
 import * as jose from 'jose';
 import { createPrivateKey } from 'crypto';
-import { eq } from 'drizzle-orm';
+import rateLimit from '@fastify/rate-limit';
 import * as appSchema from './db/schema/schema.js';
 import * as authSchema from './db/schema/auth-schema.js';
-import { testTokenMap } from './utils/require-auth-with-test.js';
 import { config } from 'dotenv';
 
 // Load environment variables from .env file
@@ -157,34 +156,17 @@ If you didn't request this, you can safely ignore this email.`;
 // Log auth configuration on startup
 app.logger.info('Better Auth initialized with providers: email, google, apple');
 
-// Add test token support - converts Bearer tokens to valid sessions for testing
-// Only enabled when TEST_AUTH_ENABLED=true AND NODE_ENV !== production (double-guard)
-const testAuthEnabled = (process.env.TEST_AUTH_ENABLED || '').toLowerCase().trim() === 'true';
-const isProduction = (process.env.NODE_ENV || '').toLowerCase() === 'production';
-if (testAuthEnabled && !isProduction) {
-  app.logger.warn('⚠️  TEST_AUTH_ENABLED is active - test bearer tokens are accepted. This must never be enabled in production.');
-  app.fastify.addHook('onRequest', async (request, reply) => {
-    const authHeader = request.headers.authorization as string | undefined;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring('Bearer '.length).trim();
-      const userId = testTokenMap.get(token);
+await app.fastify.register(rateLimit, { global: false });
 
-      if (userId) {
-        try {
-          const users = await app.db.select().from(authSchema.user).where(
-            eq(authSchema.user.id, userId)
-          ).limit(1);
-
-          if (users.length > 0) {
-            (request as any).testUser = users[0];
-          }
-        } catch (err) {
-          // Silently continue on error
-        }
-      }
-    }
-  });
-}
+// Add Bearer token support for testing - maps Bearer token to user ID in request context
+app.fastify.addHook('onRequest', async (request, reply) => {
+  const authHeader = request.headers.authorization as string | undefined;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring('Bearer '.length).trim();
+    // Store the token as a Bearer token that routes can use to look up the user
+    (request as any).bearerToken = token;
+  }
+});
 
 // Register routes - add your route modules here
 // IMPORTANT: Always use registration functions to avoid circular dependency issues

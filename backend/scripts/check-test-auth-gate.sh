@@ -1,36 +1,57 @@
 #!/usr/bin/env bash
-# CI safeguard: verifies that POST /api/test-register-token returns 404
-# when the server is running with NODE_ENV=production and TEST_AUTH_ENABLED unset.
+# CI safeguard: verifies that protected endpoints reject unauthenticated requests.
+# Probes GET /api/archetypes/me three ways — no credentials, a made-up token,
+# and a user-id-shaped UUID token — and exits 1 unless all three return 401.
+# An unreachable server (curl exit status 000) is also treated as a failure.
 #
 # Usage: ./backend/scripts/check-test-auth-gate.sh [BASE_URL]
 # Default BASE_URL: http://localhost:3001
-#
-# Exit codes:
-#   0 — endpoint correctly returns 404 (gate is working)
-#   1 — endpoint returned something other than 404 (gate has regressed — FAIL BUILD)
-#
-# Note: run `chmod +x backend/scripts/check-test-auth-gate.sh` after checkout.
 
 set -euo pipefail
 
 BASE_URL="${1:-http://localhost:3001}"
-ENDPOINT="${BASE_URL}/api/test-register-token"
+ENDPOINT="${BASE_URL}/api/archetypes/me"
+PASS=true
 
-echo "Checking test-auth gate at: ${ENDPOINT}"
+check() {
+  local label="$1"
+  local extra_args=("${@:2}")
 
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-  -X POST "${ENDPOINT}" \
-  -H "Content-Type: application/json" \
-  -d '{"token":"ci-probe-token","userId":"ci-probe-user"}')
+  # Capture both the HTTP status and the curl exit code
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+    "${extra_args[@]}" \
+    "${ENDPOINT}" 2>/dev/null) || true
 
-echo "Response status: ${HTTP_STATUS}"
+  if [ "${HTTP_STATUS}" = "000" ]; then
+    echo "❌ FAIL [${label}]: server unreachable (curl returned 000)"
+    PASS=false
+  elif [ "${HTTP_STATUS}" = "401" ]; then
+    echo "✅ PASS [${label}]: got 401 as expected"
+  else
+    echo "❌ FAIL [${label}]: expected 401, got ${HTTP_STATUS}"
+    PASS=false
+  fi
+}
 
-if [ "${HTTP_STATUS}" = "404" ]; then
-  echo "✅ PASS: endpoint correctly returns 404 — test-auth gate is active."
+echo "Checking auth gate at: ${ENDPOINT}"
+echo ""
+
+# 1. No credentials at all
+check "no credentials"
+
+# 2. Made-up Bearer token
+check "made-up token" \
+  -H "Authorization: Bearer not-a-real-token-abc123"
+
+# 3. User-id-shaped UUID (the old bypass pattern)
+check "UUID token" \
+  -H "Authorization: Bearer $(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen 2>/dev/null || echo '00000000-0000-0000-0000-000000000000')"
+
+echo ""
+if [ "${PASS}" = "true" ]; then
+  echo "✅ All checks passed — auth gate is active."
   exit 0
 else
-  echo "❌ FAIL: endpoint returned ${HTTP_STATUS} instead of 404."
-  echo "   This means POST /api/test-register-token is reachable in a production-like build."
-  echo "   Check that TEST_AUTH_ENABLED is unset and NODE_ENV=production."
+  echo "❌ One or more checks failed — auth bypass may be present."
   exit 1
 fi

@@ -1,10 +1,9 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { sql } from 'drizzle-orm';
-import { testTokenMap, requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
+import { requireAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
 
   // DELETE /api/account
   fastify.delete('/api/account', {
@@ -46,7 +45,7 @@ export function register(app: App, fastify: any) {
   ): Promise<any | void> => {
     app.logger.info({ method: 'DELETE', path: '/api/account' }, 'Delete account request received');
 
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -173,44 +172,4 @@ export function register(app: App, fastify: any) {
     };
   });
 
-  // POST /api/test-register-token (test-only endpoint - NOT under /api/auth/ to avoid Better Auth conflicts)
-  // Only registered when TEST_AUTH_ENABLED=true AND NODE_ENV !== production (double-guard)
-  const testAuthEnabled = (process.env.TEST_AUTH_ENABLED || '').toLowerCase().trim() === 'true';
-  const isProduction = (process.env.NODE_ENV || '').toLowerCase() === 'production';
-  if (testAuthEnabled && !isProduction) {
-    app.logger.warn('⚠️  POST /api/test-register-token is enabled - test token registration is active. This must never be enabled in production.');
-    fastify.post('/api/test-register-token', {
-      schema: {
-        description: 'Test-only endpoint to register a token-to-user mapping',
-        tags: ['auth'],
-        body: {
-          type: 'object',
-          required: ['token', 'userId'],
-          properties: {
-            token: { type: 'string', description: 'Session token' },
-            userId: { type: 'string', description: 'User ID' },
-          },
-        },
-        response: {
-          200: {
-            description: 'Token registered',
-            type: 'object',
-            properties: { success: { type: 'boolean' }, mapSize: { type: 'integer' } },
-          },
-        },
-      },
-    }, async (
-      request: FastifyRequest<{ Body: { token: string; userId: string } }>,
-      reply: FastifyReply
-    ): Promise<any | void> => {
-      const { token: rawToken, userId } = request.body;
-      const token = (rawToken || '').trim();
-      app.logger.info({ userId, tokenLength: token.length }, 'Test token registered for user');
-      testTokenMap.set(token, userId);
-      return { success: true, mapSize: testTokenMap.size };
-    });
-  }
-
-  // Export testTokenMap for other routes
-  (app as any).testTokenMap = testTokenMap;
 }

@@ -6,7 +6,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import * as schema from '../db/schema/schema.js';
 import { calculateNewStreak } from './progress.js';
-import { requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
+import { requireAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 interface CreateAlignmentBody {
@@ -57,9 +57,14 @@ function determineLevelFromDayCount(dayCount: number): number {
   return 3;
 }
 
-export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
+const FALLBACK_ALIGNMENT = {
+  action: 'Take one moment today to pause and notice how you feel before responding to someone.',
+  guidance: 'Before your next conversation, take a breath and check in with your body. Notice any tension or ease. Let that awareness guide how you show up.',
+  somatic_cue: 'Place one hand on your chest and take a slow breath before speaking.',
+  scripture: 'Be still, and know that I am God. — Psalm 46:10',
+};
 
+export function register(app: App, fastify: any) {
   fastify.post('/api/daily-alignment', {
     schema: {
       description: 'Get or create a daily alignment for the current user',
@@ -111,15 +116,9 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: CreateAlignmentBody }>,
     reply: FastifyReply
   ): Promise<AlignmentResponse | void> => {
-    app.logger.info({ authHeader: request.headers.authorization?.substring(0, 20) || 'none', path: request.url, method: request.method }, 'POST /api/daily-alignment received - HANDLER CALLED');
-    const testUserInRequest = (request as any).testUser;
-    app.logger.info({ testUserSet: !!testUserInRequest, testUserId: testUserInRequest?.id }, 'Checking testUser before requireAuthWithTestTokens');
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
-    app.logger.info({ hasSession: !!session, sessionUserId: session?.user?.id }, 'After requireAuthWithTestTokens');
-    if (!session) {
-      app.logger.info('No session, returning early');
-      return;
-    }
+    app.logger.info({ hasAuthHeader: !!request.headers.authorization, path: request.url, method: request.method }, 'POST /api/daily-alignment received - HANDLER CALLED');
+    const session = await requireAuthSession(app, request, reply);
+    if (!session) return;
 
     const userId = session.user.id;
     const today = getTodayDate();
@@ -260,18 +259,26 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
 
       app.logger.info({ userId, level, dayCount }, 'Generating alignment with AI');
 
-      const { output } = await generateText({
-        model: gateway('google/gemini-3-flash'),
-        system: systemPrompt,
-        prompt: userPrompt,
-        output: Output.object({
-          schema: alignmentSchema,
-          name: 'DailyAlignment',
-          description: 'Daily alignment with action, guidance, scripture, and somatic cue',
-        }),
-      });
+      let aiOutput: AlignmentOutput = FALLBACK_ALIGNMENT;
 
-      const aiOutput = output as AlignmentOutput;
+      try {
+        const { output } = await generateText({
+          model: gateway('google/gemini-3-flash'),
+          system: systemPrompt,
+          prompt: userPrompt,
+          output: Output.object({
+            schema: alignmentSchema,
+            name: 'DailyAlignment',
+            description: 'Daily alignment with action, guidance, scripture, and somatic cue',
+          }),
+        });
+
+        aiOutput = output as AlignmentOutput;
+        app.logger.info({ userId, dayCount }, 'AI generation succeeded');
+      } catch (aiError) {
+        app.logger.warn({ err: aiError, userId, dayCount }, 'AI generation failed, using fallback alignment');
+        // Continue with fallback - don't rethrow
+      }
 
       // Insert into daily alignments
       const now = new Date();
@@ -292,6 +299,11 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
         })
         .returning();
 
+      if (!insertResult || insertResult.length === 0) {
+        app.logger.error({ userId }, 'Insert alignment returned no rows');
+        throw new Error('Failed to insert alignment - no rows returned');
+      }
+
       const created = insertResult[0];
       app.logger.info({ alignmentId: created.id, userId, dayCount }, 'Daily alignment created');
 
@@ -311,8 +323,10 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
       app.logger.info({ response }, 'Returning response from POST /api/daily-alignment');
       return response;
     } catch (error) {
-      app.logger.error({ err: error, userId }, 'Failed to create daily alignment');
-      throw error;
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      app.logger.error({ err: error, userId, errorMsg }, 'Failed to create daily alignment');
+      reply.status(500).send({ error: `Failed to create alignment: ${errorMsg}` });
+      return;
     }
   });
 
@@ -364,7 +378,7 @@ Return a single daily alignment with action, guidance, scripture, and somatic_cu
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<TodayResponse | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;

@@ -1,7 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, sql } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
-import { requireAuthWithTestTokens } from '../utils/require-auth-with-test.js';
+import { requireAuthSession } from '../utils/auth.js';
 import type { App } from '../index.js';
 
 interface SaveArchetypeBody {
@@ -12,7 +12,6 @@ interface SaveArchetypeBody {
 }
 
 export function register(app: App, fastify: any) {
-  const requireAuth = app.requireAuth();
 
   // POST /api/archetypes/save
   fastify.post('/api/archetypes/save', {
@@ -67,8 +66,7 @@ export function register(app: App, fastify: any) {
     reply: FastifyReply
   ): Promise<any | void> => {
     app.logger.info({ path: request.url, method: request.method }, 'POST /api/archetypes/save - HANDLER CALLED');
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
-    app.logger.info({ hasSession: !!session, sessionUserId: session?.user?.id }, 'After requireAuthWithTestTokens in archetypes save');
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -100,6 +98,11 @@ export function register(app: App, fastify: any) {
           .where(eq(schema.userArchetypes.userId, userId))
           .returning();
 
+        if (!updated || updated.length === 0) {
+          app.logger.error({ userId }, 'Update returned no rows');
+          throw new Error('Failed to update archetype - no rows returned');
+        }
+
         const archetype = updated[0];
         app.logger.info({ userId, archetypeId: archetype.id }, 'Archetype record updated');
 
@@ -130,6 +133,11 @@ export function register(app: App, fastify: any) {
           })
           .returning();
 
+        if (!inserted || inserted.length === 0) {
+          app.logger.error({ userId }, 'Insert returned no rows');
+          throw new Error('Failed to insert archetype - no rows returned');
+        }
+
         const archetype = inserted[0];
         app.logger.info({ userId, archetypeId: archetype.id }, 'Archetype record created');
 
@@ -146,8 +154,10 @@ export function register(app: App, fastify: any) {
         };
       }
     } catch (error) {
-      app.logger.error({ err: error, userId }, 'Failed to save archetype');
-      throw error;
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      app.logger.error({ err: error, userId, errorMsg }, 'Failed to save archetype');
+      reply.status(500).send({ error: `Failed to save archetype: ${errorMsg}` });
+      return;
     }
   });
 
@@ -203,7 +213,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest<{ Body: SaveArchetypeBody }>,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;
@@ -237,6 +247,11 @@ export function register(app: App, fastify: any) {
           .where(eq(schema.userArchetypes.userId, userId))
           .returning();
 
+        if (!updated || updated.length === 0) {
+          app.logger.error({ userId }, 'Upsert update returned no rows');
+          throw new Error('Failed to update archetype - no rows returned');
+        }
+
         archetype = updated[0];
         app.logger.info({ userId, archetypeId: archetype.id }, 'Archetype updated');
       } else {
@@ -254,6 +269,11 @@ export function register(app: App, fastify: any) {
             updatedAt: new Date(),
           })
           .returning();
+
+        if (!inserted || inserted.length === 0) {
+          app.logger.error({ userId }, 'Upsert insert returned no rows');
+          throw new Error('Failed to insert archetype - no rows returned');
+        }
 
         archetype = inserted[0];
         app.logger.info({ userId, archetypeId: archetype.id }, 'Archetype created');
@@ -301,8 +321,10 @@ export function register(app: App, fastify: any) {
         },
       };
     } catch (error) {
-      app.logger.error({ err: error, userId }, 'Failed to upsert archetype');
-      throw error;
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      app.logger.error({ err: error, userId, errorMsg }, 'Failed to upsert archetype');
+      reply.status(500).send({ error: `Failed to upsert archetype: ${errorMsg}` });
+      return;
     }
   });
 
@@ -353,7 +375,7 @@ export function register(app: App, fastify: any) {
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<any | void> => {
-    const session = await requireAuthWithTestTokens(app, requireAuth, request, reply);
+    const session = await requireAuthSession(app, request, reply);
     if (!session) return;
 
     const userId = session.user.id;

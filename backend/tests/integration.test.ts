@@ -262,6 +262,8 @@ describe("API Integration Tests", () => {
     test("POST /api/alignments/generate creates alignment when authenticated", async () => {
       const res = await authenticatedApi("/api/alignments/generate", authToken, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
       });
       await expectStatus(res, 201);
       const data = await res.json();
@@ -275,6 +277,27 @@ describe("API Integration Tests", () => {
       expect(data.alignment.somatic_cue).toBeDefined();
       expect(data.alignment.scripture).toBeDefined();
       alignmentId = data.alignment.id;
+    });
+
+    test("POST /api/alignments/generate accepts optional local_date parameter", async () => {
+      const res = await authenticatedApi("/api/alignments/generate", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ local_date: "2026-05-10" }),
+      });
+      await expectStatus(res, 201);
+      const data = await res.json();
+      expect(data.alignment).toBeDefined();
+      expect(data.alignment.id).toBeDefined();
+    });
+
+    test("POST /api/alignments/generate returns 400 with invalid local_date format", async () => {
+      const res = await authenticatedApi("/api/alignments/generate", authToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ local_date: "invalid-date" }),
+      });
+      await expectStatus(res, 400);
     });
 
     test("POST /api/alignments/generate returns 401 without authentication", async () => {

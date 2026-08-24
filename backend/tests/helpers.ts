@@ -82,9 +82,17 @@ export async function api(
   });
 
   // Persist cookies from the response
-  const setCookieHeader = response.headers.get('set-cookie');
-  if (setCookieHeader) {
-    globalCookieJar.setCookie(setCookieHeader);
+  // Use getSetCookie() if available (returns array), otherwise fall back to get()
+  const setCookieHeaders = (response.headers as any).getSetCookie?.() || [];
+  for (const setCookieHeader of setCookieHeaders) {
+    if (setCookieHeader) {
+      globalCookieJar.setCookie(setCookieHeader);
+    }
+  }
+  // Fallback for environments that don't have getSetCookie
+  const singleSetCookie = response.headers.get('set-cookie');
+  if (singleSetCookie && setCookieHeaders.length === 0) {
+    globalCookieJar.setCookie(singleSetCookie);
   }
 
   return response;
@@ -92,7 +100,7 @@ export async function api(
 
 /**
  * Make an authenticated request to the API under test.
- * Sends Bearer token if available AND maintains session cookies via cookie jar.
+ * Sends Bearer token (for tests) and persists session cookies.
  */
 export async function authenticatedApi(
   path: string,
@@ -109,16 +117,12 @@ export async function authenticatedApi(
     }
   }
 
-  // Send Bearer token if provided
+  // Send Bearer token for test authentication
   if (token && token.length > 0) {
     headers.Authorization = `Bearer ${token}`;
-    // Log for debugging
-    console.log(`[authenticatedApi] ${path} - Sending Bearer token, length: ${token.length}`);
-  } else {
-    console.warn(`[authenticatedApi] Token is empty or falsy (length: ${String(token).length})`);
   }
 
-  // Add persisted cookies to the request
+  // Add persisted session cookies to the request
   const cookieHeader = globalCookieJar.getCookieHeader();
   if (cookieHeader) {
     headers.cookie = cookieHeader;
@@ -130,9 +134,17 @@ export async function authenticatedApi(
   });
 
   // Persist cookies from the response
-  const setCookieHeader = response.headers.get('set-cookie');
-  if (setCookieHeader) {
-    globalCookieJar.setCookie(setCookieHeader);
+  // Use getSetCookie() if available (returns array), otherwise fall back to get()
+  const setCookieHeaders = (response.headers as any).getSetCookie?.() || [];
+  for (const setCookieHeader of setCookieHeaders) {
+    if (setCookieHeader) {
+      globalCookieJar.setCookie(setCookieHeader);
+    }
+  }
+  // Fallback for environments that don't have getSetCookie
+  const singleSetCookie = response.headers.get('set-cookie');
+  if (singleSetCookie && setCookieHeaders.length === 0) {
+    globalCookieJar.setCookie(singleSetCookie);
   }
 
   return response;
@@ -152,7 +164,8 @@ export interface TestUser {
 }
 
 /**
- * Sign up a test user and return the token and user object.
+ * Sign up a test user and return the session token and user object.
+ * Uses the Better Auth session token from the sign-up response — NOT the user ID.
  */
 export async function signUpTestUser(): Promise<TestUser> {
   // Clear cookies when signing up a new user to ensure fresh session
@@ -176,48 +189,20 @@ export async function signUpTestUser(): Promise<TestUser> {
 
   const data = (await res.json()) as any;
 
-  // Extract user object - should be at data.user or at root of data
-  const user = data.user || data;
+  // Extract session token — Better Auth returns it as data.token
+  const token: string | undefined = data.token;
+  if (!token || typeof token !== 'string') {
+    throw new Error(
+      `Failed to extract session token from sign-up response: ${JSON.stringify(data)}`
+    );
+  }
 
+  const user = data.user || data;
   if (!user.id) {
     throw new Error(
       `Failed to extract user ID from sign-up response: ${JSON.stringify(data)}`
     );
   }
-
-  // Try to extract a session token from the response
-  // Better Auth might return: { user, session: { token: "..." } }
-  // Or it might use cookies + session ID
-  let token = "";
-
-  // Try multiple possible response formats
-  if (data.session?.token && typeof data.session.token === 'string') {
-    token = data.session.token;
-    console.log(`[signUpTestUser] Using session.token, length: ${token.length}`);
-  } else if (data.sessionToken && typeof data.sessionToken === 'string') {
-    token = data.sessionToken;
-    console.log(`[signUpTestUser] Using sessionToken, length: ${token.length}`);
-  } else if (data.token && typeof data.token === 'string') {
-    token = data.token;
-    console.log(`[signUpTestUser] Using token, length: ${token.length}`);
-  } else if (data.session?.id && typeof data.session.id === 'string') {
-    token = data.session.id;
-    console.log(`[signUpTestUser] Using session.id, length: ${token.length}`);
-  } else {
-    // Fallback: use user ID as token
-    // Authentication will rely on session cookies + Bearer token with user ID
-    token = user.id;
-    console.log(`[signUpTestUser] Falling back to user.id, length: ${token.length}`);
-  }
-
-  if (!token || typeof token !== 'string') {
-    throw new Error(
-      `Failed to extract session from sign-up response: token="${token}", data=${JSON.stringify(data)}`
-    );
-  }
-
-  console.log(`[signUpTestUser] Final token length: ${token.length}`);
-  console.log(`[signUpTestUser] User ID: ${user.id}`);
 
   const testUser: TestUser = {
     token,
@@ -231,24 +216,6 @@ export async function signUpTestUser(): Promise<TestUser> {
       updatedAt: user.updatedAt || data.updatedAt || new Date().toISOString(),
     },
   };
-
-  // Register the token for test-only authentication
-  try {
-    console.log(`[signUpTestUser] About to register token, token length: ${token.length}`);
-    const registerRes = await fetch(`${BASE_URL}/api/test-register-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, userId: user.id }),
-    });
-    const registerData = await registerRes.json();
-    if (registerRes.ok) {
-      console.log(`[signUpTestUser] Token registered with backend`, { mapSize: registerData.mapSize });
-    } else {
-      console.warn(`[signUpTestUser] Failed to register token: ${registerRes.status}`, registerData);
-    }
-  } catch (e) {
-    console.warn(`[signUpTestUser] Error registering token: ${e}`);
-  }
 
   // Auto-register cleanup so the test file doesn't need to
   afterAll(async () => {
