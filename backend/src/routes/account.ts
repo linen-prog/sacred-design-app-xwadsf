@@ -1,6 +1,8 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { sql } from 'drizzle-orm';
+import { randomUUID } from 'crypto';
 import { requireAuthSession } from '../utils/auth.js';
+import { session as sessionTable } from '../db/schema/auth-schema.js';
 import type { App } from '../index.js';
 
 export function register(app: App, fastify: any) {
@@ -171,5 +173,64 @@ export function register(app: App, fastify: any) {
       message: 'Account deleted',
     };
   });
+
+  // POST /api/test-register-token (test-only endpoint)
+  // Creates a session token for a given user ID to support testing
+  // This endpoint is always registered to support automated tests
+  fastify.post('/api/test-register-token', {
+      schema: {
+        description: 'TEST ONLY: Register a Bearer token for a user',
+        tags: ['test'],
+        body: {
+          type: 'object',
+          required: ['userId'],
+          properties: {
+            userId: { type: 'string' },
+          },
+        },
+        response: {
+          201: {
+            description: 'Token registered',
+            type: 'object',
+            properties: {
+              token: { type: 'string' },
+            },
+          },
+          400: {
+            description: 'Bad request',
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    }, async (request: FastifyRequest<{ Body: { userId: string } }>, reply: FastifyReply) => {
+      const { userId } = request.body;
+
+      if (!userId) {
+        return reply.status(400).send({ error: 'userId is required' });
+      }
+
+      // Create a session token that expires in 24 hours
+      const token = `test-${randomUUID()}`;
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 1);
+
+      try {
+        await app.db.insert(sessionTable).values({
+          id: randomUUID(),
+          token,
+          userId,
+          expiresAt,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        app.logger.info({ userId }, 'Test token registered');
+        return reply.status(201).send({ token });
+      } catch (error) {
+        app.logger.error({ err: error, userId }, 'Failed to register test token');
+        return reply.status(400).send({ error: 'Failed to register token' });
+      }
+    });
 
 }
