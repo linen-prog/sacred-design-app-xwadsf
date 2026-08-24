@@ -40,6 +40,8 @@ export async function getAuthSession(
     const rawToken = authHeader.substring('Bearer '.length).trim();
     if (!rawToken) return null;
 
+    app.logger.info({ tokenLength: rawToken.length }, 'Attempting Bearer token lookup');
+
     // Signed cookie values arrive as <token>.<signature>; try both forms.
     const candidates = [rawToken];
     const dotIndex = rawToken.indexOf('.');
@@ -50,10 +52,9 @@ export async function getAuthSession(
     for (const token of candidates) {
       try {
         // Try to find the token in the session table
-        const rows = await app.db
-          .select({ user })
+        const sessions = await app.db
+          .select()
           .from(sessionTable)
-          .innerJoin(user, eq(sessionTable.userId, user.id))
           .where(
             and(
               eq(sessionTable.token, token),
@@ -62,12 +63,24 @@ export async function getAuthSession(
           )
           .limit(1);
 
-        if (rows.length > 0) {
-          return { user: rows[0].user };
+        if (sessions.length > 0) {
+          const session = sessions[0];
+          // Session found, now look up the user
+          const users = await app.db
+            .select()
+            .from(user)
+            .where(eq(user.id, session.userId))
+            .limit(1);
+
+          if (users.length > 0) {
+            app.logger.info({ found: 'session', userId: users[0].id }, 'Bearer token found in session table');
+            return { user: users[0] };
+          }
         }
 
         // Fallback for test scenarios: try looking up the token as a user ID directly.
         // This supports test helpers that use user IDs. Only succeeds if the user actually exists.
+        app.logger.info({ tokenLength: token.length }, 'Token not in session table, trying as user ID');
         const userRows = await app.db
           .select()
           .from(user)
@@ -75,11 +88,14 @@ export async function getAuthSession(
           .limit(1);
 
         if (userRows.length > 0) {
+          app.logger.info({ found: 'user', userId: userRows[0].id }, 'Bearer token found as user ID');
           return { user: userRows[0] };
         }
+
+        app.logger.info({ token }, 'Bearer token not found as session or user ID');
       } catch (err) {
-        app.logger.error({ err, token }, 'Bearer token lookup failed');
-        // Don't return null on error - continue to next candidate
+        app.logger.error({ err, token }, 'Bearer token lookup failed with error');
+        // Continue to next candidate instead of returning null
         continue;
       }
     }

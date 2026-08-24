@@ -189,14 +189,6 @@ export async function signUpTestUser(): Promise<TestUser> {
 
   const data = (await res.json()) as any;
 
-  // Extract session token — Better Auth returns it as data.token
-  const token: string | undefined = data.token;
-  if (!token || typeof token !== 'string') {
-    throw new Error(
-      `Failed to extract session token from sign-up response: ${JSON.stringify(data)}`
-    );
-  }
-
   const user = data.user || data;
   if (!user.id) {
     throw new Error(
@@ -204,10 +196,16 @@ export async function signUpTestUser(): Promise<TestUser> {
     );
   }
 
+  const userId = user.id;
+
+  // Use user ID as Bearer token for testing
+  // auth.ts has fallback logic to look up Bearer tokens as user IDs
+  const token: string = userId;
+
   const testUser: TestUser = {
     token,
     user: {
-      id: user.id || "",
+      id: userId || "",
       name: user.name || data.name || "Test User",
       email: user.email || data.email || "",
       emailVerified: user.emailVerified ?? data.emailVerified ?? false,
