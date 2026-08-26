@@ -95,7 +95,7 @@ app.withAuth({
     "sacreddesign://",
     "sacreddesign://auth-callback",
     // Current production backend URL
-    "https://sukrtekkwekuy3ht96u2268k5ggdq8ag.app.specular.dev",
+    "https://fwmtbzdckgkxaqz8gq47r72g7dcp87eu.app.specular.dev",
     // Wildcard for Newly preview/branch deployments
     "https://*.newly.dev",
     // Local development
