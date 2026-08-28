@@ -62,6 +62,8 @@ export async function getAuthSession(
           } catch (err) {
             app.logger.debug({ err }, 'User lookup from session failed');
           }
+        } else {
+          app.logger.debug({ rawToken }, 'No session found with this token');
         }
       } catch (err) {
         app.logger.debug({ err }, 'Session table lookup failed');
@@ -69,16 +71,17 @@ export async function getAuthSession(
 
       // Fallback: try token as user ID directly (for tests)
       try {
-        app.logger.debug({ token: rawToken }, 'Trying to look up token as user ID');
+        app.logger.info({ token: rawToken }, 'Attempting to look up token as user ID (test auth fallback)');
         const users = await app.db
           .select()
           .from(user)
           .where(eq(user.id, rawToken))
           .limit(1);
 
-        app.logger.debug({ usersFound: users.length }, 'User ID lookup query completed');
+        app.logger.info({ usersFound: users.length, token: rawToken }, 'User ID lookup query completed');
         if (users.length > 0) {
           const foundUser = users[0];
+          app.logger.info({ foundUser: JSON.stringify(foundUser) }, 'User found');
           if (foundUser && foundUser.id) {
             app.logger.info({ userId: foundUser.id, hasCookie: !!request.headers.cookie }, 'Bearer token found as user ID - returning user');
             return { user: foundUser };
@@ -86,31 +89,46 @@ export async function getAuthSession(
             app.logger.warn('User query returned row but no id property');
           }
         } else {
-          app.logger.debug({ token: rawToken }, 'No user found with this ID');
+          app.logger.info({ token: rawToken }, 'No user found with this ID - query returned empty result');
+          // Try counting all users to see if table is empty
+          try {
+            const allUsers = await app.db.select().from(user).limit(5);
+            app.logger.info({ totalUsers: allUsers.length }, 'Sample of users in database');
+          } catch (countErr) {
+            app.logger.debug({ err: countErr }, 'Could not count users');
+          }
         }
       } catch (err) {
-        app.logger.warn({ err, token: rawToken }, 'User ID lookup threw an error');
+        app.logger.error({ err, token: rawToken, errMessage: err instanceof Error ? err.message : String(err) }, 'User ID lookup threw an error');
       }
     }
   }
 
   // 2. Try Better Auth cookie session (if app.auth is available)
-  if (app.auth && typeof app.auth === 'object' && 'api' in app.auth && app.auth.api) {
+  if (app.auth) {
     try {
-      app.logger.info('Attempting Better Auth cookie session lookup');
-      const cookieSession = await (app.auth as any).api.getSession({
-        headers: request.headers as Record<string, string | string[]>
-      });
-      if (cookieSession?.user) {
-        app.logger.info({ userId: cookieSession.user.id }, 'Session found via Better Auth cookie');
-        return { user: cookieSession.user };
+      app.logger.info({ hasAuth: !!app.auth, authType: typeof app.auth }, 'Attempting Better Auth cookie session lookup');
+      const authApi = (app.auth as any).api;
+      if (authApi && typeof authApi.getSession === 'function') {
+        const cookieSession = await authApi.getSession({
+          headers: request.headers as Record<string, string | string[]>
+        });
+        if (cookieSession?.user) {
+          app.logger.info({ userId: cookieSession.user.id }, 'Session found via Better Auth cookie');
+          return { user: cookieSession.user };
+        }
+        if (cookieSession) {
+          app.logger.info({ hasSession: true, hasUser: !!cookieSession.user }, 'Better Auth returned session but no user');
+        }
+      } else {
+        app.logger.debug({ hasGetSession: typeof authApi?.getSession }, 'Better Auth api.getSession not available');
       }
       app.logger.debug('Better Auth cookie session not found');
     } catch (err) {
       app.logger.debug({ err }, 'Better Auth cookie session lookup failed');
     }
   } else {
-    app.logger.debug('Better Auth API not available, skipping cookie session lookup');
+    app.logger.debug('Better Auth app.auth not available');
   }
 
   app.logger.warn('No valid authentication found - returning null');

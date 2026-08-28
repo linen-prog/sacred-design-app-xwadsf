@@ -1,15 +1,21 @@
 import { describe, test, expect } from "bun:test";
 import { api, authenticatedApi, signUpTestUser, expectStatus, connectWebSocket, connectAuthenticatedWebSocket, waitForMessage } from "./helpers";
 
-describe("API Integration Tests", () => {
-  let authToken: string;
+// Sign up test user before any tests run
+const { token: authToken, user: testUser } = await signUpTestUser();
 
+if (!authToken) {
+  throw new Error("Failed to initialize test - could not get auth token from signup");
+}
+if (!testUser.id) {
+  throw new Error("Failed to initialize test - could not get user ID from signup");
+}
+
+describe("API Integration Tests", () => {
   test("Sign up test user for authenticated endpoints", async () => {
-    const { token, user } = await signUpTestUser();
-    authToken = token;
     expect(authToken).toBeDefined();
-    expect(user.id).toBeDefined();
-    expect(user.email).toBeDefined();
+    expect(testUser.id).toBeDefined();
+    expect(testUser.email).toBeDefined();
   });
 
   describe("Daily Alignment", () => {
@@ -451,6 +457,28 @@ describe("API Integration Tests", () => {
         body: JSON.stringify({ reflection_text: "test" }),
       });
       await expectStatus(res, 400);
+    });
+
+    test("POST /api/alignments/{id}/reflection returns 403 when user doesn't own alignment", async () => {
+      // Create a new alignment with the first user
+      const alignRes = await authenticatedApi("/api/alignments/generate", authToken, {
+        method: "POST",
+      });
+      await expectStatus(alignRes, 201);
+      const alignData = await alignRes.json();
+      const otherAlignmentId = alignData.alignment.id;
+
+      // Sign up a second user
+      const { token: otherToken } = await signUpTestUser();
+
+      // Try to submit reflection for alignment created by the first user with the second user
+      const res = await authenticatedApi(`/api/alignments/${otherAlignmentId}/reflection`, otherToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reflection_text: "test" }),
+      });
+
+      await expectStatus(res, 403);
     });
 
     test("POST /api/alignments/checkin submits check-in when authenticated", async () => {
