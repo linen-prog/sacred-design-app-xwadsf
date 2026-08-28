@@ -5,9 +5,11 @@ describe("API Integration Tests", () => {
   let authToken: string;
 
   test("Sign up test user for authenticated endpoints", async () => {
-    const { token } = await signUpTestUser();
+    const { token, user } = await signUpTestUser();
     authToken = token;
     expect(authToken).toBeDefined();
+    expect(user.id).toBeDefined();
+    expect(user.email).toBeDefined();
   });
 
   describe("Daily Alignment", () => {
@@ -303,6 +305,8 @@ describe("API Integration Tests", () => {
     test("POST /api/alignments/generate returns 401 without authentication", async () => {
       const res = await api("/api/alignments/generate", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
         includeCookies: false,
       });
       await expectStatus(res, 401);
@@ -320,7 +324,7 @@ describe("API Integration Tests", () => {
     });
 
     test("POST /api/alignments/{id}/complete returns 401 without authentication", async () => {
-      const res = await api(`/api/alignments/${alignmentId}/complete`, {
+      const res = await api(`/api/alignments/00000000-0000-0000-0000-000000000000/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completed: true }),
@@ -404,7 +408,7 @@ describe("API Integration Tests", () => {
     });
 
     test("POST /api/alignments/{id}/reflection returns 401 without authentication", async () => {
-      const res = await api(`/api/alignments/${alignmentId}/reflection`, {
+      const res = await api(`/api/alignments/00000000-0000-0000-0000-000000000000/reflection`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reflection_text: "test" }),
@@ -931,6 +935,31 @@ describe("API Integration Tests", () => {
         includeCookies: false,
       });
       await expectStatus(res, 401);
+    });
+  });
+
+  describe("Test Utilities", () => {
+    test("POST /api/test-register-token registers a bearer token when given a valid userId", async () => {
+      const { user } = await signUpTestUser();
+      const res = await api("/api/test-register-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      await expectStatus(res, 201);
+      const data = await res.json();
+      expect(data.token).toBeDefined();
+      expect(typeof data.token).toBe("string");
+      expect(data.token.length).toBeGreaterThan(0);
+    });
+
+    test("POST /api/test-register-token returns 400 with missing userId field", async () => {
+      const res = await api("/api/test-register-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      await expectStatus(res, 400);
     });
   });
 });
